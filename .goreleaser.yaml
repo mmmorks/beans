@@ -47,6 +47,18 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+  groups:
+    - title: "⚠️ Breaking Changes"
+      regexp: '^.*?[[:word:]]+(\([[:word:]]+\))?!:.+$'
+      order: 0
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??:.+$'
+      order: 1
+    - title: Bug Fixes
+      regexp: '^.*?fix(\([[:word:]]+\))??:.+$'
+      order: 2
+    - title: Other
+      order: 999
 
 homebrew_casks:
   - repository:
