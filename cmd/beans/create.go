@@ -23,12 +23,6 @@ var (
 	createJSON            bool
 )
 
-var validStatuses = map[string]bool{
-	"open":        true,
-	"in-progress": true,
-	"done":        true,
-}
-
 var createCmd = &cobra.Command{
 	Use:   "create [title]",
 	Short: "Create a new bean",
@@ -38,14 +32,14 @@ var createCmd = &cobra.Command{
 		status := createStatus
 
 		// Validate status if provided
-		if status != "" && !validStatuses[status] {
+		if status != "" && !cfg.IsValidStatus(status) {
 			if createJSON {
-				return output.Error(output.ErrInvalidStatus, fmt.Sprintf("invalid status: %s (must be open, in-progress, or done)", status))
+				return output.Error(output.ErrInvalidStatus, fmt.Sprintf("invalid status: %s (must be %s)", status, cfg.StatusList()))
 			}
-			return fmt.Errorf("invalid status: %s (must be open, in-progress, or done)", status)
+			return fmt.Errorf("invalid status: %s (must be %s)", status, cfg.StatusList())
 		}
 		if status == "" {
-			status = "open"
+			status = cfg.Statuses.Default
 		}
 
 		// Determine description content
@@ -62,6 +56,12 @@ var createCmd = &cobra.Command{
 
 		// If no title provided and not in scripting mode, show interactive form
 		if title == "" && !scriptingMode {
+			// Build status options from config
+			var statusOptions []huh.Option[string]
+			for _, s := range cfg.Statuses.Available {
+				statusOptions = append(statusOptions, huh.NewOption(formatStatusLabel(s), s))
+			}
+
 			form := huh.NewForm(
 				huh.NewGroup(
 					huh.NewInput().
@@ -71,11 +71,7 @@ var createCmd = &cobra.Command{
 						Value(&title),
 					huh.NewSelect[string]().
 						Title("Status").
-						Options(
-							huh.NewOption("Open", "open"),
-							huh.NewOption("In Progress", "in-progress"),
-							huh.NewOption("Done", "done"),
-						).
+						Options(statusOptions...).
 						Value(&status),
 				),
 			)
@@ -163,6 +159,18 @@ func resolveContent(value, file string) (string, error) {
 	}
 
 	return "", nil
+}
+
+// formatStatusLabel converts a status value to a display label.
+// e.g., "in-progress" -> "In Progress", "open" -> "Open"
+func formatStatusLabel(status string) string {
+	words := strings.Split(status, "-")
+	for i, word := range words {
+		if len(word) > 0 {
+			words[i] = strings.ToUpper(word[:1]) + word[1:]
+		}
+	}
+	return strings.Join(words, " ")
 }
 
 func init() {

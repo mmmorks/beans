@@ -81,12 +81,12 @@ func editProgrammatically(b *bean.Bean) error {
 
 	// Apply status change
 	if editSetStatus != "" {
-		if !validStatuses[editSetStatus] {
+		if !cfg.IsValidStatus(editSetStatus) {
 			if editJSON {
 				return output.Error(output.ErrInvalidStatus,
-					fmt.Sprintf("invalid status: %s (must be open, in-progress, or closed)", editSetStatus))
+					fmt.Sprintf("invalid status: %s (must be %s)", editSetStatus, cfg.StatusList()))
 			}
-			return fmt.Errorf("invalid status: %s (must be open, in-progress, or closed)", editSetStatus)
+			return fmt.Errorf("invalid status: %s (must be %s)", editSetStatus, cfg.StatusList())
 		}
 		b.Status = editSetStatus
 		changes = append(changes, "status")

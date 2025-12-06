@@ -1,9 +1,11 @@
 ---
 title: Introduce TOML configuration file
-status: open
+status: done
 created_at: 2025-12-06T14:05:22.233408Z
-updated_at: 2025-12-06T14:05:22.233408Z
+updated_at: 2025-12-06T14:34:38Z
 ---
+
+
 
 Add a TOML configuration file to allow customization of beans behavior.
 

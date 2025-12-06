@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"hmans.dev/beans/internal/bean"
+	"hmans.dev/beans/internal/config"
 	"hmans.dev/beans/internal/output"
 )
 
@@ -32,8 +33,18 @@ var initCmd = &cobra.Command{
 			return fmt.Errorf("failed to initialize: %w", err)
 		}
 
+		// Create default config file
+		beansDir := filepath.Join(dir, ".beans")
+		defaultCfg := config.Default()
+		if err := defaultCfg.Save(beansDir); err != nil {
+			if initJSON {
+				return output.Error(output.ErrFileError, err.Error())
+			}
+			return fmt.Errorf("failed to create config: %w", err)
+		}
+
 		if initJSON {
-			return output.SuccessInit(filepath.Join(dir, ".beans"))
+			return output.SuccessInit(beansDir)
 		}
 
 		fmt.Println("Initialized .beans directory")

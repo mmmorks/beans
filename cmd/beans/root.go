@@ -6,9 +6,11 @@ import (
 
 	"github.com/spf13/cobra"
 	"hmans.dev/beans/internal/bean"
+	"hmans.dev/beans/internal/config"
 )
 
 var store *bean.Store
+var cfg *config.Config
 
 var rootCmd = &cobra.Command{
 	Use:   "beans",
@@ -27,6 +29,12 @@ development workflows where issues live alongside your code.`,
 			return fmt.Errorf("no .beans directory found (run 'beans init' to create one)")
 		}
 		store = bean.NewStore(root)
+
+		cfg, err = config.Load(root)
+		if err != nil {
+			return fmt.Errorf("loading config: %w", err)
+		}
+
 		return nil
 	},
 }
