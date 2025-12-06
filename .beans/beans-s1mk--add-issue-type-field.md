@@ -1,6 +1,7 @@
 ---
 title: Add issue type field
 status: done
+type: feature
 created_at: 2025-12-06T22:04:38Z
 updated_at: 2025-12-06T22:11:32Z
 ---

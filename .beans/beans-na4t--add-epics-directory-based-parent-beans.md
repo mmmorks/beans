@@ -1,6 +1,7 @@
 ---
 title: Add epics / directory-based parent beans
 status: open
+type: epic
 created_at: 2025-12-06T22:04:39Z
 updated_at: 2025-12-06T22:04:39Z
 ---

@@ -1,6 +1,7 @@
 ---
 title: Investigate and improve Claude Code hooks integration
 status: done
+type: task
 created_at: 2025-12-06T18:35:29Z
 updated_at: 2025-12-06T20:25:11Z
 ---

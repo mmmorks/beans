@@ -1,6 +1,7 @@
 ---
 title: Add initial unit test suite
 status: done
+type: task
 created_at: 2025-12-06T15:26:00Z
 updated_at: 2025-12-06T19:51:11Z
 ---

@@ -1,6 +1,7 @@
 ---
 title: Add filtering to list command
 status: open
+type: feature
 ---
 
 Add filtering and search capabilities to the `beans list` command.

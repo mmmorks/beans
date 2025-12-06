@@ -1,6 +1,7 @@
 ---
 title: Make body inclusion in beans list --json optional
 status: open
+type: feature
 created_at: 2025-12-06T22:09:15Z
 updated_at: 2025-12-06T22:09:15Z
 ---

@@ -1,6 +1,7 @@
 ---
 title: 'Planning: Issue metadata'
 status: done
+type: epic
 created_at: 2025-12-06T21:46:00Z
 updated_at: 2025-12-06T22:04:09Z
 ---
