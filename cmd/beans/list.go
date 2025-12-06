@@ -2,7 +2,6 @@ package beans
 
 import (
 	"fmt"
-	"path/filepath"
 	"sort"
 	"strings"
 
@@ -14,18 +13,17 @@ import (
 )
 
 var (
-	listJSON     bool
-	listStatus   []string
-	listPath     string
-	listQuiet    bool
-	listSort     string
+	listJSON   bool
+	listStatus []string
+	listQuiet  bool
+	listSort   string
 )
 
 var listCmd = &cobra.Command{
 	Use:     "list",
 	Aliases: []string{"ls"},
 	Short:   "List all beans",
-	Long:    `Lists all beans in the .beans directory, grouped by path.`,
+	Long:    `Lists all beans in the .beans directory.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		beans, err := store.FindAll()
 		if err != nil {
@@ -36,7 +34,7 @@ var listCmd = &cobra.Command{
 		}
 
 		// Apply filters
-		beans = filterBeans(beans, listStatus, listPath)
+		beans = filterBeans(beans, listStatus)
 
 		// Sort beans
 		sortBeans(beans, listSort)
@@ -63,7 +61,6 @@ var listCmd = &cobra.Command{
 		// Column styles with fixed widths for alignment
 		idStyle := lipgloss.NewStyle().Width(10)
 		statusStyle := lipgloss.NewStyle().Width(14)
-		pathStyle := lipgloss.NewStyle().Width(20).Foreground(ui.ColorMuted)
 		titleStyle := lipgloss.NewStyle()
 
 		// Header style
@@ -73,22 +70,15 @@ var listCmd = &cobra.Command{
 		header := lipgloss.JoinHorizontal(lipgloss.Top,
 			idStyle.Render(headerCol.Render("ID")),
 			statusStyle.Render(headerCol.Render("STATUS")),
-			pathStyle.Render(headerCol.Render("PATH")),
 			titleStyle.Render(headerCol.Render("TITLE")),
 		)
 		fmt.Println(header)
-		fmt.Println(ui.Muted.Render(strings.Repeat("─", 70)))
+		fmt.Println(ui.Muted.Render(strings.Repeat("─", 60)))
 
 		for _, b := range beans {
-			dir := filepath.Dir(b.Path)
-			if dir == "." {
-				dir = ""
-			}
-
 			row := lipgloss.JoinHorizontal(lipgloss.Top,
 				idStyle.Render(ui.ID.Render(b.ID)),
 				statusStyle.Render(ui.RenderStatusText(b.Status)),
-				pathStyle.Render(truncate(dir, 18)),
 				titleStyle.Render(truncate(b.Title, 50)),
 			)
 			fmt.Println(row)
@@ -103,7 +93,7 @@ func sortBeans(beans []*bean.Bean, sortBy string) {
 	case "created":
 		sort.Slice(beans, func(i, j int) bool {
 			if beans[i].CreatedAt == nil && beans[j].CreatedAt == nil {
-				return beans[i].Path < beans[j].Path
+				return beans[i].ID < beans[j].ID
 			}
 			if beans[i].CreatedAt == nil {
 				return false
@@ -116,7 +106,7 @@ func sortBeans(beans []*bean.Bean, sortBy string) {
 	case "updated":
 		sort.Slice(beans, func(i, j int) bool {
 			if beans[i].UpdatedAt == nil && beans[j].UpdatedAt == nil {
-				return beans[i].Path < beans[j].Path
+				return beans[i].ID < beans[j].ID
 			}
 			if beans[i].UpdatedAt == nil {
 				return false
@@ -137,43 +127,34 @@ func sortBeans(beans []*bean.Bean, sortBy string) {
 			if oi != oj {
 				return oi < oj
 			}
-			return beans[i].Path < beans[j].Path
+			return beans[i].ID < beans[j].ID
 		})
 	default:
-		// Default: sort by path
+		// Default: sort by ID
 		sort.Slice(beans, func(i, j int) bool {
-			return beans[i].Path < beans[j].Path
+			return beans[i].ID < beans[j].ID
 		})
 	}
 }
 
-func filterBeans(beans []*bean.Bean, statuses []string, pathPrefix string) []*bean.Bean {
-	if len(statuses) == 0 && pathPrefix == "" {
+func filterBeans(beans []*bean.Bean, statuses []string) []*bean.Bean {
+	if len(statuses) == 0 {
 		return beans
 	}
 
 	var filtered []*bean.Bean
 	for _, b := range beans {
 		// Filter by status
-		if len(statuses) > 0 {
-			matched := false
-			for _, s := range statuses {
-				if b.Status == s {
-					matched = true
-					break
-				}
-			}
-			if !matched {
-				continue
+		matched := false
+		for _, s := range statuses {
+			if b.Status == s {
+				matched = true
+				break
 			}
 		}
-
-		// Filter by path prefix
-		if pathPrefix != "" && !strings.HasPrefix(b.Path, pathPrefix) {
-			continue
+		if matched {
+			filtered = append(filtered, b)
 		}
-
-		filtered = append(filtered, b)
 	}
 	return filtered
 }
@@ -188,9 +169,8 @@ func truncate(s string, maxLen int) string {
 func init() {
 	listCmd.Flags().BoolVar(&listJSON, "json", false, "Output as JSON")
 	listCmd.Flags().StringArrayVarP(&listStatus, "status", "s", nil, "Filter by status (can be repeated)")
-	listCmd.Flags().StringVarP(&listPath, "path", "p", "", "Filter by path prefix")
 	listCmd.Flags().BoolVarP(&listQuiet, "quiet", "q", false, "Only output IDs (one per line)")
-	listCmd.Flags().StringVar(&listSort, "sort", "status", "Sort by: created, updated, status, path (default: status)")
+	listCmd.Flags().StringVar(&listSort, "sort", "status", "Sort by: created, updated, status, id (default: status)")
 	listCmd.MarkFlagsMutuallyExclusive("json", "quiet")
 	rootCmd.AddCommand(listCmd)
 }

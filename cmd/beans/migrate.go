@@ -35,8 +35,7 @@ var migrateCmd = &cobra.Command{
 		var skipped int
 
 		for _, b := range beans {
-			oldPath := b.Path
-			oldFilename := filepath.Base(oldPath)
+			oldFilename := b.Path // Now just the filename since we use flat structure
 			nameWithoutExt := strings.TrimSuffix(oldFilename, ".md")
 
 			// Check if already in new format (has double-dash)
@@ -58,25 +57,16 @@ var migrateCmd = &cobra.Command{
 				continue
 			}
 
-			// Build new path (preserve directory structure)
-			dir := filepath.Dir(oldPath)
-			var newPath string
-			if dir == "." {
-				newPath = newFilename
-			} else {
-				newPath = filepath.Join(dir, newFilename)
-			}
-
-			oldFullPath := filepath.Join(store.Root, oldPath)
-			newFullPath := filepath.Join(store.Root, newPath)
+			oldFullPath := filepath.Join(store.Root, oldFilename)
+			newFullPath := filepath.Join(store.Root, newFilename)
 
 			if migrateDryRun {
 				if !migrateJSON {
-					fmt.Printf("Would rename: %s -> %s\n", oldPath, newPath)
+					fmt.Printf("Would rename: %s -> %s\n", oldFilename, newFilename)
 				}
 				renamed = append(renamed, map[string]string{
-					"old": oldPath,
-					"new": newPath,
+					"old": oldFilename,
+					"new": newFilename,
 				})
 				continue
 			}
@@ -84,18 +74,18 @@ var migrateCmd = &cobra.Command{
 			// Perform the rename
 			if err := os.Rename(oldFullPath, newFullPath); err != nil {
 				if migrateJSON {
-					return output.Error(output.ErrFileError, fmt.Sprintf("failed to rename %s: %v", oldPath, err))
+					return output.Error(output.ErrFileError, fmt.Sprintf("failed to rename %s: %v", oldFilename, err))
 				}
-				return fmt.Errorf("failed to rename %s: %w", oldPath, err)
+				return fmt.Errorf("failed to rename %s: %w", oldFilename, err)
 			}
 
 			renamed = append(renamed, map[string]string{
-				"old": oldPath,
-				"new": newPath,
+				"old": oldFilename,
+				"new": newFilename,
 			})
 
 			if !migrateJSON {
-				fmt.Println(ui.Muted.Render(oldPath) + " → " + ui.Success.Render(newPath))
+				fmt.Println(ui.Muted.Render(oldFilename) + " → " + ui.Success.Render(newFilename))
 			}
 		}
 

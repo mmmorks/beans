@@ -3,7 +3,6 @@ package bean
 import (
 	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -54,32 +53,25 @@ func FindRoot() (string, error) {
 func (s *Store) FindAll() ([]*Bean, error) {
 	var beans []*Bean
 
-	err := filepath.WalkDir(s.Root, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
+	// Only read .md files directly in the .beans directory (no subdirectories)
+	entries, err := os.ReadDir(s.Root)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range entries {
+		// Skip directories and non-.md files
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
+			continue
 		}
 
-		// Skip directories
-		if d.IsDir() {
-			return nil
-		}
-
-		// Only process .md files
-		if !strings.HasSuffix(d.Name(), ".md") {
-			return nil
-		}
-
+		path := filepath.Join(s.Root, entry.Name())
 		bean, err := s.loadBean(path)
 		if err != nil {
-			return fmt.Errorf("loading %s: %w", path, err)
+			return nil, fmt.Errorf("loading %s: %w", path, err)
 		}
 
 		beans = append(beans, bean)
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
 	}
 
 	return beans, nil
