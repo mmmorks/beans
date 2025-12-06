@@ -8,7 +8,7 @@ All commands support --json for machine-readable output. Use this flag to parse 
 ## Core Rules
 
 - Track ALL work using beans (no TodoWrite tool, no markdown TODOs)
-- Use `beans new` to create issues, not TodoWrite tool
+- Use `beans create` to create issues, not TodoWrite tool
 - After compaction or clear, run `beans prompt` to re-sync
 - When completing work, mark the bean as done using `beans status <bean-id> done`
 
@@ -18,5 +18,6 @@ All commands support --json for machine-readable output. Use this flag to parse 
 
 ## Creating new beans
 
-- `beans new --help`
+- `beans create --help`
 - When creating new beans, include a useful description. If you're not sure what to write, ask the user.
+- Example: `beans create "Fix login bug" -d "Users cannot log in when..." -s open --no-edit`

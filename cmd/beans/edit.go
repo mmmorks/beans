@@ -94,7 +94,7 @@ func editProgrammatically(b *bean.Bean) error {
 
 	// Apply body change
 	if editSetBody != "" || editSetBodyFile != "" {
-		body, err := resolveBody(editSetBody, editSetBodyFile)
+		body, err := resolveContent(editSetBody, editSetBodyFile)
 		if err != nil {
 			if editJSON {
 				return output.Error(output.ErrFileError, err.Error())

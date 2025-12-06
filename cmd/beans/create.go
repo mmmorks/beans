@@ -15,12 +15,12 @@ import (
 )
 
 var (
-	newStatus   string
-	newBody     string
-	newBodyFile string
-	newNoEdit   bool
-	newPath     string
-	newJSON     bool
+	createStatus          string
+	createDescription     string
+	createDescriptionFile string
+	createNoEdit          bool
+	createPath            string
+	createJSON            bool
 )
 
 var validStatuses = map[string]bool{
@@ -29,17 +29,17 @@ var validStatuses = map[string]bool{
 	"done":        true,
 }
 
-var newCmd = &cobra.Command{
-	Use:   "new [title]",
+var createCmd = &cobra.Command{
+	Use:   "create [title]",
 	Short: "Create a new bean",
 	Long:  `Creates a new bean (issue) with a generated ID and optional title.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		title := strings.Join(args, " ")
-		status := newStatus
+		status := createStatus
 
 		// Validate status if provided
 		if status != "" && !validStatuses[status] {
-			if newJSON {
+			if createJSON {
 				return output.Error(output.ErrInvalidStatus, fmt.Sprintf("invalid status: %s (must be open, in-progress, or done)", status))
 			}
 			return fmt.Errorf("invalid status: %s (must be open, in-progress, or done)", status)
@@ -48,17 +48,17 @@ var newCmd = &cobra.Command{
 			status = "open"
 		}
 
-		// Determine body content
-		body, err := resolveBody(newBody, newBodyFile)
+		// Determine description content
+		description, err := resolveContent(createDescription, createDescriptionFile)
 		if err != nil {
-			if newJSON {
+			if createJSON {
 				return output.Error(output.ErrFileError, err.Error())
 			}
 			return err
 		}
 
 		// Check if we're in scripting mode (any flag that suggests non-interactive use)
-		scriptingMode := newBody != "" || newBodyFile != "" || newJSON || newNoEdit || cmd.Flags().Changed("status")
+		scriptingMode := createDescription != "" || createDescriptionFile != "" || createJSON || createNoEdit || cmd.Flags().Changed("status")
 
 		// If no title provided and not in scripting mode, show interactive form
 		if title == "" && !scriptingMode {
@@ -94,30 +94,30 @@ var newCmd = &cobra.Command{
 			Slug:   bean.Slugify(title),
 			Title:  title,
 			Status: status,
-			Body:   body,
+			Body:   description,
 		}
 
 		// Set path if provided
-		if newPath != "" {
-			b.Path = newPath + "/" + b.ID + "-" + b.Slug + ".md"
+		if createPath != "" {
+			b.Path = createPath + "/" + b.ID + "-" + b.Slug + ".md"
 		}
 
 		if err := store.Save(b); err != nil {
-			if newJSON {
+			if createJSON {
 				return output.Error(output.ErrFileError, err.Error())
 			}
 			return fmt.Errorf("failed to create bean: %w", err)
 		}
 
 		// Output result
-		if newJSON {
+		if createJSON {
 			return output.Success(b, "Bean created")
 		}
 
 		fmt.Println(ui.Success.Render("Created ") + ui.ID.Render(b.ID) + " " + ui.Muted.Render(b.Path))
 
 		// Open in editor unless --no-edit or --json
-		if !newNoEdit && !newJSON {
+		if !createNoEdit && !createJSON {
 			editor := os.Getenv("EDITOR")
 			if editor != "" {
 				path := store.FullPath(b)
@@ -135,14 +135,14 @@ var newCmd = &cobra.Command{
 	},
 }
 
-// resolveBody returns the body content from --body or --body-file flags.
-// If --body is "-", reads from stdin.
-func resolveBody(body, bodyFile string) (string, error) {
-	if body != "" && bodyFile != "" {
-		return "", fmt.Errorf("cannot use both --body and --body-file")
+// resolveContent returns content from a direct value or file flag.
+// If value is "-", reads from stdin.
+func resolveContent(value, file string) (string, error) {
+	if value != "" && file != "" {
+		return "", fmt.Errorf("cannot use both --description and --description-file")
 	}
 
-	if body == "-" {
+	if value == "-" {
 		data, err := io.ReadAll(os.Stdin)
 		if err != nil {
 			return "", fmt.Errorf("reading stdin: %w", err)
@@ -150,14 +150,14 @@ func resolveBody(body, bodyFile string) (string, error) {
 		return string(data), nil
 	}
 
-	if body != "" {
-		return body, nil
+	if value != "" {
+		return value, nil
 	}
 
-	if bodyFile != "" {
-		data, err := os.ReadFile(bodyFile)
+	if file != "" {
+		data, err := os.ReadFile(file)
 		if err != nil {
-			return "", fmt.Errorf("reading body file: %w", err)
+			return "", fmt.Errorf("reading file: %w", err)
 		}
 		return string(data), nil
 	}
@@ -166,12 +166,12 @@ func resolveBody(body, bodyFile string) (string, error) {
 }
 
 func init() {
-	newCmd.Flags().StringVarP(&newStatus, "status", "s", "", "Initial status (open, in-progress, done)")
-	newCmd.Flags().StringVarP(&newBody, "body", "b", "", "Body content (use '-' to read from stdin)")
-	newCmd.Flags().StringVar(&newBodyFile, "body-file", "", "Read body from file")
-	newCmd.Flags().BoolVar(&newNoEdit, "no-edit", false, "Skip opening $EDITOR")
-	newCmd.Flags().StringVarP(&newPath, "path", "p", "", "Subdirectory within .beans/")
-	newCmd.Flags().BoolVar(&newJSON, "json", false, "Output as JSON")
-	newCmd.MarkFlagsMutuallyExclusive("body", "body-file")
-	rootCmd.AddCommand(newCmd)
+	createCmd.Flags().StringVarP(&createStatus, "status", "s", "", "Initial status (open, in-progress, done)")
+	createCmd.Flags().StringVarP(&createDescription, "description", "d", "", "Description content (use '-' to read from stdin)")
+	createCmd.Flags().StringVar(&createDescriptionFile, "description-file", "", "Read description from file")
+	createCmd.Flags().BoolVar(&createNoEdit, "no-edit", false, "Skip opening $EDITOR")
+	createCmd.Flags().StringVarP(&createPath, "path", "p", "", "Subdirectory within .beans/")
+	createCmd.Flags().BoolVar(&createJSON, "json", false, "Output as JSON")
+	createCmd.MarkFlagsMutuallyExclusive("description", "description-file")
+	rootCmd.AddCommand(createCmd)
 }
