@@ -11,6 +11,7 @@ import (
 
 var store *bean.Store
 var cfg *config.Config
+var beansPath string
 
 var rootCmd = &cobra.Command{
 	Use:   "beans",
@@ -24,10 +25,24 @@ development workflows where issues live alongside your code.`,
 			return nil
 		}
 
-		root, err := bean.FindRoot()
-		if err != nil {
-			return fmt.Errorf("no .beans directory found (run 'beans init' to create one)")
+		var root string
+		var err error
+
+		if beansPath != "" {
+			// Use explicit path
+			root = beansPath
+			// Verify it exists
+			if info, statErr := os.Stat(root); statErr != nil || !info.IsDir() {
+				return fmt.Errorf("beans path does not exist or is not a directory: %s", root)
+			}
+		} else {
+			// Search upward for .beans directory
+			root, err = bean.FindRoot()
+			if err != nil {
+				return fmt.Errorf("no .beans directory found (run 'beans init' to create one)")
+			}
 		}
+
 		store = bean.NewStore(root)
 
 		cfg, err = config.Load(root)
@@ -37,6 +52,10 @@ development workflows where issues live alongside your code.`,
 
 		return nil
 	},
+}
+
+func init() {
+	rootCmd.PersistentFlags().StringVar(&beansPath, "beans-path", "", "Path to .beans directory (overrides auto-detection)")
 }
 
 func Execute() {

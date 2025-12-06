@@ -18,24 +18,42 @@ var initCmd = &cobra.Command{
 	Short: "Initialize a .beans directory",
 	Long:  `Creates a .beans directory in the current directory for storing issues.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dir, err := os.Getwd()
-		if err != nil {
-			if initJSON {
-				return output.Error(output.ErrFileError, err.Error())
-			}
-			return err
-		}
+		var beansDir string
+		var dirName string
 
-		if err := bean.Init(dir); err != nil {
-			if initJSON {
-				return output.Error(output.ErrFileError, err.Error())
+		if beansPath != "" {
+			// Use explicit path
+			beansDir = beansPath
+			dirName = filepath.Base(filepath.Dir(beansDir))
+			// Create the directory
+			if err := os.MkdirAll(beansDir, 0755); err != nil {
+				if initJSON {
+					return output.Error(output.ErrFileError, err.Error())
+				}
+				return fmt.Errorf("failed to create directory: %w", err)
 			}
-			return fmt.Errorf("failed to initialize: %w", err)
+		} else {
+			// Use current working directory
+			dir, err := os.Getwd()
+			if err != nil {
+				if initJSON {
+					return output.Error(output.ErrFileError, err.Error())
+				}
+				return err
+			}
+
+			if err := bean.Init(dir); err != nil {
+				if initJSON {
+					return output.Error(output.ErrFileError, err.Error())
+				}
+				return fmt.Errorf("failed to initialize: %w", err)
+			}
+
+			beansDir = filepath.Join(dir, ".beans")
+			dirName = filepath.Base(dir)
 		}
 
 		// Create default config file with directory name as prefix
-		beansDir := filepath.Join(dir, ".beans")
-		dirName := filepath.Base(dir)
 		defaultCfg := config.DefaultWithPrefix(dirName + "-")
 		if err := defaultCfg.Save(beansDir); err != nil {
 			if initJSON {
