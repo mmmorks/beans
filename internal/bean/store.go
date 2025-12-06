@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 const BeansDir = ".beans"
@@ -110,6 +111,13 @@ func (s *Store) FindByID(idPrefix string) (*Bean, error) {
 
 // Save writes a bean to disk.
 func (s *Store) Save(bean *Bean) error {
+	// Set timestamps
+	now := time.Now().UTC()
+	if bean.CreatedAt == nil {
+		bean.CreatedAt = &now
+	}
+	bean.UpdatedAt = &now
+
 	// Determine the file path
 	var path string
 	if bean.Path != "" {

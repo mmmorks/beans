@@ -18,6 +18,7 @@ var (
 	listStatus   []string
 	listPath     string
 	listQuiet    bool
+	listSort     string
 )
 
 var listCmd = &cobra.Command{
@@ -37,10 +38,8 @@ var listCmd = &cobra.Command{
 		// Apply filters
 		beans = filterBeans(beans, listStatus, listPath)
 
-		// Sort by path for grouping
-		sort.Slice(beans, func(i, j int) bool {
-			return beans[i].Path < beans[j].Path
-		})
+		// Sort beans
+		sortBeans(beans, listSort)
 
 		// JSON output
 		if listJSON {
@@ -99,6 +98,51 @@ var listCmd = &cobra.Command{
 	},
 }
 
+func sortBeans(beans []*bean.Bean, sortBy string) {
+	switch sortBy {
+	case "created":
+		sort.Slice(beans, func(i, j int) bool {
+			if beans[i].CreatedAt == nil && beans[j].CreatedAt == nil {
+				return beans[i].Path < beans[j].Path
+			}
+			if beans[i].CreatedAt == nil {
+				return false
+			}
+			if beans[j].CreatedAt == nil {
+				return true
+			}
+			return beans[i].CreatedAt.After(*beans[j].CreatedAt)
+		})
+	case "updated":
+		sort.Slice(beans, func(i, j int) bool {
+			if beans[i].UpdatedAt == nil && beans[j].UpdatedAt == nil {
+				return beans[i].Path < beans[j].Path
+			}
+			if beans[i].UpdatedAt == nil {
+				return false
+			}
+			if beans[j].UpdatedAt == nil {
+				return true
+			}
+			return beans[i].UpdatedAt.After(*beans[j].UpdatedAt)
+		})
+	case "status":
+		statusOrder := map[string]int{"in-progress": 0, "open": 1, "done": 2}
+		sort.Slice(beans, func(i, j int) bool {
+			oi, oj := statusOrder[beans[i].Status], statusOrder[beans[j].Status]
+			if oi != oj {
+				return oi < oj
+			}
+			return beans[i].Path < beans[j].Path
+		})
+	default:
+		// Default: sort by path
+		sort.Slice(beans, func(i, j int) bool {
+			return beans[i].Path < beans[j].Path
+		})
+	}
+}
+
 func filterBeans(beans []*bean.Bean, statuses []string, pathPrefix string) []*bean.Bean {
 	if len(statuses) == 0 && pathPrefix == "" {
 		return beans
@@ -142,6 +186,7 @@ func init() {
 	listCmd.Flags().StringArrayVarP(&listStatus, "status", "s", nil, "Filter by status (can be repeated)")
 	listCmd.Flags().StringVarP(&listPath, "path", "p", "", "Filter by path prefix")
 	listCmd.Flags().BoolVarP(&listQuiet, "quiet", "q", false, "Only output IDs (one per line)")
+	listCmd.Flags().StringVar(&listSort, "sort", "", "Sort by: created, updated, status, path (default: path)")
 	listCmd.MarkFlagsMutuallyExclusive("json", "quiet")
 	rootCmd.AddCommand(listCmd)
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/adrg/frontmatter"
 	"gopkg.in/yaml.v3"
@@ -19,8 +20,10 @@ type Bean struct {
 	Path string `yaml:"-" json:"path"`
 
 	// Front matter fields
-	Title  string `yaml:"title" json:"title"`
-	Status string `yaml:"status" json:"status"`
+	Title     string     `yaml:"title" json:"title"`
+	Status    string     `yaml:"status" json:"status"`
+	CreatedAt *time.Time `yaml:"created_at,omitempty" json:"created_at,omitempty"`
+	UpdatedAt *time.Time `yaml:"updated_at,omitempty" json:"updated_at,omitempty"`
 
 	// Body is the markdown content after the front matter.
 	Body string `yaml:"-" json:"body"`
@@ -28,8 +31,10 @@ type Bean struct {
 
 // frontMatter is the subset of Bean that gets serialized to YAML front matter.
 type frontMatter struct {
-	Title  string `yaml:"title"`
-	Status string `yaml:"status"`
+	Title     string     `yaml:"title"`
+	Status    string     `yaml:"status"`
+	CreatedAt *time.Time `yaml:"created_at,omitempty"`
+	UpdatedAt *time.Time `yaml:"updated_at,omitempty"`
 }
 
 // Parse reads a bean from a reader (markdown with YAML front matter).
@@ -41,17 +46,21 @@ func Parse(r io.Reader) (*Bean, error) {
 	}
 
 	return &Bean{
-		Title:  fm.Title,
-		Status: fm.Status,
-		Body:   string(body),
+		Title:     fm.Title,
+		Status:    fm.Status,
+		CreatedAt: fm.CreatedAt,
+		UpdatedAt: fm.UpdatedAt,
+		Body:      string(body),
 	}, nil
 }
 
 // Render serializes the bean back to markdown with YAML front matter.
 func (b *Bean) Render() ([]byte, error) {
 	fm := frontMatter{
-		Title:  b.Title,
-		Status: b.Status,
+		Title:     b.Title,
+		Status:    b.Status,
+		CreatedAt: b.CreatedAt,
+		UpdatedAt: b.UpdatedAt,
 	}
 
 	fmBytes, err := yaml.Marshal(&fm)

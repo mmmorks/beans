@@ -1,7 +1,8 @@
 ---
 title: Add created_at and updated_at timestamps
-status: open
+status: in-progress
 ---
+
 
 Add automatic timestamp tracking to beans via `created_at` and `updated_at` front matter fields.
 
