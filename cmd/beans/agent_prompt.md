@@ -17,6 +17,12 @@ All commands support --json for machine-readable output. Use this flag to parse 
 
 - `beans list --json` to list all beans
 
+## Working on a bean
+
+- `bean status <bean-id> in-progress` to mark a bean as in-progress
+- `bean show <bean-id>` to see details about a bean
+- Adhere to the instructions in the bean's descriptions when working on it
+
 ## Creating new beans
 
 - `beans create --help`
