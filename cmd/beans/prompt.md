@@ -7,7 +7,8 @@ All commands support --json for machine-readable output. Use this flag to parse 
 
 ## Core Rules
 
-- Track ALL work using beans (no TodoWrite tool, no markdown TODOs)
+- Track ALL work using beans (no TodoWrite tool, no markdown TODOs). If you identify something that should be tracked, create a bean for it.
+- All bean commands support the `--json` flag for machine-readable output.
 - Use `beans create` to create issues, not TodoWrite tool
 - Never interact with the data inside the `.beans/` directory directly, except for updating an existing bean.
 - After compaction or clear, run `beans prompt` to re-sync
