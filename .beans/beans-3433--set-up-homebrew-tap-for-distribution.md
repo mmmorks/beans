@@ -2,8 +2,9 @@
 title: Set up Homebrew tap for distribution
 status: done
 created_at: 2025-12-06T16:31:34Z
-updated_at: 2025-12-06T16:48:26Z
+updated_at: 2025-12-06T17:05:26Z
 ---
+
 
 ## Summary
 
