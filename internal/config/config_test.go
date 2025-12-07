@@ -21,8 +21,8 @@ func TestDefault(t *testing.T) {
 	if len(cfg.Statuses) != 3 {
 		t.Errorf("len(Statuses) = %d, want 3", len(cfg.Statuses))
 	}
-	if len(cfg.Types) != 4 {
-		t.Errorf("len(Types) = %d, want 4", len(cfg.Types))
+	if len(cfg.Types) != 5 {
+		t.Errorf("len(Types) = %d, want 5", len(cfg.Types))
 	}
 }
 
@@ -288,6 +288,7 @@ func TestIsValidType(t *testing.T) {
 		{"feature", true},
 		{"bug", true},
 		{"epic", true},
+		{"idea", true},
 		{"invalid", false},
 		{"", false},
 		{"TASK", false}, // case sensitive
@@ -306,7 +307,7 @@ func TestIsValidType(t *testing.T) {
 func TestTypeList(t *testing.T) {
 	cfg := Default()
 	got := cfg.TypeList()
-	want := "task, feature, bug, epic"
+	want := "task, feature, bug, epic, idea"
 
 	if got != want {
 		t.Errorf("TypeList() = %q, want %q", got, want)

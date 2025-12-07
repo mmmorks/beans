@@ -23,6 +23,7 @@ var DefaultTypes = []TypeConfig{
 	{Name: "feature", Color: "green"},
 	{Name: "bug", Color: "red"},
 	{Name: "epic", Color: "purple"},
+	{Name: "idea", Color: "cyan"},
 }
 
 // StatusConfig defines a single status with its display color.
