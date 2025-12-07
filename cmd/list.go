@@ -204,28 +204,16 @@ func filterBeans(beans []*bean.Bean, statuses []string) []*bean.Bean {
 //   - "type:id" - Returns beans that have id in their links[type]
 //   - "type" - Returns beans that have ANY link of this type
 //
-// Multiple values can be comma-separated or specified via repeated flags.
+// Use repeated flags for multiple values (OR logic).
 //
 // Examples:
 //   - --links blocks:A returns beans that block A
 //   - --links blocks returns all beans that block something
-//   - --links blocks,parent returns beans that block something OR have a parent link
+//   - --links blocks --links parent returns beans that block something OR have a parent link
 func filterByLinks(beans []*bean.Bean, link []string) []*bean.Bean {
 	if len(link) == 0 {
 		return beans
 	}
-
-	// Expand comma-separated values
-	var expandedLink []string
-	for _, l := range link {
-		for _, part := range strings.Split(l, ",") {
-			part = strings.TrimSpace(part)
-			if part != "" {
-				expandedLink = append(expandedLink, part)
-			}
-		}
-	}
-	link = expandedLink
 
 	var filtered []*bean.Bean
 	for _, b := range beans {
@@ -268,28 +256,16 @@ func filterByLinks(beans []*bean.Bean, link []string) []*bean.Bean {
 //   - "type:id" - Returns beans that the specified bean (id) has in its links[type]
 //   - "type" - Returns beans that ANY bean has in its links[type]
 //
-// Multiple values can be comma-separated or specified via repeated flags.
+// Use repeated flags for multiple values (OR logic).
 //
 // Examples:
 //   - --linked-as blocks:A returns beans that A blocks
 //   - --linked-as blocks returns all beans that are blocked by something
-//   - --linked-as blocks,parent returns beans that are blocked OR have a parent
+//   - --linked-as blocks --linked-as parent returns beans that are blocked OR have a parent
 func filterByLinkedAs(beans []*bean.Bean, linked []string) []*bean.Bean {
 	if len(linked) == 0 {
 		return beans
 	}
-
-	// Expand comma-separated values
-	var expandedLinked []string
-	for _, l := range linked {
-		for _, part := range strings.Split(l, ",") {
-			part = strings.TrimSpace(part)
-			if part != "" {
-				expandedLinked = append(expandedLinked, part)
-			}
-		}
-	}
-	linked = expandedLinked
 
 	// Build ID → Bean lookup for source beans
 	byID := make(map[string]*bean.Bean)
@@ -362,18 +338,6 @@ func excludeByLinks(beans []*bean.Bean, exclude []string) []*bean.Bean {
 		return beans
 	}
 
-	// Expand comma-separated values
-	var expanded []string
-	for _, l := range exclude {
-		for _, part := range strings.Split(l, ",") {
-			part = strings.TrimSpace(part)
-			if part != "" {
-				expanded = append(expanded, part)
-			}
-		}
-	}
-	exclude = expanded
-
 	var filtered []*bean.Bean
 	for _, b := range beans {
 		excluded := false
@@ -420,18 +384,6 @@ func excludeByLinkedAs(beans []*bean.Bean, exclude []string) []*bean.Bean {
 	if len(exclude) == 0 {
 		return beans
 	}
-
-	// Expand comma-separated values
-	var expanded []string
-	for _, l := range exclude {
-		for _, part := range strings.Split(l, ",") {
-			part = strings.TrimSpace(part)
-			if part != "" {
-				expanded = append(expanded, part)
-			}
-		}
-	}
-	exclude = expanded
 
 	// Build ID → Bean lookup for source beans
 	byID := make(map[string]*bean.Bean)

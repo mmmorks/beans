@@ -53,7 +53,7 @@ Incoming (passive) links - use `--linked-as`:
 - `beans list --linked-as blocks:<id>` - Show beans that `<id>` blocks
 - `beans list --linked-as parent:<id>` - Show beans that have `<id>` as parent
 
-Both support comma-separated values: `--links blocks,parent` (OR logic)
+Use repeated flags for multiple values: `--links blocks --links parent` (OR logic)
 
 **Excluding by relationship:**
 

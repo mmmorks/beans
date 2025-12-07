@@ -257,12 +257,7 @@ func TestFilterByLinks(t *testing.T) {
 			wantIDs: []string{"c3"},
 		},
 		{
-			name:    "comma-separated filters (OR logic)",
-			filter:  []string{"blocks,parent"},
-			wantIDs: []string{"a1", "b2", "c3", "e5"},
-		},
-		{
-			name:    "multiple filters",
+			name:    "multiple filters (OR logic)",
 			filter:  []string{"blocks", "parent"},
 			wantIDs: []string{"a1", "b2", "c3", "e5"},
 		},
@@ -374,8 +369,8 @@ func TestExcludeByLinks(t *testing.T) {
 			wantIDs: []string{"b2", "d4"}, // a1, c3, e5 all block b2
 		},
 		{
-			name:    "comma-separated exclusions",
-			exclude: []string{"blocks,parent"},
+			name:    "multiple exclusions",
+			exclude: []string{"blocks", "parent"},
 			wantIDs: []string{"d4"}, // only d4 has neither blocks nor parent
 		},
 		{
@@ -438,8 +433,8 @@ func TestExcludeByLinkedAs(t *testing.T) {
 			wantIDs: []string{"a1", "b2", "c3", "d4", "epic1"}, // nothing excluded
 		},
 		{
-			name:    "comma-separated exclusions",
-			exclude: []string{"blocks,parent"},
+			name:    "multiple exclusions",
+			exclude: []string{"blocks", "parent"},
 			wantIDs: []string{"d4", "epic1"}, // d4 and epic1 are neither blocked nor children
 		},
 	}
