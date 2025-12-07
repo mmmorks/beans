@@ -36,6 +36,14 @@ If you identify something that should be tracked during your work, create a bean
 - `beans show <bean-id> --json` to see full details including description
 - Adhere to the instructions in the bean's description when working on it
 
+**If the bean has a checklist:**
+
+- Work through items in order (unless dependencies require otherwise)
+- **After completing each checklist item**, immediately update the bean file to mark it done:
+  - Change `- [ ]` to `- [x]` for the completed item
+- When committing code changes, include the updated bean file with checked-off items
+- Re-read the bean periodically to stay aware of remaining work
+
 ## Relationships
 
 Beans can have relationships to other beans. Use these to express dependencies and connections.
