@@ -541,7 +541,10 @@ func (m detailModel) resolveIncomingLinks(allBeans []*bean.Bean) []resolvedLink 
 
 func (m detailModel) renderBody(_ int) string {
 	if m.bean.Body == "" {
-		return lipgloss.NewStyle().Foreground(ui.ColorMuted).Italic(true).Render("No description")
+		return lipgloss.NewStyle().
+			Foreground(ui.ColorMuted).
+			Padding(0, 1).
+			Render("No description")
 	}
 
 	renderer := getGlamourRenderer()
