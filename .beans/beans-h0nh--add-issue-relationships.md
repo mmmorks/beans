@@ -3,8 +3,12 @@ title: Add issue relationships
 status: done
 type: feature
 created_at: 2025-12-06T22:04:39Z
-updated_at: 2025-12-07T11:01:22Z
+updated_at: 2025-12-07T11:17:22Z
+links:
+    parent:
+        - beans-v8qj
 ---
+
 
 Add relationship fields to beans for expressing dependencies and connections.
 
