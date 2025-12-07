@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/charmbracelet/glamour"
@@ -106,10 +107,18 @@ var showCmd = &cobra.Command{
 	},
 }
 
-// formatLinks formats links for display.
+// formatLinks formats links for display with consistent ordering.
 func formatLinks(links map[string][]string) string {
+	// Sort link types for deterministic output
+	types := make([]string, 0, len(links))
+	for t := range links {
+		types = append(types, t)
+	}
+	sort.Strings(types)
+
 	var parts []string
-	for linkType, ids := range links {
+	for _, linkType := range types {
+		ids := links[linkType]
 		for _, id := range ids {
 			parts = append(parts, fmt.Sprintf("%s %s",
 				ui.Muted.Render(linkType+":"),

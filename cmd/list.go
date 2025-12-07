@@ -15,6 +15,7 @@ import (
 var (
 	listJSON   bool
 	listStatus []string
+	listLink   []string
 	listLinked []string
 	listQuiet  bool
 	listSort   string
@@ -37,6 +38,7 @@ var listCmd = &cobra.Command{
 
 		// Apply filters
 		beans = filterBeans(beans, listStatus)
+		beans = filterByLink(beans, listLink)
 		beans = filterByLinked(beans, listLinked)
 
 		// Sort beans
@@ -193,6 +195,70 @@ func filterBeans(beans []*bean.Bean, statuses []string) []*bean.Bean {
 	return filtered
 }
 
+// filterByLink filters beans by outgoing relationship.
+// Supports two formats:
+//   - "type:id" - Returns beans that have id in their links[type]
+//   - "type" - Returns beans that have ANY link of this type
+//
+// Multiple values can be comma-separated or specified via repeated flags.
+//
+// Examples:
+//   - --link blocks:A returns beans that block A
+//   - --link blocks returns all beans that block something
+//   - --link blocks,parent returns beans that block something OR have a parent link
+func filterByLink(beans []*bean.Bean, link []string) []*bean.Bean {
+	if len(link) == 0 {
+		return beans
+	}
+
+	// Expand comma-separated values
+	var expandedLink []string
+	for _, l := range link {
+		for _, part := range strings.Split(l, ",") {
+			part = strings.TrimSpace(part)
+			if part != "" {
+				expandedLink = append(expandedLink, part)
+			}
+		}
+	}
+	link = expandedLink
+
+	var filtered []*bean.Bean
+	for _, b := range beans {
+		matched := false
+		for _, l := range link {
+			parts := strings.SplitN(l, ":", 2)
+			linkType := parts[0]
+
+			if len(parts) == 1 {
+				// Type-only: check if this bean has ANY link of this type
+				if ids, ok := b.Links[linkType]; ok && len(ids) > 0 {
+					matched = true
+				}
+			} else {
+				// Type:ID: check if this bean links to the specific target
+				targetID := parts[1]
+				if ids, ok := b.Links[linkType]; ok {
+					for _, id := range ids {
+						if id == targetID {
+							matched = true
+							break
+						}
+					}
+				}
+			}
+
+			if matched {
+				break
+			}
+		}
+		if matched {
+			filtered = append(filtered, b)
+		}
+	}
+	return filtered
+}
+
 // filterByLinked filters beans by incoming relationship.
 // Supports two formats:
 //   - "type:id" - Returns beans that the specified bean (id) has in its links[type]
@@ -291,7 +357,8 @@ func truncate(s string, maxLen int) string {
 func init() {
 	listCmd.Flags().BoolVar(&listJSON, "json", false, "Output as JSON")
 	listCmd.Flags().StringArrayVarP(&listStatus, "status", "s", nil, "Filter by status (can be repeated)")
-	listCmd.Flags().StringArrayVar(&listLinked, "linked", nil, "Filter by relationship (format: type:id)")
+	listCmd.Flags().StringArrayVar(&listLink, "link", nil, "Filter by outgoing relationship (format: type or type:id)")
+	listCmd.Flags().StringArrayVar(&listLinked, "linked", nil, "Filter by incoming relationship (format: type or type:id)")
 	listCmd.Flags().BoolVarP(&listQuiet, "quiet", "q", false, "Only output IDs (one per line)")
 	listCmd.Flags().StringVar(&listSort, "sort", "status", "Sort by: created, updated, status, id (default: status)")
 	listCmd.Flags().BoolVar(&listFull, "full", false, "Include bean body in JSON output")

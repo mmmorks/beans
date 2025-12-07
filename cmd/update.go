@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"hmans.dev/beans/internal/bean"
 	"hmans.dev/beans/internal/output"
 	"hmans.dev/beans/internal/ui"
 )
@@ -231,10 +232,10 @@ func removeString(slice []string, s string) []string {
 
 // isKnownLinkType checks if a link type is recognized.
 func isKnownLinkType(linkType string) bool {
-	switch linkType {
-	case "blocks", "duplicates", "parent", "relates-to":
-		return true
-	default:
-		return false
+	for _, t := range bean.KnownLinkTypes {
+		if t == linkType {
+			return true
+		}
 	}
+	return false
 }
