@@ -12,17 +12,17 @@ const ConfigFile = "config.yaml"
 
 // DefaultStatuses defines the default status configuration.
 var DefaultStatuses = []StatusConfig{
-	{Name: "open", Color: "green", Description: "Ready to be worked on"},
 	{Name: "in-progress", Color: "yellow", Description: "Currently being worked on"},
+	{Name: "open", Color: "green", Description: "Ready to be worked on"},
 	{Name: "done", Color: "gray", Archive: true, Description: "Completed and ready for archival"},
 }
 
 // DefaultTypes defines the default type configuration.
 var DefaultTypes = []TypeConfig{
-	{Name: "epic", Color: "purple", Description: "A thematic container for related work; should have child beans, not be worked on directly"},
 	{Name: "milestone", Color: "cyan", Description: "A target release or checkpoint; group work that should ship together"},
-	{Name: "feature", Color: "green", Description: "A user-facing capability or enhancement"},
+	{Name: "epic", Color: "purple", Description: "A thematic container for related work; should have child beans, not be worked on directly"},
 	{Name: "bug", Color: "red", Description: "Something that is broken and needs fixing"},
+	{Name: "feature", Color: "green", Description: "A user-facing capability or enhancement"},
 	{Name: "task", Color: "blue", Description: "A concrete piece of work to complete (eg. a chore, or a sub-task for a feature)"},
 }
 

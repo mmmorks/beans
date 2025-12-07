@@ -66,7 +66,7 @@ func TestIsValidStatus(t *testing.T) {
 func TestStatusList(t *testing.T) {
 	cfg := Default()
 	got := cfg.StatusList()
-	want := "open, in-progress, done"
+	want := "in-progress, open, done"
 
 	if got != want {
 		t.Errorf("StatusList() = %q, want %q", got, want)
@@ -80,8 +80,8 @@ func TestStatusNames(t *testing.T) {
 	if len(got) != 3 {
 		t.Fatalf("len(StatusNames()) = %d, want 3", len(got))
 	}
-	if got[0] != "open" || got[1] != "in-progress" || got[2] != "done" {
-		t.Errorf("StatusNames() = %v, want [open, in-progress, done]", got)
+	if got[0] != "in-progress" || got[1] != "open" || got[2] != "done" {
+		t.Errorf("StatusNames() = %v, want [in-progress, open, done]", got)
 	}
 }
 
@@ -231,8 +231,8 @@ func TestLoadAppliesDefaults(t *testing.T) {
 		t.Errorf("Default statuses not applied: got %d, want 3", len(cfg.Statuses))
 	}
 	// DefaultStatus should be first status name when not specified
-	if cfg.Beans.DefaultStatus != "open" {
-		t.Errorf("DefaultStatus default not applied: got %q, want \"open\"", cfg.Beans.DefaultStatus)
+	if cfg.Beans.DefaultStatus != "in-progress" {
+		t.Errorf("DefaultStatus default not applied: got %q, want \"in-progress\"", cfg.Beans.DefaultStatus)
 	}
 }
 
@@ -307,7 +307,7 @@ func TestIsValidType(t *testing.T) {
 func TestTypeList(t *testing.T) {
 	cfg := Default()
 	got := cfg.TypeList()
-	want := "epic, milestone, feature, bug, task"
+	want := "milestone, epic, bug, feature, task"
 
 	if got != want {
 		t.Errorf("TypeList() = %q, want %q", got, want)
