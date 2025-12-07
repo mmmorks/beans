@@ -1,9 +1,11 @@
 ---
 title: Standardize on 'description' terminology instead of 'body'
 status: done
+type: task
 created_at: 2025-12-06T23:30:26Z
-updated_at: 2025-12-06T23:40:48Z
+updated_at: 2025-12-07T11:36:40Z
 ---
+
 
 
 

@@ -1,9 +1,11 @@
 ---
 title: Fix relationship feature issues
 status: done
+type: bug
 created_at: 2025-12-07T11:09:47Z
-updated_at: 2025-12-07T11:11:35Z
+updated_at: 2025-12-07T11:36:40Z
 ---
+
 
 
 ## Tasks

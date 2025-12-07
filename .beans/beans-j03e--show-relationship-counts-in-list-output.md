@@ -1,9 +1,11 @@
 ---
 title: Show relationship counts in list output
 status: open
+type: feature
 created_at: 2025-12-07T11:29:37Z
-updated_at: 2025-12-07T11:29:37Z
+updated_at: 2025-12-07T11:36:40Z
 ---
+
 
 ## Summary
 
