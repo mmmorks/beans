@@ -23,7 +23,7 @@ var DefaultTypes = []TypeConfig{
 	{Name: "milestone", Color: "cyan", Description: "A target release or checkpoint; group work that should ship together"},
 	{Name: "feature", Color: "green", Description: "A user-facing capability or enhancement"},
 	{Name: "bug", Color: "red", Description: "Something that is broken and needs fixing"},
-	{Name: "task", Color: "blue", Description: "A concrete piece of work to complete"},
+	{Name: "task", Color: "blue", Description: "A concrete piece of work to complete (eg. a chore, or a sub-task for a feature)"},
 }
 
 // StatusConfig defines a single status with its display color.

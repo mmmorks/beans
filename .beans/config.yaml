@@ -25,4 +25,4 @@ types:
       description: Something that is broken and needs fixing
     - name: task
       color: blue
-      description: A concrete piece of work to complete
+      description: A concrete piece of work to complete (eg. a chore, or a sub-task for a feature)
