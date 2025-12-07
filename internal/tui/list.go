@@ -182,7 +182,7 @@ func (m listModel) Update(msg tea.Msg) (listModel, tea.Cmd) {
 		m.updateDelegate()
 
 	case beansLoadedMsg:
-		sortBeans(msg.beans, m.config.StatusNames())
+		sortBeans(msg.beans, m.config.StatusNames(), m.config.TypeNames())
 		items := make([]list.Item, len(msg.beans))
 		// Check if any beans have tags
 		m.hasTags = false
@@ -279,16 +279,42 @@ func (m listModel) View() string {
 	return content + "\n" + help
 }
 
-// sortBeans sorts beans by status order
-func sortBeans(beans []*bean.Bean, statusNames []string) {
+// sortBeans sorts beans by status order, then by type order.
+// Unrecognized statuses and types are sorted last.
+func sortBeans(beans []*bean.Bean, statusNames []string, typeNames []string) {
 	statusOrder := make(map[string]int)
 	for i, s := range statusNames {
 		statusOrder[s] = i
 	}
+	typeOrder := make(map[string]int)
+	for i, t := range typeNames {
+		typeOrder[t] = i
+	}
+
+	// Helper to get order with unrecognized values sorted last
+	getStatusOrder := func(status string) int {
+		if order, ok := statusOrder[status]; ok {
+			return order
+		}
+		return len(statusNames) // Unrecognized statuses come last
+	}
+	getTypeOrder := func(typ string) int {
+		if order, ok := typeOrder[typ]; ok {
+			return order
+		}
+		return len(typeNames) // Unrecognized types come last
+	}
+
 	sort.Slice(beans, func(i, j int) bool {
-		oi, oj := statusOrder[beans[i].Status], statusOrder[beans[j].Status]
+		// Primary: status order
+		oi, oj := getStatusOrder(beans[i].Status), getStatusOrder(beans[j].Status)
 		if oi != oj {
 			return oi < oj
+		}
+		// Secondary: type order
+		ti, tj := getTypeOrder(beans[i].Type), getTypeOrder(beans[j].Type)
+		if ti != tj {
+			return ti < tj
 		}
 		return strings.ToLower(beans[i].Title) < strings.ToLower(beans[j].Title)
 	})
