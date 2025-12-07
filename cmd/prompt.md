@@ -5,14 +5,22 @@ use the "beans" CLI to manage them.
 
 All commands support --json for machine-readable output. Use this flag to parse responses easily.
 
+## CRITICAL: Track All Work With Beans
+
+**BEFORE starting any task the user asks you to do:**
+
+1. FIRST: Create a bean with `beans create "Title" -d "Description..." -s in-progress --no-edit`
+2. THEN: Do the work
+3. FINALLY: Mark done with `beans update <bean-id> --status done` (do this before committing)
+
+**Do NOT use the TodoWrite tool or markdown TODOs.** Use beans for all task tracking.
+
+If you identify something that should be tracked during your work, create a bean for it.
+
 ## Core Rules
 
 - After compaction or clear, run `beans prompt` to re-sync
-- Track ALL work using beans (no TodoWrite tool, no markdown TODOs). If you identify something that should be tracked, create a bean for it.
-- When I ask you to do something, create a bean for it, give it a useful body/description, keep it updated while you're working on it, and include it in the commit when you make one.
 - All bean commands support the `--json` flag for machine-readable output.
-- Use `beans create` to create issues, not TodoWrite tool
-- When completing work, mark the bean as done using `beans update <bean-id> --status done`. If you're about to create a commit, do this first.
 - Lean towards using sub-agents for interacting with beans.
 - You can inspect `.beans/config.yaml` to learn about the different issue types and statuses configured for this project.
 
