@@ -552,8 +552,8 @@ func TestLinksRoundtrip(t *testing.T) {
 			links: Links{
 				{Type: "blocks", Target: "abc123"},
 				{Type: "parent", Target: "xyz789"},
-				{Type: "relates-to", Target: "foo"},
-				{Type: "relates-to", Target: "bar"},
+				{Type: "related", Target: "foo"},
+				{Type: "related", Target: "bar"},
 			},
 		},
 	}

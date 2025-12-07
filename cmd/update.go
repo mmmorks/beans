@@ -37,7 +37,7 @@ Use flags to specify which properties to update:
   --link         Add a relationship (format: type:id)
   --unlink       Remove a relationship (format: type:id)
 
-Relationship types: blocks, duplicates, parent, relates-to`,
+Relationship types: blocks, duplicates, parent, related`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
@@ -108,7 +108,7 @@ Relationship types: blocks, duplicates, parent, relates-to`,
 					return err
 				}
 				if !isKnownLinkType(linkType) {
-					errMsg := fmt.Sprintf("unknown link type: %s (must be blocks, duplicates, parent, relates-to)", linkType)
+					errMsg := fmt.Sprintf("unknown link type: %s (must be blocks, duplicates, parent, related)", linkType)
 					if updateJSON {
 						return output.Error(output.ErrValidation, errMsg)
 					}

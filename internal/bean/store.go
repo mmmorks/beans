@@ -18,7 +18,7 @@ var (
 )
 
 // KnownLinkTypes lists the recognized relationship types.
-var KnownLinkTypes = []string{"blocks", "duplicates", "parent", "relates-to"}
+var KnownLinkTypes = []string{"blocks", "duplicates", "parent", "related"}
 
 // Store manages beans on the filesystem.
 type Store struct {

@@ -37,7 +37,7 @@ Beans can have relationships to other beans. Use these to express dependencies a
 - `beans update <bean-id> --link parent:<other-id>` - This bean has a parent
 - `beans update <bean-id> --unlink blocks:<other-id>` - Remove a relationship
 
-**Relationship types:** `blocks`, `duplicates`, `parent`, `relates-to`
+**Relationship types:** `blocks`, `duplicates`, `parent`, `related`
 
 **Filtering by relationship:**
 

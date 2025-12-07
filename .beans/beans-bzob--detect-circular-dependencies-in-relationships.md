@@ -32,5 +32,5 @@ Circular dependency detected:
 ## Notes
 
 - Cycles in `parent` would also be problematic
-- `relates-to` and `duplicates` are less concerning for cycles
+- `related` and `duplicates` are less concerning for cycles
 - Could use depth-first search to detect back edges
