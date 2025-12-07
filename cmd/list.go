@@ -13,13 +13,13 @@ import (
 )
 
 var (
-	listJSON   bool
-	listStatus []string
-	listLink   []string
-	listLinked []string
-	listQuiet  bool
-	listSort   string
-	listFull   bool
+	listJSON     bool
+	listStatus   []string
+	listLinks    []string
+	listLinkedAs []string
+	listQuiet    bool
+	listSort     string
+	listFull     bool
 )
 
 var listCmd = &cobra.Command{
@@ -38,8 +38,8 @@ var listCmd = &cobra.Command{
 
 		// Apply filters
 		beans = filterBeans(beans, listStatus)
-		beans = filterByLink(beans, listLink)
-		beans = filterByLinked(beans, listLinked)
+		beans = filterByLinks(beans, listLinks)
+		beans = filterByLinkedAs(beans, listLinkedAs)
 
 		// Sort beans
 		sortBeans(beans, listSort, cfg.StatusNames())
@@ -195,7 +195,7 @@ func filterBeans(beans []*bean.Bean, statuses []string) []*bean.Bean {
 	return filtered
 }
 
-// filterByLink filters beans by outgoing relationship.
+// filterByLinks filters beans by outgoing relationship.
 // Supports two formats:
 //   - "type:id" - Returns beans that have id in their links[type]
 //   - "type" - Returns beans that have ANY link of this type
@@ -203,10 +203,10 @@ func filterBeans(beans []*bean.Bean, statuses []string) []*bean.Bean {
 // Multiple values can be comma-separated or specified via repeated flags.
 //
 // Examples:
-//   - --link blocks:A returns beans that block A
-//   - --link blocks returns all beans that block something
-//   - --link blocks,parent returns beans that block something OR have a parent link
-func filterByLink(beans []*bean.Bean, link []string) []*bean.Bean {
+//   - --links blocks:A returns beans that block A
+//   - --links blocks returns all beans that block something
+//   - --links blocks,parent returns beans that block something OR have a parent link
+func filterByLinks(beans []*bean.Bean, link []string) []*bean.Bean {
 	if len(link) == 0 {
 		return beans
 	}
@@ -259,7 +259,7 @@ func filterByLink(beans []*bean.Bean, link []string) []*bean.Bean {
 	return filtered
 }
 
-// filterByLinked filters beans by incoming relationship.
+// filterByLinkedAs filters beans by incoming relationship.
 // Supports two formats:
 //   - "type:id" - Returns beans that the specified bean (id) has in its links[type]
 //   - "type" - Returns beans that ANY bean has in its links[type]
@@ -267,10 +267,10 @@ func filterByLink(beans []*bean.Bean, link []string) []*bean.Bean {
 // Multiple values can be comma-separated or specified via repeated flags.
 //
 // Examples:
-//   - --linked blocks:A returns beans that A blocks
-//   - --linked blocks returns all beans that are blocked by something
-//   - --linked blocks,parent returns beans that are blocked OR have a parent
-func filterByLinked(beans []*bean.Bean, linked []string) []*bean.Bean {
+//   - --linked-as blocks:A returns beans that A blocks
+//   - --linked-as blocks returns all beans that are blocked by something
+//   - --linked-as blocks,parent returns beans that are blocked OR have a parent
+func filterByLinkedAs(beans []*bean.Bean, linked []string) []*bean.Bean {
 	if len(linked) == 0 {
 		return beans
 	}
@@ -357,8 +357,8 @@ func truncate(s string, maxLen int) string {
 func init() {
 	listCmd.Flags().BoolVar(&listJSON, "json", false, "Output as JSON")
 	listCmd.Flags().StringArrayVarP(&listStatus, "status", "s", nil, "Filter by status (can be repeated)")
-	listCmd.Flags().StringArrayVar(&listLink, "link", nil, "Filter by outgoing relationship (format: type or type:id)")
-	listCmd.Flags().StringArrayVar(&listLinked, "linked", nil, "Filter by incoming relationship (format: type or type:id)")
+	listCmd.Flags().StringArrayVar(&listLinks, "links", nil, "Filter by outgoing relationship (format: type or type:id)")
+	listCmd.Flags().StringArrayVar(&listLinkedAs, "linked-as", nil, "Filter by incoming relationship (format: type or type:id)")
 	listCmd.Flags().BoolVarP(&listQuiet, "quiet", "q", false, "Only output IDs (one per line)")
 	listCmd.Flags().StringVar(&listSort, "sort", "status", "Sort by: created, updated, status, id (default: status)")
 	listCmd.Flags().BoolVar(&listFull, "full", false, "Include bean body in JSON output")

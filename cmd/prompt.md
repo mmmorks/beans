@@ -40,17 +40,17 @@ Beans can have relationships to other beans. Use these to express dependencies a
 
 **Filtering by relationship:**
 
-Outgoing (active) links - use `--link`:
-- `beans list --link blocks` - Show beans that block something
-- `beans list --link blocks:<id>` - Show beans that block `<id>`
-- `beans list --link parent` - Show beans that have a parent
+Outgoing (active) links - use `--links`:
+- `beans list --links blocks` - Show beans that block something
+- `beans list --links blocks:<id>` - Show beans that block `<id>`
+- `beans list --links parent` - Show beans that have a parent
 
-Incoming (passive) links - use `--linked`:
-- `beans list --linked blocks` - Show beans that are blocked by something
-- `beans list --linked blocks:<id>` - Show beans that `<id>` blocks
-- `beans list --linked parent:<id>` - Show beans that have `<id>` as parent
+Incoming (passive) links - use `--linked-as`:
+- `beans list --linked-as blocks` - Show beans that are blocked by something
+- `beans list --linked-as blocks:<id>` - Show beans that `<id>` blocks
+- `beans list --linked-as parent:<id>` - Show beans that have `<id>` as parent
 
-Both support comma-separated values: `--link blocks,parent` (OR logic)
+Both support comma-separated values: `--links blocks,parent` (OR logic)
 
 ## Creating new beans
 
