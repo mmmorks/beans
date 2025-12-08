@@ -233,10 +233,62 @@ func RenderTypeText(typeName, color string) string {
 	return lipgloss.NewStyle().Foreground(c).Render(typeName)
 }
 
+// RenderPriorityWithColor returns a styled priority badge using the specified color.
+func RenderPriorityWithColor(priority, color string) string {
+	if priority == "" {
+		return ""
+	}
+	c := ResolveColor(color)
+	style := lipgloss.NewStyle().
+		Foreground(c).
+		Bold(priority == "critical" || priority == "high")
+	return style.Render("[" + priority + "]")
+}
+
+// RenderPriorityText returns styled priority text for tables.
+func RenderPriorityText(priority, color string) string {
+	if priority == "" {
+		return ""
+	}
+	c := ResolveColor(color)
+	style := lipgloss.NewStyle().Foreground(c)
+	if priority == "critical" || priority == "high" {
+		style = style.Bold(true)
+	}
+	return style.Render(priority)
+}
+
+// RenderPrioritySymbol returns a compact symbol for priority (used in TUI).
+// Returns empty string for normal/empty priority.
+func RenderPrioritySymbol(priority, color string) string {
+	var symbol string
+	switch priority {
+	case "critical":
+		symbol = "‼"
+	case "high":
+		symbol = "!"
+	case "low":
+		symbol = "↓"
+	case "deferred":
+		symbol = "→"
+	default:
+		return ""
+	}
+
+	c := ResolveColor(color)
+	style := lipgloss.NewStyle().Foreground(c)
+	if priority == "critical" || priority == "high" {
+		style = style.Bold(true)
+	}
+	return style.Render(symbol)
+}
+
 // BeanRowConfig holds configuration for rendering a bean row
 type BeanRowConfig struct {
 	StatusColor   string
 	TypeColor     string
+	PriorityColor string
+	Priority      string // Priority value (critical, high, normal, low, deferred)
 	IsArchive     bool
 	MaxTitleWidth int  // 0 means no truncation
 	ShowCursor    bool // Show selection cursor
@@ -355,10 +407,20 @@ func RenderBeanRow(id, status, typeName, title string, cfg BeanRowConfig) string
 		tagsCol = tagsStyle.Render(RenderTagsCompact(cfg.Tags, maxTags))
 	}
 
-	// Title (truncate if needed)
+	// Priority symbol (prepended to title)
+	prioritySymbol := RenderPrioritySymbol(cfg.Priority, cfg.PriorityColor)
+	if prioritySymbol != "" {
+		prioritySymbol += " "
+	}
+
+	// Title (truncate if needed, accounting for priority symbol width)
 	displayTitle := title
-	if cfg.MaxTitleWidth > 0 && len(title) > cfg.MaxTitleWidth {
-		displayTitle = title[:cfg.MaxTitleWidth-3] + "..."
+	maxWidth := cfg.MaxTitleWidth
+	if maxWidth > 0 && prioritySymbol != "" {
+		maxWidth -= 2 // Account for symbol + space
+	}
+	if maxWidth > 0 && len(title) > maxWidth {
+		displayTitle = title[:maxWidth-3] + "..."
 	}
 
 	// Cursor and title styling
@@ -378,7 +440,7 @@ func RenderBeanRow(id, status, typeName, title string, cfg BeanRowConfig) string
 	}
 
 	if cfg.ShowTags {
-		return cursor + idCol + typeCol + statusCol + tagsCol + titleStyled
+		return cursor + idCol + typeCol + statusCol + tagsCol + prioritySymbol + titleStyled
 	}
-	return cursor + idCol + typeCol + statusCol + titleStyled
+	return cursor + idCol + typeCol + statusCol + prioritySymbol + titleStyled
 }

@@ -175,6 +175,7 @@ type Bean struct {
 	Title     string     `yaml:"title" json:"title"`
 	Status    string     `yaml:"status" json:"status"`
 	Type      string     `yaml:"type,omitempty" json:"type,omitempty"`
+	Priority  string     `yaml:"priority,omitempty" json:"priority,omitempty"`
 	Tags      []string   `yaml:"tags,omitempty" json:"tags,omitempty"`
 	CreatedAt *time.Time `yaml:"created_at,omitempty" json:"created_at,omitempty"`
 	UpdatedAt *time.Time `yaml:"updated_at,omitempty" json:"updated_at,omitempty"`
@@ -192,6 +193,7 @@ type frontMatter struct {
 	Title     string      `yaml:"title"`
 	Status    string      `yaml:"status"`
 	Type      string      `yaml:"type,omitempty"`
+	Priority  string      `yaml:"priority,omitempty"`
 	Tags      []string    `yaml:"tags,omitempty"`
 	CreatedAt *time.Time  `yaml:"created_at,omitempty"`
 	UpdatedAt *time.Time  `yaml:"updated_at,omitempty"`
@@ -241,6 +243,7 @@ func Parse(r io.Reader) (*Bean, error) {
 		Title:     fm.Title,
 		Status:    fm.Status,
 		Type:      fm.Type,
+		Priority:  fm.Priority,
 		Tags:      fm.Tags,
 		CreatedAt: fm.CreatedAt,
 		UpdatedAt: fm.UpdatedAt,
@@ -254,6 +257,7 @@ type renderFrontMatter struct {
 	Title     string     `yaml:"title"`
 	Status    string     `yaml:"status"`
 	Type      string     `yaml:"type,omitempty"`
+	Priority  string     `yaml:"priority,omitempty"`
 	Tags      []string   `yaml:"tags,omitempty"`
 	CreatedAt *time.Time `yaml:"created_at,omitempty"`
 	UpdatedAt *time.Time `yaml:"updated_at,omitempty"`
@@ -266,6 +270,7 @@ func (b *Bean) Render() ([]byte, error) {
 		Title:     b.Title,
 		Status:    b.Status,
 		Type:      b.Type,
+		Priority:  b.Priority,
 		Tags:      b.Tags,
 		CreatedAt: b.CreatedAt,
 		UpdatedAt: b.UpdatedAt,

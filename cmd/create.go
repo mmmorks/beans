@@ -17,6 +17,7 @@ import (
 var (
 	createStatus   string
 	createType     string
+	createPriority string
 	createBody     string
 	createBodyFile string
 	createTag      []string
@@ -55,6 +56,14 @@ var createCmd = &cobra.Command{
 			createType = cfg.GetDefaultType()
 		}
 
+		// Validate priority if provided
+		if createPriority != "" && !cfg.IsValidPriority(createPriority) {
+			if createJSON {
+				return output.Error(output.ErrValidation, fmt.Sprintf("invalid priority: %s (must be %s)", createPriority, cfg.PriorityList()))
+			}
+			return fmt.Errorf("invalid priority: %s (must be %s)", createPriority, cfg.PriorityList())
+		}
+
 		// Determine body content
 		body, err := resolveContent(createBody, createBodyFile)
 		if err != nil {
@@ -65,7 +74,7 @@ var createCmd = &cobra.Command{
 		}
 
 		// Check if we're in scripting mode (any flag that suggests non-interactive use)
-		scriptingMode := createBody != "" || createBodyFile != "" || createJSON || createNoEdit || cmd.Flags().Changed("status") || cmd.Flags().Changed("type") || len(createTag) > 0 || len(createLink) > 0
+		scriptingMode := createBody != "" || createBodyFile != "" || createJSON || createNoEdit || cmd.Flags().Changed("status") || cmd.Flags().Changed("type") || cmd.Flags().Changed("priority") || len(createTag) > 0 || len(createLink) > 0
 
 		// Track the type selection (use flag value if provided)
 		beanType := createType
@@ -112,11 +121,12 @@ var createCmd = &cobra.Command{
 		}
 
 		b := &bean.Bean{
-			Slug:   bean.Slugify(title),
-			Title:  title,
-			Status: status,
-			Type:   beanType,
-			Body:   body,
+			Slug:     bean.Slugify(title),
+			Title:    title,
+			Status:   status,
+			Type:     beanType,
+			Priority: createPriority,
+			Body:     body,
 		}
 
 		// Add tags if provided
@@ -200,9 +210,14 @@ func init() {
 	for i, t := range config.DefaultTypes {
 		typeNames[i] = t.Name
 	}
+	priorityNames := make([]string, len(config.DefaultPriorities))
+	for i, p := range config.DefaultPriorities {
+		priorityNames[i] = p.Name
+	}
 
 	createCmd.Flags().StringVarP(&createStatus, "status", "s", "", "Initial status ("+strings.Join(statusNames, ", ")+")")
 	createCmd.Flags().StringVarP(&createType, "type", "t", "", "Bean type ("+strings.Join(typeNames, ", ")+")")
+	createCmd.Flags().StringVarP(&createPriority, "priority", "p", "", "Priority level ("+strings.Join(priorityNames, ", ")+")")
 	createCmd.Flags().StringVarP(&createBody, "body", "d", "", "Body content (use '-' to read from stdin)")
 	createCmd.Flags().StringVar(&createBodyFile, "body-file", "", "Read body from file")
 	createCmd.Flags().StringArrayVar(&createTag, "tag", nil, "Add tag (can be repeated)")

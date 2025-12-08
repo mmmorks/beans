@@ -158,6 +158,150 @@ type: deprecated-type-no-longer-in-config
 	}
 }
 
+func TestParseWithPriority(t *testing.T) {
+	tests := []struct {
+		name             string
+		input            string
+		expectedPriority string
+	}{
+		{
+			name: "with priority field",
+			input: `---
+title: Urgent Bug
+status: todo
+type: bug
+priority: critical
+---
+
+Fix this immediately.`,
+			expectedPriority: "critical",
+		},
+		{
+			name: "without priority field",
+			input: `---
+title: Normal Task
+status: todo
+---
+
+No priority specified.`,
+			expectedPriority: "",
+		},
+		{
+			name: "with high priority",
+			input: `---
+title: Important Feature
+status: in-progress
+priority: high
+---`,
+			expectedPriority: "high",
+		},
+		{
+			name: "with deferred priority",
+			input: `---
+title: Later Task
+status: backlog
+priority: deferred
+---`,
+			expectedPriority: "deferred",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bean, err := Parse(strings.NewReader(tt.input))
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if bean.Priority != tt.expectedPriority {
+				t.Errorf("Priority = %q, want %q", bean.Priority, tt.expectedPriority)
+			}
+		})
+	}
+}
+
+func TestRenderWithPriority(t *testing.T) {
+	tests := []struct {
+		name     string
+		bean     *Bean
+		contains []string
+	}{
+		{
+			name: "with priority",
+			bean: &Bean{
+				Title:    "High Priority",
+				Status:   "todo",
+				Priority: "high",
+			},
+			contains: []string{
+				"title: High Priority",
+				"status: todo",
+				"priority: high",
+			},
+		},
+		{
+			name: "without priority",
+			bean: &Bean{
+				Title:  "No Priority",
+				Status: "todo",
+			},
+			contains: []string{
+				"title: No Priority",
+				"status: todo",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rendered, err := tt.bean.Render()
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			content := string(rendered)
+			for _, want := range tt.contains {
+				if !strings.Contains(content, want) {
+					t.Errorf("Render() missing %q in:\n%s", want, content)
+				}
+			}
+
+			// Verify priority is NOT in output when empty
+			if tt.bean.Priority == "" && strings.Contains(content, "priority:") {
+				t.Errorf("Render() should not contain 'priority:' when priority is empty:\n%s", content)
+			}
+		})
+	}
+}
+
+func TestPriorityRoundtrip(t *testing.T) {
+	priorities := []string{"critical", "high", "normal", "low", "deferred", ""}
+
+	for _, priority := range priorities {
+		t.Run(priority, func(t *testing.T) {
+			original := &Bean{
+				Title:    "Test Bean",
+				Status:   "todo",
+				Priority: priority,
+			}
+
+			rendered, err := original.Render()
+			if err != nil {
+				t.Fatalf("Render() error: %v", err)
+			}
+
+			parsed, err := Parse(strings.NewReader(string(rendered)))
+			if err != nil {
+				t.Fatalf("Parse() error: %v", err)
+			}
+
+			if parsed.Priority != original.Priority {
+				t.Errorf("Priority roundtrip failed: got %q, want %q", parsed.Priority, original.Priority)
+			}
+		})
+	}
+}
+
 func TestRender(t *testing.T) {
 	now := time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)
 

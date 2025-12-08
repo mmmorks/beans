@@ -87,7 +87,7 @@ func (d linkDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	labelCol := lipgloss.NewStyle().Width(12).Render(ui.Muted.Render(item.label + ":"))
 
 	// Get colors from config
-	colors := d.cfg.GetBeanColors(link.bean.Status, link.bean.Type)
+	colors := d.cfg.GetBeanColors(link.bean.Status, link.bean.Type, link.bean.Priority)
 
 	// Calculate max title width using responsive columns
 	baseWidth := d.cols.ID + d.cols.Status + d.cols.Type + 12 + 4 // label + cursor + padding
@@ -105,6 +105,8 @@ func (d linkDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 		ui.BeanRowConfig{
 			StatusColor:   colors.StatusColor,
 			TypeColor:     colors.TypeColor,
+			PriorityColor: colors.PriorityColor,
+			Priority:      link.bean.Priority,
 			IsArchive:     colors.IsArchive,
 			MaxTitleWidth: maxTitleWidth,
 			ShowCursor:    false,

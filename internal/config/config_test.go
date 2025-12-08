@@ -686,3 +686,116 @@ func TestDefaultHasBeansPath(t *testing.T) {
 		t.Errorf("Default().Beans.Path = %q, want %q", cfg.Beans.Path, DefaultBeansPath)
 	}
 }
+
+func TestIsValidPriority(t *testing.T) {
+	cfg := Default()
+
+	tests := []struct {
+		priority string
+		want     bool
+	}{
+		{"critical", true},
+		{"high", true},
+		{"normal", true},
+		{"low", true},
+		{"deferred", true},
+		{"", true}, // empty is valid (means no priority)
+		{"invalid", false},
+		{"CRITICAL", false}, // case sensitive
+		{"medium", false},   // not a valid priority
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.priority, func(t *testing.T) {
+			got := cfg.IsValidPriority(tt.priority)
+			if got != tt.want {
+				t.Errorf("IsValidPriority(%q) = %v, want %v", tt.priority, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPriorityList(t *testing.T) {
+	cfg := Default()
+	got := cfg.PriorityList()
+	want := "critical, high, normal, low, deferred"
+
+	if got != want {
+		t.Errorf("PriorityList() = %q, want %q", got, want)
+	}
+}
+
+func TestPriorityNames(t *testing.T) {
+	cfg := Default()
+	got := cfg.PriorityNames()
+
+	if len(got) != 5 {
+		t.Fatalf("len(PriorityNames()) = %d, want 5", len(got))
+	}
+	expected := []string{"critical", "high", "normal", "low", "deferred"}
+	for i, name := range expected {
+		if got[i] != name {
+			t.Errorf("PriorityNames()[%d] = %q, want %q", i, got[i], name)
+		}
+	}
+}
+
+func TestGetPriority(t *testing.T) {
+	cfg := Default()
+
+	t.Run("existing priority", func(t *testing.T) {
+		p := cfg.GetPriority("high")
+		if p == nil {
+			t.Fatal("GetPriority(\"high\") = nil, want non-nil")
+		}
+		if p.Name != "high" {
+			t.Errorf("Name = %q, want \"high\"", p.Name)
+		}
+		if p.Color != "yellow" {
+			t.Errorf("Color = %q, want \"yellow\"", p.Color)
+		}
+	})
+
+	t.Run("non-existing priority", func(t *testing.T) {
+		p := cfg.GetPriority("invalid")
+		if p != nil {
+			t.Errorf("GetPriority(\"invalid\") = %v, want nil", p)
+		}
+	})
+
+	t.Run("empty priority returns nil", func(t *testing.T) {
+		p := cfg.GetPriority("")
+		if p != nil {
+			t.Errorf("GetPriority(\"\") = %v, want nil", p)
+		}
+	})
+}
+
+func TestPriorityDescriptions(t *testing.T) {
+	cfg := Default()
+
+	expectedDescriptions := map[string]string{
+		"critical": "Urgent, blocking work. When possible, address immediately",
+		"high":     "Important, should be done before normal work",
+		"normal":   "Standard priority",
+		"low":      "Less important, can be delayed",
+		"deferred": "Explicitly pushed back, avoid doing unless necessary",
+	}
+
+	for priorityName, expectedDesc := range expectedDescriptions {
+		p := cfg.GetPriority(priorityName)
+		if p == nil {
+			t.Errorf("GetPriority(%q) = nil, want non-nil", priorityName)
+			continue
+		}
+		if p.Description != expectedDesc {
+			t.Errorf("Priority %q description = %q, want %q", priorityName, p.Description, expectedDesc)
+		}
+	}
+}
+
+func TestDefaultPrioritiesCount(t *testing.T) {
+	if len(DefaultPriorities) != 5 {
+		t.Errorf("len(DefaultPriorities) = %d, want 5", len(DefaultPriorities))
+	}
+}

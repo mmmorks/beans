@@ -19,6 +19,8 @@ var (
 	listNoStatus   []string
 	listType       []string
 	listNoType     []string
+	listPriority   []string
+	listNoPriority []string
 	listLinks      []string
 	listLinkedAs   []string
 	listNoLinks    []string
@@ -97,6 +99,8 @@ var listCmd = &cobra.Command{
 		beans = excludeByStatus(beans, listNoStatus)
 		beans = filterByType(beans, listType)
 		beans = excludeByType(beans, listNoType)
+		beans = filterByPriority(beans, listPriority)
+		beans = excludeByPriority(beans, listNoPriority)
 		beans = filterByLinks(beans, linksFilters)
 		beans = filterByLinkedAs(beans, linkedAsFilters, idx)
 		beans = excludeByLinks(beans, noLinksFilters)
@@ -198,6 +202,16 @@ var listCmd = &cobra.Command{
 				typeColor = typeCfg.Color
 			}
 
+			// Get priority color and render symbol
+			priorityColor := ""
+			if priorityCfg := cfg.GetPriority(b.Priority); priorityCfg != nil {
+				priorityColor = priorityCfg.Color
+			}
+			prioritySymbol := ui.RenderPrioritySymbol(b.Priority, priorityColor)
+			if prioritySymbol != "" {
+				prioritySymbol += " "
+			}
+
 			var row string
 			if hasTags {
 				tagsStr := ui.RenderTagsCompact(b.Tags, 1)
@@ -206,14 +220,14 @@ var listCmd = &cobra.Command{
 					typeStyle.Render(ui.RenderTypeText(b.Type, typeColor)),
 					statusStyle.Render(ui.RenderStatusTextWithColor(b.Status, statusColor, isArchive)),
 					tagsStyle.Render(tagsStr),
-					titleStyle.Render(truncate(b.Title, 50)),
+					titleStyle.Render(prioritySymbol+truncate(b.Title, 50)),
 				)
 			} else {
 				row = lipgloss.JoinHorizontal(lipgloss.Top,
 					idStyle.Render(ui.ID.Render(b.ID)),
 					typeStyle.Render(ui.RenderTypeText(b.Type, typeColor)),
 					statusStyle.Render(ui.RenderStatusTextWithColor(b.Status, statusColor, isArchive)),
-					titleStyle.Render(truncate(b.Title, 50)),
+					titleStyle.Render(prioritySymbol+truncate(b.Title, 50)),
 				)
 			}
 			fmt.Println(row)
@@ -225,6 +239,7 @@ var listCmd = &cobra.Command{
 
 func sortBeans(beans []*bean.Bean, sortBy string, cfg *config.Config) {
 	statusNames := cfg.StatusNames()
+	priorityNames := cfg.PriorityNames()
 	typeNames := cfg.TypeNames()
 
 	switch sortBy {
@@ -267,13 +282,45 @@ func sortBeans(beans []*bean.Bean, sortBy string, cfg *config.Config) {
 			}
 			return beans[i].ID < beans[j].ID
 		})
+	case "priority":
+		// Build priority order from configured priorities
+		priorityOrder := make(map[string]int)
+		for i, p := range priorityNames {
+			priorityOrder[p] = i
+		}
+		// Find normal priority index for beans without priority
+		normalIdx := len(priorityNames)
+		for i, p := range priorityNames {
+			if p == "normal" {
+				normalIdx = i
+				break
+			}
+		}
+		sort.Slice(beans, func(i, j int) bool {
+			pi := normalIdx
+			if beans[i].Priority != "" {
+				if order, ok := priorityOrder[beans[i].Priority]; ok {
+					pi = order
+				}
+			}
+			pj := normalIdx
+			if beans[j].Priority != "" {
+				if order, ok := priorityOrder[beans[j].Priority]; ok {
+					pj = order
+				}
+			}
+			if pi != pj {
+				return pi < pj
+			}
+			return beans[i].ID < beans[j].ID
+		})
 	case "id":
 		sort.Slice(beans, func(i, j int) bool {
 			return beans[i].ID < beans[j].ID
 		})
 	default:
-		// Default: sort by status order, then type order, then title (same as TUI)
-		bean.SortByStatusAndType(beans, statusNames, typeNames)
+		// Default: sort by status order, then priority, then type order, then title (same as TUI)
+		bean.SortByStatusPriorityAndType(beans, statusNames, priorityNames, typeNames)
 	}
 }
 
@@ -355,6 +402,50 @@ func excludeByType(beans []*bean.Bean, types []string) []*bean.Bean {
 		excluded := false
 		for _, t := range types {
 			if b.Type == t {
+				excluded = true
+				break
+			}
+		}
+		if !excluded {
+			filtered = append(filtered, b)
+		}
+	}
+	return filtered
+}
+
+// filterByPriority filters beans that match any of the given priorities (OR logic).
+// Empty priority in the bean matches "normal" filter.
+func filterByPriority(beans []*bean.Bean, priorities []string) []*bean.Bean {
+	if len(priorities) == 0 {
+		return beans
+	}
+
+	var filtered []*bean.Bean
+	for _, b := range beans {
+		for _, p := range priorities {
+			// Match if priority equals filter, or if bean has no priority and filter is "normal"
+			if b.Priority == p || (b.Priority == "" && p == "normal") {
+				filtered = append(filtered, b)
+				break
+			}
+		}
+	}
+	return filtered
+}
+
+// excludeByPriority excludes beans that match any of the given priorities.
+// Empty priority in the bean is treated as "normal" for exclusion purposes.
+func excludeByPriority(beans []*bean.Bean, priorities []string) []*bean.Bean {
+	if len(priorities) == 0 {
+		return beans
+	}
+
+	var filtered []*bean.Bean
+	for _, b := range beans {
+		excluded := false
+		for _, p := range priorities {
+			// Exclude if priority equals filter, or if bean has no priority and filter is "normal"
+			if b.Priority == p || (b.Priority == "" && p == "normal") {
 				excluded = true
 				break
 			}
@@ -583,6 +674,8 @@ func init() {
 	listCmd.Flags().StringArrayVar(&listNoStatus, "no-status", nil, "Exclude by status (can be repeated)")
 	listCmd.Flags().StringArrayVarP(&listType, "type", "t", nil, "Filter by type (can be repeated)")
 	listCmd.Flags().StringArrayVar(&listNoType, "no-type", nil, "Exclude by type (can be repeated)")
+	listCmd.Flags().StringArrayVarP(&listPriority, "priority", "p", nil, "Filter by priority (can be repeated)")
+	listCmd.Flags().StringArrayVar(&listNoPriority, "no-priority", nil, "Exclude by priority (can be repeated)")
 	listCmd.Flags().StringArrayVar(&listLinks, "links", nil, "Filter by outgoing relationship (format: type or type:id)")
 	listCmd.Flags().StringArrayVar(&listLinkedAs, "linked-as", nil, "Filter by incoming relationship (format: type or type:id)")
 	listCmd.Flags().StringArrayVar(&listNoLinks, "no-links", nil, "Exclude beans with outgoing relationship (format: type or type:id)")
@@ -590,7 +683,7 @@ func init() {
 	listCmd.Flags().StringArrayVar(&listTag, "tag", nil, "Filter by tag (can be repeated, OR logic)")
 	listCmd.Flags().StringArrayVar(&listNoTag, "no-tag", nil, "Exclude beans with tag (can be repeated)")
 	listCmd.Flags().BoolVarP(&listQuiet, "quiet", "q", false, "Only output IDs (one per line)")
-	listCmd.Flags().StringVar(&listSort, "sort", "", "Sort by: created, updated, status, id (default: status, then type, then title)")
+	listCmd.Flags().StringVar(&listSort, "sort", "", "Sort by: created, updated, status, priority, id (default: status, priority, type, title)")
 	listCmd.Flags().BoolVar(&listFull, "full", false, "Include bean body in JSON output")
 	listCmd.MarkFlagsMutuallyExclusive("json", "quiet")
 	rootCmd.AddCommand(listCmd)

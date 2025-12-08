@@ -36,6 +36,16 @@ var DefaultTypes = []TypeConfig{
 	{Name: "task", Color: "blue", Description: "A concrete piece of work to complete (eg. a chore, or a sub-task for a feature)"},
 }
 
+// DefaultPriorities defines the hardcoded priority configuration.
+// Priorities are ordered from highest to lowest urgency.
+var DefaultPriorities = []PriorityConfig{
+	{Name: "critical", Color: "red", Description: "Urgent, blocking work. When possible, address immediately"},
+	{Name: "high", Color: "yellow", Description: "Important, should be done before normal work"},
+	{Name: "normal", Color: "white", Description: "Standard priority"},
+	{Name: "low", Color: "gray", Description: "Less important, can be delayed"},
+	{Name: "deferred", Color: "gray", Description: "Explicitly pushed back, avoid doing unless necessary"},
+}
+
 // StatusConfig defines a single status with its display color.
 type StatusConfig struct {
 	Name        string `yaml:"name"`
@@ -46,6 +56,13 @@ type StatusConfig struct {
 
 // TypeConfig defines a single bean type with its display color.
 type TypeConfig struct {
+	Name        string `yaml:"name"`
+	Color       string `yaml:"color"`
+	Description string `yaml:"description,omitempty"`
+}
+
+// PriorityConfig defines a single priority level with its display color.
+type PriorityConfig struct {
 	Name        string `yaml:"name"`
 	Color       string `yaml:"color"`
 	Description string `yaml:"description,omitempty"`
@@ -313,17 +330,19 @@ func (c *Config) TypeList() string {
 
 // BeanColors holds resolved color information for rendering a bean
 type BeanColors struct {
-	StatusColor string
-	TypeColor   string
-	IsArchive   bool
+	StatusColor   string
+	TypeColor     string
+	PriorityColor string
+	IsArchive     bool
 }
 
-// GetBeanColors returns the resolved colors for a bean based on its status and type.
-func (c *Config) GetBeanColors(status, typeName string) BeanColors {
+// GetBeanColors returns the resolved colors for a bean based on its status, type, and priority.
+func (c *Config) GetBeanColors(status, typeName, priority string) BeanColors {
 	colors := BeanColors{
-		StatusColor: "gray",
-		TypeColor:   "",
-		IsArchive:   false,
+		StatusColor:   "gray",
+		TypeColor:     "",
+		PriorityColor: "",
+		IsArchive:     false,
 	}
 
 	if statusCfg := c.GetStatus(status); statusCfg != nil {
@@ -335,5 +354,51 @@ func (c *Config) GetBeanColors(status, typeName string) BeanColors {
 		colors.TypeColor = typeCfg.Color
 	}
 
+	if priorityCfg := c.GetPriority(priority); priorityCfg != nil {
+		colors.PriorityColor = priorityCfg.Color
+	}
+
 	return colors
+}
+
+// GetPriority returns the PriorityConfig for a given priority name, or nil if not found.
+func (c *Config) GetPriority(name string) *PriorityConfig {
+	for i := range DefaultPriorities {
+		if DefaultPriorities[i].Name == name {
+			return &DefaultPriorities[i]
+		}
+	}
+	return nil
+}
+
+// PriorityNames returns a slice of valid priority names in order from highest to lowest.
+func (c *Config) PriorityNames() []string {
+	names := make([]string, len(DefaultPriorities))
+	for i, p := range DefaultPriorities {
+		names[i] = p.Name
+	}
+	return names
+}
+
+// IsValidPriority returns true if the priority is a valid hardcoded priority.
+// Empty string is valid (means no priority set).
+func (c *Config) IsValidPriority(priority string) bool {
+	if priority == "" {
+		return true
+	}
+	for _, p := range DefaultPriorities {
+		if p.Name == priority {
+			return true
+		}
+	}
+	return false
+}
+
+// PriorityList returns a comma-separated list of valid priorities.
+func (c *Config) PriorityList() string {
+	names := make([]string, len(DefaultPriorities))
+	for i, p := range DefaultPriorities {
+		names[i] = p.Name
+	}
+	return strings.Join(names, ", ")
 }

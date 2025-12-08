@@ -66,6 +66,15 @@ var showCmd = &cobra.Command{
 		header.WriteString(ui.ID.Render(b.ID))
 		header.WriteString(" ")
 		header.WriteString(ui.RenderStatusWithColor(b.Status, statusColor, isArchive))
+		if b.Priority != "" {
+			priorityCfg := cfg.GetPriority(b.Priority)
+			priorityColor := "gray"
+			if priorityCfg != nil {
+				priorityColor = priorityCfg.Color
+			}
+			header.WriteString(" ")
+			header.WriteString(ui.RenderPriorityWithColor(b.Priority, priorityColor))
+		}
 		if len(b.Tags) > 0 {
 			header.WriteString("  ")
 			header.WriteString(ui.Muted.Render(strings.Join(b.Tags, ", ")))

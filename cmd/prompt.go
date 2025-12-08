@@ -64,6 +64,18 @@ var promptCmd = &cobra.Command{
 			}
 		}
 
+		// Priorities section (hardcoded priorities)
+		sb.WriteString("\n## Priorities\n\n")
+		sb.WriteString("Beans can have an optional priority. Use `-p` when creating or `--priority` when updating:\n\n")
+		for _, p := range config.DefaultPriorities {
+			if p.Description != "" {
+				sb.WriteString(fmt.Sprintf("- **%s**: %s\n", p.Name, p.Description))
+			} else {
+				sb.WriteString(fmt.Sprintf("- **%s**\n", p.Name))
+			}
+		}
+		sb.WriteString("\nBeans without a priority are treated as `normal` priority for sorting purposes.\n")
+
 		sb.WriteString("\n")
 		fmt.Print(sb.String())
 

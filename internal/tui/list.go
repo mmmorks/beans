@@ -46,7 +46,7 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	}
 
 	// Get colors from config
-	colors := d.cfg.GetBeanColors(item.bean.Status, item.bean.Type)
+	colors := d.cfg.GetBeanColors(item.bean.Status, item.bean.Type, item.bean.Priority)
 
 	// Calculate max title width using responsive columns
 	baseWidth := d.cols.ID + d.cols.Status + d.cols.Type + 4 // 4 for cursor + padding
@@ -63,6 +63,8 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 		ui.BeanRowConfig{
 			StatusColor:   colors.StatusColor,
 			TypeColor:     colors.TypeColor,
+			PriorityColor: colors.PriorityColor,
+			Priority:      item.bean.Priority,
 			IsArchive:     colors.IsArchive,
 			MaxTitleWidth: maxTitleWidth,
 			ShowCursor:    true,

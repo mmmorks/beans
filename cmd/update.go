@@ -15,6 +15,7 @@ import (
 var (
 	updateStatus   string
 	updateType     string
+	updatePriority string
 	updateTitle    string
 	updateBody     string
 	updateBodyFile string
@@ -34,6 +35,7 @@ var updateCmd = &cobra.Command{
 Use flags to specify which properties to update:
   --status       Change the status
   --type         Change the type
+  --priority     Change the priority
   --title        Change the title
   --body         Change the body (use '-' to read from stdin)
   --link         Add a relationship (format: type:id, can be repeated)
@@ -81,6 +83,18 @@ Relationship types: blocks, duplicates, parent, related`,
 			}
 			b.Type = updateType
 			changes = append(changes, "type")
+		}
+
+		// Update priority if provided
+		if cmd.Flags().Changed("priority") {
+			if !cfg.IsValidPriority(updatePriority) {
+				if updateJSON {
+					return output.Error(output.ErrValidation, fmt.Sprintf("invalid priority: %s (must be %s)", updatePriority, cfg.PriorityList()))
+				}
+				return fmt.Errorf("invalid priority: %s (must be %s)", updatePriority, cfg.PriorityList())
+			}
+			b.Priority = updatePriority
+			changes = append(changes, "priority")
 		}
 
 		// Update title if provided
@@ -150,7 +164,7 @@ Relationship types: blocks, duplicates, parent, related`,
 			if updateJSON {
 				return output.Error(output.ErrValidation, "no changes specified")
 			}
-			return fmt.Errorf("no changes specified (use --status, --type, --title, --body, --link, --unlink, --tag, or --untag)")
+			return fmt.Errorf("no changes specified (use --status, --type, --priority, --title, --body, --link, --unlink, --tag, or --untag)")
 		}
 
 		// Save the bean
@@ -205,9 +219,14 @@ func init() {
 	for i, t := range config.DefaultTypes {
 		typeNames[i] = t.Name
 	}
+	priorityNames := make([]string, len(config.DefaultPriorities))
+	for i, p := range config.DefaultPriorities {
+		priorityNames[i] = p.Name
+	}
 
 	updateCmd.Flags().StringVarP(&updateStatus, "status", "s", "", "New status ("+strings.Join(statusNames, ", ")+")")
 	updateCmd.Flags().StringVarP(&updateType, "type", "t", "", "New type ("+strings.Join(typeNames, ", ")+")")
+	updateCmd.Flags().StringVarP(&updatePriority, "priority", "p", "", "New priority ("+strings.Join(priorityNames, ", ")+", or empty to clear)")
 	updateCmd.Flags().StringVar(&updateTitle, "title", "", "New title")
 	updateCmd.Flags().StringVarP(&updateBody, "body", "d", "", "New body (use '-' to read from stdin)")
 	updateCmd.Flags().StringVar(&updateBodyFile, "body-file", "", "Read body from file")

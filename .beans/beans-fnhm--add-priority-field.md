@@ -1,31 +1,41 @@
 ---
 title: Add priority field
-status: backlog
+status: completed
 type: feature
 tags:
     - schema
 created_at: 2025-12-06T22:04:39Z
-updated_at: 2025-12-08T14:09:11Z
+updated_at: 2025-12-08T17:38:41Z
 links:
     - parent: beans-7lmv
 ---
 
-
-Add a `priority` field to bean frontmatter with hard-coded allowed values.
+Add a 5-level priority system to beans: `critical`, `high`, `normal`, `low`, `deferred`.
 
 ## Requirements
-- Hard-coded values: `low`, `medium`, `high`, `critical`
+- Priority is optional (beans without priority are treated as `normal` for sorting)
+- Hard-coded values: `critical`, `high`, `normal`, `low`, `deferred`
 - Validation should reject unknown priority values
-- Display priority in list/show commands with appropriate styling
+- Status sorts first, then priority within each status group
+- Display priority in list/show commands with colored styling
 
 ## Checklist
-- [ ] Add `Priority string` field to Bean struct in `internal/bean/bean.go`
-- [ ] Update frontmatter parsing/rendering
-- [ ] Add `--priority` flag to `beans create` command
-- [ ] Add `--priority` flag to `beans update` command
-- [ ] Add `priority` to JSON output
-- [ ] Add validation for allowed priority values
-- [ ] Unit tests for priority field handling
+- [x] Add PriorityConfig and validation in `internal/config/config.go`
+- [x] Add `Priority` field to Bean struct in `internal/bean/bean.go`
+- [x] Update frontmatter parsing/rendering
+- [x] Update sorting to include priority in `internal/bean/sort.go`
+- [x] Add `--priority` flag to `beans create` command
+- [x] Add `--priority` flag to `beans update` command
+- [x] Add `--priority` / `--no-priority` filtering to `beans list` command
+- [x] Display priority in `beans show` command
+- [x] Update agent prompt in `cmd/prompt.go`
+- [x] Add tests for priority functionality
 
-## Context
-Part of the issue metadata expansion. See original planning bean: beans-v8qj
+## Priority Colors
+| Priority | Color |
+|----------|-------|
+| critical | red |
+| high | yellow |
+| normal | white |
+| low | gray |
+| deferred | gray/dim |
