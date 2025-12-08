@@ -1,12 +1,12 @@
 ---
 title: Detect circular dependencies in relationships
-status: todo
+status: completed
 type: feature
 tags:
     - validation
     - relationships
 created_at: 2025-12-07T11:29:37Z
-updated_at: 2025-12-08T14:58:28Z
+updated_at: 2025-12-08T16:59:32Z
 ---
 
 
