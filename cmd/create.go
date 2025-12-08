@@ -2,11 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"os"
-	"os/exec"
 	"strings"
 
-	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 	"hmans.dev/beans/internal/bean"
 	"hmans.dev/beans/internal/config"
@@ -22,7 +19,6 @@ var (
 	createBodyFile string
 	createTag      []string
 	createLink     []string
-	createNoEdit   bool
 	createJSON     bool
 )
 
@@ -73,49 +69,6 @@ var createCmd = &cobra.Command{
 			return err
 		}
 
-		// Check if we're in scripting mode (any flag that suggests non-interactive use)
-		scriptingMode := createBody != "" || createBodyFile != "" || createJSON || createNoEdit || cmd.Flags().Changed("status") || cmd.Flags().Changed("type") || cmd.Flags().Changed("priority") || len(createTag) > 0 || len(createLink) > 0
-
-		// Track the type selection (use flag value if provided)
-		beanType := createType
-
-		// If no title provided and not in scripting mode, show interactive form
-		if title == "" && !scriptingMode {
-			// Build status options
-			var statusOptions []huh.Option[string]
-			for _, s := range cfg.StatusNames() {
-				statusOptions = append(statusOptions, huh.NewOption(formatStatusLabel(s), s))
-			}
-
-			// Build type options
-			var typeOptions []huh.Option[string]
-			for _, t := range cfg.TypeNames() {
-				typeOptions = append(typeOptions, huh.NewOption(formatStatusLabel(t), t))
-			}
-
-			form := huh.NewForm(
-				huh.NewGroup(
-					huh.NewInput().
-						Title("Title").
-						Description("What's this bean about?").
-						Placeholder("Bug: login fails on Safari").
-						Value(&title),
-					huh.NewSelect[string]().
-						Title("Status").
-						Options(statusOptions...).
-						Value(&status),
-					huh.NewSelect[string]().
-						Title("Type").
-						Options(typeOptions...).
-						Value(&beanType),
-				),
-			)
-
-			if err := form.Run(); err != nil {
-				return err
-			}
-		}
-
 		if title == "" {
 			title = "Untitled"
 		}
@@ -124,7 +77,7 @@ var createCmd = &cobra.Command{
 			Slug:     bean.Slugify(title),
 			Title:    title,
 			Status:   status,
-			Type:     beanType,
+			Type:     createType,
 			Priority: createPriority,
 			Body:     body,
 		}
@@ -168,36 +121,8 @@ var createCmd = &cobra.Command{
 
 		fmt.Println(ui.Success.Render("Created ") + ui.ID.Render(b.ID) + " " + ui.Muted.Render(b.Path))
 
-		// Open in editor unless --no-edit or --json
-		if !createNoEdit && !createJSON {
-			editor := os.Getenv("EDITOR")
-			if editor != "" {
-				path := core.FullPath(b)
-				editorCmd := exec.Command(editor, path)
-				editorCmd.Stdin = os.Stdin
-				editorCmd.Stdout = os.Stdout
-				editorCmd.Stderr = os.Stderr
-				if err := editorCmd.Run(); err != nil {
-					return fmt.Errorf("editor failed: %w", err)
-				}
-			}
-		}
-
 		return nil
 	},
-}
-
-
-// formatStatusLabel converts a status value to a display label.
-// e.g., "in-progress" -> "In Progress", "open" -> "Open"
-func formatStatusLabel(status string) string {
-	words := strings.Split(status, "-")
-	for i, word := range words {
-		if len(word) > 0 {
-			words[i] = strings.ToUpper(word[:1]) + word[1:]
-		}
-	}
-	return strings.Join(words, " ")
 }
 
 func init() {
@@ -222,7 +147,6 @@ func init() {
 	createCmd.Flags().StringVar(&createBodyFile, "body-file", "", "Read body from file")
 	createCmd.Flags().StringArrayVar(&createTag, "tag", nil, "Add tag (can be repeated)")
 	createCmd.Flags().StringArrayVar(&createLink, "link", nil, "Add relationship (format: type:id, can be repeated)")
-	createCmd.Flags().BoolVar(&createNoEdit, "no-edit", false, "Skip opening $EDITOR")
 	createCmd.Flags().BoolVar(&createJSON, "json", false, "Output as JSON")
 	createCmd.MarkFlagsMutuallyExclusive("body", "body-file")
 	rootCmd.AddCommand(createCmd)
