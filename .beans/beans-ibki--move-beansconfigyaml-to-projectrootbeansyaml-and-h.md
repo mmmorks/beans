@@ -1,6 +1,6 @@
 ---
 title: Move .beans/config.yaml to <projectRoot>/.beans.yaml and have it specify the beans path
-status: open
+status: todo
 type: task
 tags:
     - config

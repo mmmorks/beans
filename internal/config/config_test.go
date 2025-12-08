@@ -15,18 +15,18 @@ func TestDefault(t *testing.T) {
 	if cfg.Beans.Prefix != "" {
 		t.Errorf("Prefix = %q, want empty", cfg.Beans.Prefix)
 	}
-	if cfg.Beans.DefaultStatus != "open" {
-		t.Errorf("DefaultStatus = %q, want \"open\"", cfg.Beans.DefaultStatus)
+	if cfg.Beans.DefaultStatus != "todo" {
+		t.Errorf("DefaultStatus = %q, want \"todo\"", cfg.Beans.DefaultStatus)
 	}
 	if cfg.Beans.DefaultType != "task" {
 		t.Errorf("DefaultType = %q, want \"task\"", cfg.Beans.DefaultType)
 	}
-	if len(cfg.Statuses) != 3 {
-		t.Errorf("len(Statuses) = %d, want 3", len(cfg.Statuses))
-	}
-	// Types are hardcoded, not stored in config
+	// Both types and statuses are hardcoded
 	if len(DefaultTypes) != 5 {
 		t.Errorf("len(DefaultTypes) = %d, want 5", len(DefaultTypes))
+	}
+	if len(DefaultStatuses) != 5 {
+		t.Errorf("len(DefaultStatuses) = %d, want 5", len(DefaultStatuses))
 	}
 }
 
@@ -49,12 +49,19 @@ func TestIsValidStatus(t *testing.T) {
 		status string
 		want   bool
 	}{
-		{"open", true},
+		{"backlog", true},
+		{"todo", true},
 		{"in-progress", true},
-		{"done", true},
+		{"completed", true},
+		{"scrapped", true},
 		{"invalid", false},
 		{"", false},
-		{"OPEN", false}, // case sensitive
+		{"TODO", false}, // case sensitive
+		// Old status names should no longer be valid
+		{"open", false},
+		{"done", false},
+		{"ready", false},
+		{"not-ready", false},
 	}
 
 	for _, tt := range tests {
@@ -70,7 +77,7 @@ func TestIsValidStatus(t *testing.T) {
 func TestStatusList(t *testing.T) {
 	cfg := Default()
 	got := cfg.StatusList()
-	want := "in-progress, open, done"
+	want := "backlog, todo, in-progress, completed, scrapped"
 
 	if got != want {
 		t.Errorf("StatusList() = %q, want %q", got, want)
@@ -81,11 +88,14 @@ func TestStatusNames(t *testing.T) {
 	cfg := Default()
 	got := cfg.StatusNames()
 
-	if len(got) != 3 {
-		t.Fatalf("len(StatusNames()) = %d, want 3", len(got))
+	if len(got) != 5 {
+		t.Fatalf("len(StatusNames()) = %d, want 5", len(got))
 	}
-	if got[0] != "in-progress" || got[1] != "open" || got[2] != "done" {
-		t.Errorf("StatusNames() = %v, want [in-progress, open, done]", got)
+	expected := []string{"backlog", "todo", "in-progress", "completed", "scrapped"}
+	for i, name := range expected {
+		if got[i] != name {
+			t.Errorf("StatusNames()[%d] = %q, want %q", i, got[i], name)
+		}
 	}
 }
 
@@ -93,12 +103,12 @@ func TestGetStatus(t *testing.T) {
 	cfg := Default()
 
 	t.Run("existing status", func(t *testing.T) {
-		s := cfg.GetStatus("open")
+		s := cfg.GetStatus("todo")
 		if s == nil {
-			t.Fatal("GetStatus(\"open\") = nil, want non-nil")
+			t.Fatal("GetStatus(\"todo\") = nil, want non-nil")
 		}
-		if s.Name != "open" {
-			t.Errorf("Name = %q, want \"open\"", s.Name)
+		if s.Name != "todo" {
+			t.Errorf("Name = %q, want \"todo\"", s.Name)
 		}
 		if s.Color != "green" {
 			t.Errorf("Color = %q, want \"green\"", s.Color)
@@ -111,14 +121,29 @@ func TestGetStatus(t *testing.T) {
 			t.Errorf("GetStatus(\"invalid\") = %v, want nil", s)
 		}
 	})
+
+	t.Run("old status names not valid", func(t *testing.T) {
+		s := cfg.GetStatus("open")
+		if s != nil {
+			t.Errorf("GetStatus(\"open\") = %v, want nil (old status name)", s)
+		}
+		s = cfg.GetStatus("done")
+		if s != nil {
+			t.Errorf("GetStatus(\"done\") = %v, want nil (old status name)", s)
+		}
+		s = cfg.GetStatus("ready")
+		if s != nil {
+			t.Errorf("GetStatus(\"ready\") = %v, want nil (old status name)", s)
+		}
+	})
 }
 
 func TestGetDefaultStatus(t *testing.T) {
 	cfg := Default()
 	got := cfg.GetDefaultStatus()
 
-	if got != "open" {
-		t.Errorf("GetDefaultStatus() = %q, want \"open\"", got)
+	if got != "todo" {
+		t.Errorf("GetDefaultStatus() = %q, want \"todo\"", got)
 	}
 }
 
@@ -138,8 +163,10 @@ func TestIsArchiveStatus(t *testing.T) {
 		status string
 		want   bool
 	}{
-		{"done", true},
-		{"open", false},
+		{"completed", true},
+		{"scrapped", true},
+		{"backlog", false},
+		{"todo", false},
 		{"in-progress", false},
 		{"invalid", false},
 	}
@@ -171,17 +198,12 @@ func TestLoadAndSave(t *testing.T) {
 	// Create temp directory
 	tmpDir := t.TempDir()
 
-	// Create a config
+	// Create a config (statuses are no longer stored in config)
 	cfg := &Config{
 		Beans: BeansConfig{
-			Prefix:        "test-",
-			IDLength:      6,
-			DefaultStatus: "todo",
-		},
-		Statuses: []StatusConfig{
-			{Name: "todo", Color: "blue"},
-			{Name: "doing", Color: "yellow"},
-			{Name: "finished", Color: "green", Archive: true},
+			Prefix:      "test-",
+			IDLength:    6,
+			DefaultType: "bug",
 		},
 	}
 
@@ -209,11 +231,12 @@ func TestLoadAndSave(t *testing.T) {
 	if loaded.Beans.IDLength != 6 {
 		t.Errorf("IDLength = %d, want 6", loaded.Beans.IDLength)
 	}
-	if loaded.Beans.DefaultStatus != "todo" {
-		t.Errorf("DefaultStatus = %q, want \"todo\"", loaded.Beans.DefaultStatus)
+	if loaded.Beans.DefaultType != "bug" {
+		t.Errorf("DefaultType = %q, want \"bug\"", loaded.Beans.DefaultType)
 	}
-	if len(loaded.Statuses) != 3 {
-		t.Errorf("len(Statuses) = %d, want 3", len(loaded.Statuses))
+	// Statuses are hardcoded, not stored in config
+	if len(loaded.StatusNames()) != 5 {
+		t.Errorf("len(StatusNames()) = %d, want 5", len(loaded.StatusNames()))
 	}
 }
 
@@ -222,7 +245,7 @@ func TestLoadAppliesDefaults(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, ConfigFile)
 
-	// Write minimal config (missing id_length, default_status, default_type, statuses)
+	// Write minimal config (missing id_length and default_type)
 	minimalConfig := `beans:
   prefix: "my-"
 `
@@ -240,12 +263,13 @@ func TestLoadAppliesDefaults(t *testing.T) {
 	if cfg.Beans.IDLength != 4 {
 		t.Errorf("IDLength default not applied: got %d, want 4", cfg.Beans.IDLength)
 	}
-	if len(cfg.Statuses) != 3 {
-		t.Errorf("Default statuses not applied: got %d, want 3", len(cfg.Statuses))
+	// Statuses are hardcoded, always 5
+	if len(cfg.StatusNames()) != 5 {
+		t.Errorf("Hardcoded statuses: got %d, want 5", len(cfg.StatusNames()))
 	}
-	// DefaultStatus should be first status name when not specified
-	if cfg.Beans.DefaultStatus != "in-progress" {
-		t.Errorf("DefaultStatus default not applied: got %q, want \"in-progress\"", cfg.Beans.DefaultStatus)
+	// DefaultStatus is always "todo"
+	if cfg.GetDefaultStatus() != "todo" {
+		t.Errorf("DefaultStatus: got %q, want \"todo\"", cfg.GetDefaultStatus())
 	}
 	// DefaultType should be first type name when not specified
 	if cfg.Beans.DefaultType != "milestone" {
@@ -253,44 +277,28 @@ func TestLoadAppliesDefaults(t *testing.T) {
 	}
 }
 
-func TestCustomStatuses(t *testing.T) {
-	cfg := &Config{
-		Beans: BeansConfig{
-			Prefix:        "",
-			IDLength:      4,
-			DefaultStatus: "backlog",
-		},
-		Statuses: []StatusConfig{
-			{Name: "backlog", Color: "gray"},
-			{Name: "active", Color: "#FF6B6B"},
-			{Name: "review", Color: "purple"},
-			{Name: "shipped", Color: "green", Archive: true},
-		},
+func TestStatusesAreHardcoded(t *testing.T) {
+	// Statuses are hardcoded and not configurable (like types)
+	// Verify that any config only uses hardcoded statuses
+	cfg := Default()
+
+	// All hardcoded statuses should be valid
+	hardcodedStatuses := []string{"backlog", "todo", "in-progress", "completed", "scrapped"}
+	for _, status := range hardcodedStatuses {
+		if !cfg.IsValidStatus(status) {
+			t.Errorf("IsValidStatus(%q) = false, want true", status)
+		}
 	}
 
-	// Test custom status validation
-	if !cfg.IsValidStatus("backlog") {
-		t.Error("IsValidStatus(\"backlog\") = false, want true")
+	// Archive statuses should be completed and scrapped
+	if !cfg.IsArchiveStatus("completed") {
+		t.Error("IsArchiveStatus(\"completed\") = false, want true")
 	}
-	if !cfg.IsValidStatus("active") {
-		t.Error("IsValidStatus(\"active\") = false, want true")
+	if !cfg.IsArchiveStatus("scrapped") {
+		t.Error("IsArchiveStatus(\"scrapped\") = false, want true")
 	}
-	if cfg.IsValidStatus("open") {
-		t.Error("IsValidStatus(\"open\") = true, want false (not in custom statuses)")
-	}
-
-	// Test custom archive status
-	if !cfg.IsArchiveStatus("shipped") {
-		t.Error("IsArchiveStatus(\"shipped\") = false, want true")
-	}
-	if cfg.IsArchiveStatus("active") {
-		t.Error("IsArchiveStatus(\"active\") = true, want false")
-	}
-
-	// Test hex color in custom status
-	s := cfg.GetStatus("active")
-	if s == nil || s.Color != "#FF6B6B" {
-		t.Error("Custom hex color not preserved")
+	if cfg.IsArchiveStatus("todo") {
+		t.Error("IsArchiveStatus(\"todo\") = true, want false")
 	}
 }
 
@@ -374,11 +382,10 @@ func TestTypesAreHardcoded(t *testing.T) {
 
 	cfg := &Config{
 		Beans: BeansConfig{
-			Prefix:        "test-",
-			IDLength:      4,
-			DefaultStatus: "open",
+			Prefix:      "test-",
+			IDLength:    4,
+			DefaultType: "task",
 		},
-		Statuses: DefaultStatuses,
 	}
 
 	// Save it
@@ -402,6 +409,11 @@ func TestTypesAreHardcoded(t *testing.T) {
 		if !loaded.IsValidType(typeName) {
 			t.Errorf("IsValidType(%q) = false, want true", typeName)
 		}
+	}
+
+	// Statuses should also be hardcoded
+	if len(loaded.StatusNames()) != 5 {
+		t.Errorf("len(StatusNames()) = %d, want 5", len(loaded.StatusNames()))
 	}
 }
 
@@ -470,13 +482,15 @@ types:
 }
 
 func TestStatusDescriptions(t *testing.T) {
-	t.Run("default statuses have descriptions", func(t *testing.T) {
+	t.Run("hardcoded statuses have descriptions", func(t *testing.T) {
 		cfg := Default()
 
 		expectedDescriptions := map[string]string{
-			"open":        "Ready to be worked on",
+			"backlog":     "Not yet ready to be worked on",
+			"todo":        "Ready to be worked on",
 			"in-progress": "Currently being worked on",
-			"done":        "Completed and ready for archival",
+			"completed":   "Finished successfully",
+			"scrapped":    "Will not be done",
 		}
 
 		for statusName, expectedDesc := range expectedDescriptions {
@@ -491,53 +505,20 @@ func TestStatusDescriptions(t *testing.T) {
 		}
 	})
 
-	t.Run("save and load preserves status descriptions", func(t *testing.T) {
-		tmpDir := t.TempDir()
-
-		cfg := &Config{
-			Beans: BeansConfig{
-				Prefix:        "test-",
-				IDLength:      4,
-				DefaultStatus: "open",
-			},
-			Statuses: []StatusConfig{
-				{Name: "open", Color: "green", Description: "Ready to start"},
-				{Name: "done", Color: "gray", Archive: true, Description: "All finished"},
-			},
-		}
-
-		if err := cfg.Save(tmpDir); err != nil {
-			t.Fatalf("Save() error = %v", err)
-		}
-
-		loaded, err := Load(tmpDir)
-		if err != nil {
-			t.Fatalf("Load() error = %v", err)
-		}
-
-		if loaded.Statuses[0].Description != "Ready to start" {
-			t.Errorf("Statuses[0].Description = %q, want \"Ready to start\"", loaded.Statuses[0].Description)
-		}
-		if loaded.Statuses[1].Description != "All finished" {
-			t.Errorf("Statuses[1].Description = %q, want \"All finished\"", loaded.Statuses[1].Description)
-		}
-	})
-
-	t.Run("status description is optional", func(t *testing.T) {
+	t.Run("statuses in config file are ignored", func(t *testing.T) {
+		// Even if a config file has custom statuses, they should be ignored
+		// and hardcoded statuses should be used instead
 		tmpDir := t.TempDir()
 		configPath := filepath.Join(tmpDir, ConfigFile)
 
-		// Config without status descriptions (backwards compatibility)
+		// Config with custom statuses (should be ignored)
 		configYAML := `beans:
   prefix: "test-"
   id_length: 4
-  default_status: open
 statuses:
-  - name: open
-    color: green
-  - name: done
-    color: gray
-    archive: true
+  - name: custom-status
+    color: pink
+    description: "This should be ignored"
 `
 		if err := os.WriteFile(configPath, []byte(configYAML), 0644); err != nil {
 			t.Fatalf("WriteFile error = %v", err)
@@ -548,12 +529,14 @@ statuses:
 			t.Fatalf("Load() error = %v", err)
 		}
 
-		// Should load without error, descriptions should be empty
-		if loaded.Statuses[0].Description != "" {
-			t.Errorf("Statuses[0].Description = %q, want empty", loaded.Statuses[0].Description)
+		// Custom status should not be valid
+		if loaded.IsValidStatus("custom-status") {
+			t.Error("IsValidStatus(\"custom-status\") = true, want false (custom statuses should be ignored)")
 		}
-		if loaded.Statuses[1].Description != "" {
-			t.Errorf("Statuses[1].Description = %q, want empty", loaded.Statuses[1].Description)
+
+		// Hardcoded statuses should still work
+		if !loaded.IsValidStatus("todo") {
+			t.Error("IsValidStatus(\"todo\") = false, want true")
 		}
 	})
 }

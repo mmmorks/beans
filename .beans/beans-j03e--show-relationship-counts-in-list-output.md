@@ -1,6 +1,6 @@
 ---
 title: Show relationship counts in list output
-status: open
+status: todo
 type: feature
 tags:
     - cli

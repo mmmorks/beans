@@ -16,7 +16,7 @@ var (
 var archiveCmd = &cobra.Command{
 	Use:   "archive",
 	Short: "Delete all beans with an archive status",
-	Long:  `Deletes all beans that have a status marked with archive=true in config.yaml. Asks for confirmation unless --force is provided.`,
+	Long:  `Deletes all beans with status "completed" or "scrapped". Asks for confirmation unless --force is provided.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		beans := core.All()
 

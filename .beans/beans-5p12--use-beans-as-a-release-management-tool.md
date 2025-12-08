@@ -1,6 +1,6 @@
 ---
 title: Use beans as a release management tool
-status: open
+status: todo
 type: idea
 tags:
     - cli

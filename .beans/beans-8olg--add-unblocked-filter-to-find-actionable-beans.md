@@ -1,6 +1,6 @@
 ---
 title: Add --unblocked filter to find actionable beans
-status: open
+status: todo
 type: feature
 tags:
     - cli

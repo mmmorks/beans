@@ -1,6 +1,6 @@
 ---
 title: Detect circular dependencies in relationships
-status: open
+status: todo
 type: feature
 tags:
     - validation

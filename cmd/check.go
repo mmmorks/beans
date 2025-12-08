@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"hmans.dev/beans/internal/config"
 	"hmans.dev/beans/internal/ui"
 )
 
@@ -19,26 +20,18 @@ type checkResult struct {
 var checkCmd = &cobra.Command{
 	Use:   "check",
 	Short: "Validate config.yaml configuration",
-	Long:  `Checks config.yaml for configuration issues such as invalid statuses, colors, or missing required values.`,
+	Long:  `Checks config.yaml for configuration issues such as invalid default type or other settings.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var errors []string
 
-		// 1. Check statuses not empty
-		if len(cfg.Statuses) == 0 {
-			errors = append(errors, "no statuses defined")
-		} else {
-			if !checkJSON {
-				fmt.Printf("%s Statuses defined (%d)\n", ui.Success.Render("✓"), len(cfg.Statuses))
-			}
+		// 1. Check statuses are defined (always true since hardcoded)
+		if !checkJSON {
+			fmt.Printf("%s Statuses defined (%d hardcoded)\n", ui.Success.Render("✓"), len(config.DefaultStatuses))
 		}
 
-		// 2. Check default_status exists in statuses
-		if len(cfg.Statuses) > 0 && !cfg.IsValidStatus(cfg.GetDefaultStatus()) {
-			errors = append(errors, fmt.Sprintf("default_status '%s' is not a defined status", cfg.GetDefaultStatus()))
-		} else if len(cfg.Statuses) > 0 {
-			if !checkJSON {
-				fmt.Printf("%s Default status '%s' exists\n", ui.Success.Render("✓"), cfg.GetDefaultStatus())
-			}
+		// 2. Check default_status exists in statuses (always true since hardcoded)
+		if !checkJSON {
+			fmt.Printf("%s Default status '%s' exists\n", ui.Success.Render("✓"), cfg.GetDefaultStatus())
 		}
 
 		// 2b. Check default_type is a valid hardcoded type
@@ -50,13 +43,13 @@ var checkCmd = &cobra.Command{
 			}
 		}
 
-		// 3. Check all colors are valid
-		for _, s := range cfg.Statuses {
+		// 3. Check all status colors are valid (hardcoded statuses)
+		for _, s := range config.DefaultStatuses {
 			if !ui.IsValidColor(s.Color) {
 				errors = append(errors, fmt.Sprintf("invalid color '%s' for status '%s'", s.Color, s.Name))
 			}
 		}
-		if len(cfg.Statuses) > 0 && !checkJSON {
+		if !checkJSON {
 			// Only show success if we checked colors and found no errors related to colors
 			colorErrors := 0
 			for _, e := range errors {
@@ -66,6 +59,24 @@ var checkCmd = &cobra.Command{
 			}
 			if colorErrors == 0 {
 				fmt.Printf("%s All status colors valid\n", ui.Success.Render("✓"))
+			}
+		}
+
+		// 4. Check all type colors are valid (hardcoded types)
+		for _, t := range config.DefaultTypes {
+			if !ui.IsValidColor(t.Color) {
+				errors = append(errors, fmt.Sprintf("invalid color '%s' for type '%s'", t.Color, t.Name))
+			}
+		}
+		if !checkJSON {
+			typeColorErrors := 0
+			for _, e := range errors {
+				if len(e) > 13 && e[:13] == "invalid color" {
+					typeColorErrors++
+				}
+			}
+			if typeColorErrors == 0 {
+				fmt.Printf("%s All type colors valid\n", ui.Success.Render("✓"))
 			}
 		}
 

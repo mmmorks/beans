@@ -1,9 +1,9 @@
 ---
 title: Hardcode bean statuses (remove configurability)
-status: open
+status: completed
 type: task
 created_at: 2025-12-08T13:07:39Z
-updated_at: 2025-12-08T13:07:39Z
+updated_at: 2025-12-08T13:26:36Z
 links:
     - parent: beans-58hm
 ---
@@ -16,7 +16,7 @@ Remove the configurability of bean statuses from config.yaml and hardcode the fo
 - **ready**: Ready to be worked on
 - **in-progress**: Currently being worked on
 - **completed**: Finished successfully
-- **canceled**: Will not be done
+- **scrapped**: Will not be done
 
 ## Rationale
 
@@ -24,11 +24,11 @@ Simplifies the system by removing unnecessary configurability. The hardcoded sta
 
 ## Checklist
 
-- [ ] Update `internal/config/config.go` to hardcode statuses instead of reading from config
-- [ ] Remove statuses section from config.yaml handling
-- [ ] Update `beans init` to not create statuses in config
-- [ ] Update any validation logic to use hardcoded statuses
-- [ ] Remove any `beans statuses` command if planned
-- [ ] Update prompt.md to reflect the hardcoded statuses
-- [ ] Update tests
-- [ ] Consider migration path for existing beans using old status names (open → ready, done → completed)
+- [x] Update `internal/config/config.go` to hardcode statuses instead of reading from config
+- [x] Remove statuses section from config.yaml handling
+- [x] Update `beans init` to not create statuses in config (init saves config without statuses now)
+- [x] Update any validation logic to use hardcoded statuses
+- [x] Remove any `beans statuses` command if planned (there wasn't one)
+- [x] Update prompt.md to reflect the hardcoded statuses
+- [x] Update tests
+- [x] Consider migration path for existing beans using old status names (open → ready, done → completed) - updated all existing beans

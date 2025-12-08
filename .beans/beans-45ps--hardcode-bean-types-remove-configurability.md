@@ -1,6 +1,6 @@
 ---
 title: Hardcode bean types (remove configurability)
-status: done
+status: completed
 type: task
 created_at: 2025-12-08T13:07:39Z
 updated_at: 2025-12-08T13:16:31Z

@@ -11,7 +11,7 @@ All commands support --json for machine-readable output. Use this flag to parse 
 
 1. FIRST: Create a bean with `beans create "Title" -t <type> -d "Description..." -s in-progress`
 2. THEN: Do the work
-3. FINALLY: Mark done with `beans update <bean-id> --status done`
+3. FINALLY: Mark completed with `beans update <bean-id> --status completed`
 4. IF and WHEN you COMMIT: Include both your code changes AND the bean file(s) in the commit!
 
 If you identify something that should be changed or fixed after completing the user's request, create a new bean for that work instead of doing it immediately.
@@ -24,7 +24,7 @@ If you identify something that should be changed or fixed after completing the u
 
 ## Finding work
 
-- `beans list --no-status done --no-linked-as blocks --json` to find actionable beans (not done, not blocked)
+- `beans list --no-status completed --no-linked-as blocks --json` to find actionable beans (not completed, not blocked)
 - `beans list --json` to list all beans (descriptions not included by default)
 - `beans list --json --full` to include full description content
 
@@ -81,9 +81,9 @@ Use `--no-links` and `--no-linked-as` to exclude beans matching a relationship:
 
 Use `--no-status` to exclude beans with specific statuses:
 
-- `beans list --no-status done` - Show beans that are not done
-- `beans list --no-status done --no-status archived` - Exclude multiple statuses
-- `beans list --no-status done --no-linked-as blocks` - Actionable beans (not done, not blocked)
+- `beans list --no-status completed` - Show beans that are not completed
+- `beans list --no-status completed --no-status scrapped` - Exclude multiple statuses
+- `beans list --no-status completed --no-linked-as blocks` - Actionable beans (not completed, not blocked)
 
 **Filtering by type:**
 
@@ -92,12 +92,12 @@ Use `-t/--type` to filter by bean type (OR logic when repeated):
 - `beans list -t bug` - Show only bugs
 - `beans list -t bug -t feature` - Show bugs OR features
 - `beans list --no-type epic` - Exclude epics
-- `beans list -t task --no-status done` - Show open tasks
+- `beans list -t task --no-status completed` - Show open tasks
 
 ## Creating new beans
 
 - `beans create --help`
-- Example: `beans create "Fix login bug" -t bug -d "Users cannot log in when..." -s open`
+- Example: `beans create "Fix login bug" -t bug -d "Users cannot log in when..." -s todo`
 - **Always specify a type with `-t`**. See the "Issue Types" section below for available types and their descriptions.
 - When creating a new bean, first see if a similar bean already exists.
 - When creating new beans, include a useful description. If you're not sure what to write, ask the user.
@@ -106,4 +106,4 @@ Use `-t/--type` to filter by bean type (OR logic when repeated):
 
 ## Cleaning up beans
 
-- `beans archive` will archive (delete) beans marked as done. ONLY run this when I explicitly tell you to.
+- `beans archive` will archive (delete) beans marked as completed or scrapped. ONLY run this when I explicitly tell you to.

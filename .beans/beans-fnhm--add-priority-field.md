@@ -1,6 +1,6 @@
 ---
 title: Add priority field
-status: open
+status: todo
 type: feature
 tags:
     - schema

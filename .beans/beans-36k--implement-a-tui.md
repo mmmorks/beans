@@ -1,6 +1,6 @@
 ---
 title: Implement a TUI
-status: open
+status: todo
 type: feature
 tags:
     - tui

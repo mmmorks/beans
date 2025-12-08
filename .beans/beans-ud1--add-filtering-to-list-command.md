@@ -1,6 +1,6 @@
 ---
 title: Add filtering to list command
-status: open
+status: todo
 type: feature
 tags:
     - cli

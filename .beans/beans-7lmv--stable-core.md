@@ -1,6 +1,6 @@
 ---
 title: Stable Core
-status: open
+status: todo
 type: milestone
 tags:
     - core

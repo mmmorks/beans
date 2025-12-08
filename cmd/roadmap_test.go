@@ -27,12 +27,8 @@ func TestBuildRoadmap(t *testing.T) {
 	oldCfg := cfg
 	defer func() { cfg = oldCfg }()
 
-	cfg = &config.Config{}
-	cfg.Statuses = []config.StatusConfig{
-		{Name: "in-progress"},
-		{Name: "open"},
-		{Name: "done", Archive: true},
-	}
+	// Statuses are now hardcoded
+	cfg = config.Default()
 
 	now := time.Now()
 
@@ -51,25 +47,25 @@ func TestBuildRoadmap(t *testing.T) {
 		{
 			name: "milestone with epic and items",
 			beans: []*bean.Bean{
-				{ID: "m1", Type: "milestone", Title: "v1.0", Status: "open", CreatedAt: &now},
-				{ID: "e1", Type: "epic", Title: "Auth", Status: "open", Links: bean.Links{{Type: "parent", Target: "m1"}}},
-				{ID: "t1", Type: "task", Title: "Login", Status: "open", Links: bean.Links{{Type: "parent", Target: "e1"}}},
+				{ID: "m1", Type: "milestone", Title: "v1.0", Status: "todo", CreatedAt: &now},
+				{ID: "e1", Type: "epic", Title: "Auth", Status: "todo", Links: bean.Links{{Type: "parent", Target: "m1"}}},
+				{ID: "t1", Type: "task", Title: "Login", Status: "todo", Links: bean.Links{{Type: "parent", Target: "e1"}}},
 			},
 			wantMilestones: 1,
 		},
 		{
 			name: "milestone with direct children (no epic)",
 			beans: []*bean.Bean{
-				{ID: "m1", Type: "milestone", Title: "v1.0", Status: "open", CreatedAt: &now},
-				{ID: "t1", Type: "task", Title: "Docs", Status: "open", Links: bean.Links{{Type: "parent", Target: "m1"}}},
+				{ID: "m1", Type: "milestone", Title: "v1.0", Status: "todo", CreatedAt: &now},
+				{ID: "t1", Type: "task", Title: "Docs", Status: "todo", Links: bean.Links{{Type: "parent", Target: "m1"}}},
 			},
 			wantMilestones: 1,
 		},
 		{
 			name: "unscheduled epic",
 			beans: []*bean.Bean{
-				{ID: "e1", Type: "epic", Title: "Future", Status: "open"},
-				{ID: "t1", Type: "task", Title: "Nice to have", Status: "open", Links: bean.Links{{Type: "parent", Target: "e1"}}},
+				{ID: "e1", Type: "epic", Title: "Future", Status: "todo"},
+				{ID: "t1", Type: "task", Title: "Nice to have", Status: "todo", Links: bean.Links{{Type: "parent", Target: "e1"}}},
 			},
 			wantMilestones:  0,
 			wantUnscheduled: 1,
@@ -77,8 +73,8 @@ func TestBuildRoadmap(t *testing.T) {
 		{
 			name: "done items excluded by default",
 			beans: []*bean.Bean{
-				{ID: "m1", Type: "milestone", Title: "v1.0", Status: "open", CreatedAt: &now},
-				{ID: "t1", Type: "task", Title: "Done task", Status: "done", Links: bean.Links{{Type: "parent", Target: "m1"}}},
+				{ID: "m1", Type: "milestone", Title: "v1.0", Status: "todo", CreatedAt: &now},
+				{ID: "t1", Type: "task", Title: "Done task", Status: "completed", Links: bean.Links{{Type: "parent", Target: "m1"}}},
 			},
 			includeDone:    false,
 			wantMilestones: 0, // milestone has no visible children
@@ -86,8 +82,8 @@ func TestBuildRoadmap(t *testing.T) {
 		{
 			name: "done items included when requested",
 			beans: []*bean.Bean{
-				{ID: "m1", Type: "milestone", Title: "v1.0", Status: "open", CreatedAt: &now},
-				{ID: "t1", Type: "task", Title: "Done task", Status: "done", Links: bean.Links{{Type: "parent", Target: "m1"}}},
+				{ID: "m1", Type: "milestone", Title: "v1.0", Status: "todo", CreatedAt: &now},
+				{ID: "t1", Type: "task", Title: "Done task", Status: "completed", Links: bean.Links{{Type: "parent", Target: "m1"}}},
 			},
 			includeDone:    true,
 			wantMilestones: 1,
@@ -95,17 +91,17 @@ func TestBuildRoadmap(t *testing.T) {
 		{
 			name: "bean without parent not included",
 			beans: []*bean.Bean{
-				{ID: "m1", Type: "milestone", Title: "v1.0", Status: "open", CreatedAt: &now},
-				{ID: "t1", Type: "task", Title: "Orphan", Status: "open"}, // no parent link
+				{ID: "m1", Type: "milestone", Title: "v1.0", Status: "todo", CreatedAt: &now},
+				{ID: "t1", Type: "task", Title: "Orphan", Status: "todo"}, // no parent link
 			},
 			wantMilestones: 0, // milestone has no children
 		},
 		{
 			name: "item with both epic and milestone parent appears once under epic",
 			beans: []*bean.Bean{
-				{ID: "m1", Type: "milestone", Title: "v1.0", Status: "open", CreatedAt: &now},
-				{ID: "e1", Type: "epic", Title: "Auth", Status: "open", Links: bean.Links{{Type: "parent", Target: "m1"}}},
-				{ID: "t1", Type: "task", Title: "Login", Status: "open", Links: bean.Links{
+				{ID: "m1", Type: "milestone", Title: "v1.0", Status: "todo", CreatedAt: &now},
+				{ID: "e1", Type: "epic", Title: "Auth", Status: "todo", Links: bean.Links{{Type: "parent", Target: "m1"}}},
+				{ID: "t1", Type: "task", Title: "Login", Status: "todo", Links: bean.Links{
 					{Type: "parent", Target: "e1"},
 					{Type: "parent", Target: "m1"},
 				}},
@@ -134,17 +130,14 @@ func TestBuildRoadmap_DuplicateAvoidance(t *testing.T) {
 	oldCfg := cfg
 	defer func() { cfg = oldCfg }()
 
-	cfg = &config.Config{}
-	cfg.Statuses = []config.StatusConfig{
-		{Name: "open"},
-		{Name: "done", Archive: true},
-	}
+	// Statuses are now hardcoded
+	cfg = config.Default()
 
 	now := time.Now()
 	beans := []*bean.Bean{
-		{ID: "m1", Type: "milestone", Title: "v1.0", Status: "open", CreatedAt: &now},
-		{ID: "e1", Type: "epic", Title: "Auth", Status: "open", Links: bean.Links{{Type: "parent", Target: "m1"}}},
-		{ID: "t1", Type: "task", Title: "Login", Status: "open", Links: bean.Links{
+		{ID: "m1", Type: "milestone", Title: "v1.0", Status: "todo", CreatedAt: &now},
+		{ID: "e1", Type: "epic", Title: "Auth", Status: "todo", Links: bean.Links{{Type: "parent", Target: "m1"}}},
+		{ID: "t1", Type: "task", Title: "Login", Status: "todo", Links: bean.Links{
 			{Type: "parent", Target: "e1"},
 			{Type: "parent", Target: "m1"},
 		}},
@@ -269,28 +262,24 @@ func TestStatusFiltering(t *testing.T) {
 	oldCfg := cfg
 	defer func() { cfg = oldCfg }()
 
-	cfg = &config.Config{}
-	cfg.Statuses = []config.StatusConfig{
-		{Name: "open"},
-		{Name: "in-progress"},
-		{Name: "done", Archive: true},
-	}
+	// Statuses are now hardcoded
+	cfg = config.Default()
 
 	now := time.Now()
 	beans := []*bean.Bean{
-		{ID: "m1", Type: "milestone", Title: "Open Milestone", Status: "open", CreatedAt: &now},
+		{ID: "m1", Type: "milestone", Title: "Todo Milestone", Status: "todo", CreatedAt: &now},
 		{ID: "m2", Type: "milestone", Title: "In Progress Milestone", Status: "in-progress", CreatedAt: &now},
-		{ID: "t1", Type: "task", Title: "Task 1", Status: "open", Links: bean.Links{{Type: "parent", Target: "m1"}}},
-		{ID: "t2", Type: "task", Title: "Task 2", Status: "open", Links: bean.Links{{Type: "parent", Target: "m2"}}},
+		{ID: "t1", Type: "task", Title: "Task 1", Status: "todo", Links: bean.Links{{Type: "parent", Target: "m1"}}},
+		{ID: "t2", Type: "task", Title: "Task 2", Status: "todo", Links: bean.Links{{Type: "parent", Target: "m2"}}},
 	}
 
 	t.Run("filter by status", func(t *testing.T) {
-		result := buildRoadmap(beans, false, []string{"open"}, nil)
+		result := buildRoadmap(beans, false, []string{"todo"}, nil)
 		if len(result.Milestones) != 1 {
 			t.Errorf("expected 1 milestone, got %d", len(result.Milestones))
 		}
-		if result.Milestones[0].Milestone.Status != "open" {
-			t.Errorf("expected open milestone, got %s", result.Milestones[0].Milestone.Status)
+		if result.Milestones[0].Milestone.Status != "todo" {
+			t.Errorf("expected todo milestone, got %s", result.Milestones[0].Milestone.Status)
 		}
 	})
 
@@ -299,8 +288,8 @@ func TestStatusFiltering(t *testing.T) {
 		if len(result.Milestones) != 1 {
 			t.Errorf("expected 1 milestone, got %d", len(result.Milestones))
 		}
-		if result.Milestones[0].Milestone.Status != "open" {
-			t.Errorf("expected open milestone, got %s", result.Milestones[0].Milestone.Status)
+		if result.Milestones[0].Milestone.Status != "todo" {
+			t.Errorf("expected todo milestone, got %s", result.Milestones[0].Milestone.Status)
 		}
 	})
 }

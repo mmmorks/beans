@@ -1,6 +1,6 @@
 ---
 title: Add stats/summary command
-status: open
+status: todo
 type: feature
 tags:
     - cli

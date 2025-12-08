@@ -10,11 +10,14 @@ import (
 
 const ConfigFile = "config.yaml"
 
-// DefaultStatuses defines the default status configuration.
+// DefaultStatuses defines the hardcoded status configuration.
+// Statuses are not configurable - they are hardcoded like types.
 var DefaultStatuses = []StatusConfig{
+	{Name: "backlog", Color: "gray", Description: "Not yet ready to be worked on"},
+	{Name: "todo", Color: "green", Description: "Ready to be worked on"},
 	{Name: "in-progress", Color: "yellow", Description: "Currently being worked on"},
-	{Name: "open", Color: "green", Description: "Ready to be worked on"},
-	{Name: "done", Color: "gray", Archive: true, Description: "Completed and ready for archival"},
+	{Name: "completed", Color: "cyan", Archive: true, Description: "Finished successfully"},
+	{Name: "scrapped", Color: "red", Archive: true, Description: "Will not be done"},
 }
 
 // DefaultTypes defines the default type configuration.
@@ -42,9 +45,9 @@ type TypeConfig struct {
 }
 
 // Config holds the beans configuration.
+// Note: Statuses are no longer stored in config - they are hardcoded like types.
 type Config struct {
-	Beans    BeansConfig    `yaml:"beans"`
-	Statuses []StatusConfig `yaml:"statuses"`
+	Beans BeansConfig `yaml:"beans"`
 }
 
 // BeansConfig defines settings for bean creation.
@@ -61,10 +64,9 @@ func Default() *Config {
 		Beans: BeansConfig{
 			Prefix:        "",
 			IDLength:      4,
-			DefaultStatus: "open",
+			DefaultStatus: "todo",
 			DefaultType:   "task",
 		},
-		Statuses: DefaultStatuses,
 	}
 }
 
@@ -98,14 +100,9 @@ func Load(root string) (*Config, error) {
 		cfg.Beans.IDLength = 4
 	}
 
-	// Apply default statuses if none defined
-	if len(cfg.Statuses) == 0 {
-		cfg.Statuses = DefaultStatuses
-	}
-
-	// Apply default status values if not specified
+	// Apply default status if not specified
 	if cfg.Beans.DefaultStatus == "" {
-		cfg.Beans.DefaultStatus = cfg.Statuses[0].Name
+		cfg.Beans.DefaultStatus = "todo"
 	}
 
 	// Apply default type if not specified
@@ -128,9 +125,9 @@ func (c *Config) Save(root string) error {
 	return os.WriteFile(path, data, 0644)
 }
 
-// IsValidStatus returns true if the status is in the config's allowed list.
+// IsValidStatus returns true if the status is a valid hardcoded status.
 func (c *Config) IsValidStatus(status string) bool {
-	for _, s := range c.Statuses {
+	for _, s := range DefaultStatuses {
 		if s.Name == status {
 			return true
 		}
@@ -139,28 +136,31 @@ func (c *Config) IsValidStatus(status string) bool {
 }
 
 // StatusList returns a comma-separated list of valid statuses.
+// Statuses are hardcoded and not configurable.
 func (c *Config) StatusList() string {
-	names := make([]string, len(c.Statuses))
-	for i, s := range c.Statuses {
+	names := make([]string, len(DefaultStatuses))
+	for i, s := range DefaultStatuses {
 		names[i] = s.Name
 	}
 	return strings.Join(names, ", ")
 }
 
 // StatusNames returns a slice of valid status names.
+// Statuses are hardcoded and not configurable.
 func (c *Config) StatusNames() []string {
-	names := make([]string, len(c.Statuses))
-	for i, s := range c.Statuses {
+	names := make([]string, len(DefaultStatuses))
+	for i, s := range DefaultStatuses {
 		names[i] = s.Name
 	}
 	return names
 }
 
 // GetStatus returns the StatusConfig for a given status name, or nil if not found.
+// Statuses are hardcoded and not configurable.
 func (c *Config) GetStatus(name string) *StatusConfig {
-	for i := range c.Statuses {
-		if c.Statuses[i].Name == name {
-			return &c.Statuses[i]
+	for i := range DefaultStatuses {
+		if DefaultStatuses[i].Name == name {
+			return &DefaultStatuses[i]
 		}
 	}
 	return nil
@@ -168,6 +168,9 @@ func (c *Config) GetStatus(name string) *StatusConfig {
 
 // GetDefaultStatus returns the default status name for new beans.
 func (c *Config) GetDefaultStatus() string {
+	if c.Beans.DefaultStatus == "" {
+		return "todo"
+	}
 	return c.Beans.DefaultStatus
 }
 
@@ -177,6 +180,7 @@ func (c *Config) GetDefaultType() string {
 }
 
 // IsArchiveStatus returns true if the given status is marked for archiving.
+// Statuses are hardcoded and not configurable.
 func (c *Config) IsArchiveStatus(name string) bool {
 	if s := c.GetStatus(name); s != nil {
 		return s.Archive

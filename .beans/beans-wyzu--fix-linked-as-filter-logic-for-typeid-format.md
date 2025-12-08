@@ -1,6 +1,6 @@
 ---
 title: Fix --linked-as filter logic for type:id format
-status: done
+status: completed
 type: bug
 created_at: 2025-12-08T11:12:25Z
 updated_at: 2025-12-08T11:15:24Z

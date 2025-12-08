@@ -1,6 +1,6 @@
 ---
 title: Enhance beans check to identify and fix broken links
-status: open
+status: todo
 type: feature
 tags:
     - validation

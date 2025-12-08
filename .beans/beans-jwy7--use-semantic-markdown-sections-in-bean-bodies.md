@@ -1,6 +1,6 @@
 ---
 title: Use semantic markdown sections in bean bodies
-status: open
+status: todo
 type: idea
 tags:
     - parsing

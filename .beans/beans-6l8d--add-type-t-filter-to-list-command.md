@@ -1,6 +1,6 @@
 ---
 title: Add --type/-t filter to list command
-status: done
+status: completed
 type: bug
 created_at: 2025-12-08T12:54:06Z
 updated_at: 2025-12-08T12:55:31Z

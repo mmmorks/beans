@@ -1,16 +1,5 @@
 beans:
     prefix: beans-
     id_length: 4
-    default_status: open
+    default_status: todo
     default_type: task
-statuses:
-    - name: in-progress
-      color: yellow
-      description: Currently being worked on
-    - name: open
-      color: green
-      description: Ready to be worked on
-    - name: done
-      color: gray
-      archive: true
-      description: Completed and ready for archival

@@ -186,13 +186,8 @@ func TestSortBeans(t *testing.T) {
 	earlier := now.Add(-1 * time.Hour)
 	evenEarlier := now.Add(-2 * time.Hour)
 
-	testCfg := &config.Config{
-		Statuses: []config.StatusConfig{
-			{Name: "open", Color: "green"},
-			{Name: "in-progress", Color: "yellow"},
-			{Name: "done", Color: "gray", Archive: true},
-		},
-	}
+	// Statuses are now hardcoded, so we just use default config
+	testCfg := config.Default()
 
 	t.Run("sort by id", func(t *testing.T) {
 		beans := []*bean.Bean{
@@ -254,15 +249,15 @@ func TestSortBeans(t *testing.T) {
 
 	t.Run("sort by status", func(t *testing.T) {
 		beans := []*bean.Bean{
-			{ID: "d1", Status: "done"},
-			{ID: "o1", Status: "open"},
+			{ID: "c1", Status: "completed"},
+			{ID: "t1", Status: "todo"},
 			{ID: "i1", Status: "in-progress"},
-			{ID: "o2", Status: "open"},
+			{ID: "t2", Status: "todo"},
 		}
 		sortBeans(beans, "status", testCfg)
 
-		// Should be ordered by status config order, then by ID within same status
-		expected := []string{"o1", "o2", "i1", "d1"}
+		// Should be ordered by status config order (not-ready, ready, in-progress, completed, scrapped), then by ID within same status
+		expected := []string{"t1", "t2", "i1", "c1"}
 		for i, want := range expected {
 			if beans[i].ID != want {
 				t.Errorf("sort by status[%d]: got %q, want %q", i, beans[i].ID, want)
@@ -272,18 +267,18 @@ func TestSortBeans(t *testing.T) {
 
 	t.Run("default sort (archive status then type)", func(t *testing.T) {
 		beans := []*bean.Bean{
-			{ID: "done-bug", Status: "done", Type: "bug"},
-			{ID: "open-feature", Status: "open", Type: "feature"},
-			{ID: "open-task", Status: "open", Type: "task"},
-			{ID: "done-task", Status: "done", Type: "task"},
-			{ID: "open-bug", Status: "open", Type: "bug"},
+			{ID: "completed-bug", Status: "completed", Type: "bug"},
+			{ID: "todo-feature", Status: "todo", Type: "feature"},
+			{ID: "todo-task", Status: "todo", Type: "task"},
+			{ID: "completed-task", Status: "completed", Type: "task"},
+			{ID: "todo-bug", Status: "todo", Type: "bug"},
 		}
 		sortBeans(beans, "", testCfg)
 
 		// Should be: non-archive first (sorted by type order from DefaultTypes: milestone, epic, bug, feature, task),
 		// then archive (sorted by type)
 		// DefaultTypes order: milestone, epic, bug, feature, task
-		expected := []string{"open-bug", "open-feature", "open-task", "done-bug", "done-task"}
+		expected := []string{"todo-bug", "todo-feature", "todo-task", "completed-bug", "completed-task"}
 		for i, want := range expected {
 			if beans[i].ID != want {
 				t.Errorf("default sort[%d]: got %q, want %q", i, beans[i].ID, want)

@@ -1,6 +1,6 @@
 ---
 title: Add beans graph command for relationship visualization
-status: open
+status: todo
 type: feature
 tags:
     - cli
