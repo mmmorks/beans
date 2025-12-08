@@ -1,11 +1,11 @@
 ---
 title: Add stats/summary command
-status: todo
+status: backlog
 type: feature
 tags:
     - cli
 created_at: 2025-12-07T17:08:36Z
-updated_at: 2025-12-08T14:58:28Z
+updated_at: 2025-12-08T17:02:44Z
 links:
     - parent: beans-7lmv
 ---

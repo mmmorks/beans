@@ -1,12 +1,13 @@
 ---
 title: Use semantic markdown sections in bean bodies
-status: todo
+status: backlog
 type: idea
 tags:
     - parsing
     - schema
+    - idea
 created_at: 2025-12-07T12:33:57Z
-updated_at: 2025-12-07T19:00:57Z
+updated_at: 2025-12-08T17:02:44Z
 ---
 
 ## Overview

@@ -1,12 +1,12 @@
 ---
 title: Add --unblocked filter to find actionable beans
-status: todo
+status: backlog
 type: feature
 tags:
     - cli
     - filtering
 created_at: 2025-12-07T11:29:37Z
-updated_at: 2025-12-07T19:01:06Z
+updated_at: 2025-12-08T17:02:44Z
 ---
 
 

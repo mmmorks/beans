@@ -1,12 +1,13 @@
 ---
 title: Use beans as a release management tool
-status: todo
+status: backlog
 type: idea
 tags:
     - cli
     - changelog
+    - idea
 created_at: 2025-12-07T12:30:19Z
-updated_at: 2025-12-07T19:00:57Z
+updated_at: 2025-12-08T17:02:44Z
 ---
 
 ## Overview

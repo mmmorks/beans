@@ -1,12 +1,12 @@
 ---
 title: Show relationship counts in list output
-status: todo
+status: backlog
 type: feature
 tags:
     - cli
     - relationships
 created_at: 2025-12-07T11:29:37Z
-updated_at: 2025-12-07T19:01:13Z
+updated_at: 2025-12-08T17:02:44Z
 ---
 
 
