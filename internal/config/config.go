@@ -20,11 +20,11 @@ const (
 // DefaultStatuses defines the hardcoded status configuration.
 // Statuses are not configurable - they are hardcoded like types.
 var DefaultStatuses = []StatusConfig{
-	{Name: "backlog", Color: "gray", Description: "Not yet ready to be worked on"},
+	{Name: "backlog", Color: "blue", Description: "Not yet ready to be worked on"},
 	{Name: "todo", Color: "green", Description: "Ready to be worked on"},
 	{Name: "in-progress", Color: "yellow", Description: "Currently being worked on"},
-	{Name: "completed", Color: "cyan", Archive: true, Description: "Finished successfully"},
-	{Name: "scrapped", Color: "red", Archive: true, Description: "Will not be done"},
+	{Name: "completed", Color: "gray", Archive: true, Description: "Finished successfully"},
+	{Name: "scrapped", Color: "gray", Archive: true, Description: "Will not be done"},
 }
 
 // DefaultTypes defines the default type configuration.
