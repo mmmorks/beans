@@ -1,9 +1,9 @@
 ---
 title: 0.2.0 - First Public Release
-status: todo
+status: completed
 type: milestone
 created_at: 2025-12-08T09:43:13Z
-updated_at: 2025-12-08T09:43:13Z
+updated_at: 2025-12-08T14:58:13Z
 ---
 
 The first public release of beans, the agentic-first issue tracker.
