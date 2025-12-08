@@ -67,22 +67,20 @@ func TestExecuteQuery(t *testing.T) {
 			t.Fatalf("executeQuery() error = %v", err)
 		}
 
-		var response struct {
-			Data struct {
-				Beans []struct {
-					ID     string `json:"id"`
-					Title  string `json:"title"`
-					Status string `json:"status"`
-				} `json:"beans"`
-			} `json:"data"`
+		var data struct {
+			Beans []struct {
+				ID     string `json:"id"`
+				Title  string `json:"title"`
+				Status string `json:"status"`
+			} `json:"beans"`
 		}
 
-		if err := json.Unmarshal(result, &response); err != nil {
+		if err := json.Unmarshal(result, &data); err != nil {
 			t.Fatalf("failed to parse response: %v", err)
 		}
 
-		if len(response.Data.Beans) != 3 {
-			t.Errorf("expected 3 beans, got %d", len(response.Data.Beans))
+		if len(data.Beans) != 3 {
+			t.Errorf("expected 3 beans, got %d", len(data.Beans))
 		}
 	})
 
@@ -93,24 +91,22 @@ func TestExecuteQuery(t *testing.T) {
 			t.Fatalf("executeQuery() error = %v", err)
 		}
 
-		var response struct {
-			Data struct {
-				Bean struct {
-					ID    string `json:"id"`
-					Title string `json:"title"`
-				} `json:"bean"`
-			} `json:"data"`
+		var data struct {
+			Bean struct {
+				ID    string `json:"id"`
+				Title string `json:"title"`
+			} `json:"bean"`
 		}
 
-		if err := json.Unmarshal(result, &response); err != nil {
+		if err := json.Unmarshal(result, &data); err != nil {
 			t.Fatalf("failed to parse response: %v", err)
 		}
 
-		if response.Data.Bean.ID != "test-1" {
-			t.Errorf("expected id 'test-1', got %q", response.Data.Bean.ID)
+		if data.Bean.ID != "test-1" {
+			t.Errorf("expected id 'test-1', got %q", data.Bean.ID)
 		}
-		if response.Data.Bean.Title != "First Bean" {
-			t.Errorf("expected title 'First Bean', got %q", response.Data.Bean.Title)
+		if data.Bean.Title != "First Bean" {
+			t.Errorf("expected title 'First Bean', got %q", data.Bean.Title)
 		}
 	})
 
@@ -121,23 +117,21 @@ func TestExecuteQuery(t *testing.T) {
 			t.Fatalf("executeQuery() error = %v", err)
 		}
 
-		var response struct {
-			Data struct {
-				Beans []struct {
-					ID string `json:"id"`
-				} `json:"beans"`
-			} `json:"data"`
+		var data struct {
+			Beans []struct {
+				ID string `json:"id"`
+			} `json:"beans"`
 		}
 
-		if err := json.Unmarshal(result, &response); err != nil {
+		if err := json.Unmarshal(result, &data); err != nil {
 			t.Fatalf("failed to parse response: %v", err)
 		}
 
-		if len(response.Data.Beans) != 1 {
-			t.Errorf("expected 1 bean with status 'todo', got %d", len(response.Data.Beans))
+		if len(data.Beans) != 1 {
+			t.Errorf("expected 1 bean with status 'todo', got %d", len(data.Beans))
 		}
-		if len(response.Data.Beans) > 0 && response.Data.Beans[0].ID != "test-1" {
-			t.Errorf("expected bean id 'test-1', got %q", response.Data.Beans[0].ID)
+		if len(data.Beans) > 0 && data.Beans[0].ID != "test-1" {
+			t.Errorf("expected bean id 'test-1', got %q", data.Beans[0].ID)
 		}
 	})
 
@@ -151,21 +145,19 @@ func TestExecuteQuery(t *testing.T) {
 			t.Fatalf("executeQuery() error = %v", err)
 		}
 
-		var response struct {
-			Data struct {
-				Bean struct {
-					ID    string `json:"id"`
-					Title string `json:"title"`
-				} `json:"bean"`
-			} `json:"data"`
+		var data struct {
+			Bean struct {
+				ID    string `json:"id"`
+				Title string `json:"title"`
+			} `json:"bean"`
 		}
 
-		if err := json.Unmarshal(result, &response); err != nil {
+		if err := json.Unmarshal(result, &data); err != nil {
 			t.Fatalf("failed to parse response: %v", err)
 		}
 
-		if response.Data.Bean.ID != "test-2" {
-			t.Errorf("expected id 'test-2', got %q", response.Data.Bean.ID)
+		if data.Bean.ID != "test-2" {
+			t.Errorf("expected id 'test-2', got %q", data.Bean.ID)
 		}
 	})
 
@@ -176,42 +168,29 @@ func TestExecuteQuery(t *testing.T) {
 			t.Fatalf("executeQuery() error = %v", err)
 		}
 
-		var response struct {
-			Data struct {
-				Bean *struct {
-					ID string `json:"id"`
-				} `json:"bean"`
-			} `json:"data"`
+		var data struct {
+			Bean *struct {
+				ID string `json:"id"`
+			} `json:"bean"`
 		}
 
-		if err := json.Unmarshal(result, &response); err != nil {
+		if err := json.Unmarshal(result, &data); err != nil {
 			t.Fatalf("failed to parse response: %v", err)
 		}
 
-		if response.Data.Bean != nil {
-			t.Errorf("expected null bean, got %+v", response.Data.Bean)
+		if data.Bean != nil {
+			t.Errorf("expected null bean, got %+v", data.Bean)
 		}
 	})
 
 	t.Run("invalid query returns error", func(t *testing.T) {
 		query := `{ invalid { field } }`
-		result, err := executeQuery(query, nil, "")
-		if err != nil {
-			t.Fatalf("executeQuery() error = %v", err)
+		_, err := executeQuery(query, nil, "")
+		if err == nil {
+			t.Fatal("expected error for invalid query, got nil")
 		}
-
-		var response struct {
-			Errors []struct {
-				Message string `json:"message"`
-			} `json:"errors"`
-		}
-
-		if err := json.Unmarshal(result, &response); err != nil {
-			t.Fatalf("failed to parse response: %v", err)
-		}
-
-		if len(response.Errors) == 0 {
-			t.Error("expected errors in response for invalid query")
+		if !strings.Contains(err.Error(), "graphql") {
+			t.Errorf("expected error to contain 'graphql', got %q", err.Error())
 		}
 	})
 }
@@ -262,27 +241,25 @@ func TestExecuteQueryWithRelationships(t *testing.T) {
 			t.Fatalf("executeQuery() error = %v", err)
 		}
 
-		var response struct {
-			Data struct {
-				Bean struct {
-					ID     string `json:"id"`
-					Parent *struct {
-						ID    string `json:"id"`
-						Title string `json:"title"`
-					} `json:"parent"`
-				} `json:"bean"`
-			} `json:"data"`
+		var data struct {
+			Bean struct {
+				ID     string `json:"id"`
+				Parent *struct {
+					ID    string `json:"id"`
+					Title string `json:"title"`
+				} `json:"parent"`
+			} `json:"bean"`
 		}
 
-		if err := json.Unmarshal(result, &response); err != nil {
+		if err := json.Unmarshal(result, &data); err != nil {
 			t.Fatalf("failed to parse response: %v", err)
 		}
 
-		if response.Data.Bean.Parent == nil {
+		if data.Bean.Parent == nil {
 			t.Fatal("expected parent to be set")
 		}
-		if response.Data.Bean.Parent.ID != "parent-1" {
-			t.Errorf("expected parent id 'parent-1', got %q", response.Data.Bean.Parent.ID)
+		if data.Bean.Parent.ID != "parent-1" {
+			t.Errorf("expected parent id 'parent-1', got %q", data.Bean.Parent.ID)
 		}
 	})
 
@@ -293,27 +270,25 @@ func TestExecuteQueryWithRelationships(t *testing.T) {
 			t.Fatalf("executeQuery() error = %v", err)
 		}
 
-		var response struct {
-			Data struct {
-				Bean struct {
-					ID       string `json:"id"`
-					Children []struct {
-						ID    string `json:"id"`
-						Title string `json:"title"`
-					} `json:"children"`
-				} `json:"bean"`
-			} `json:"data"`
+		var data struct {
+			Bean struct {
+				ID       string `json:"id"`
+				Children []struct {
+					ID    string `json:"id"`
+					Title string `json:"title"`
+				} `json:"children"`
+			} `json:"bean"`
 		}
 
-		if err := json.Unmarshal(result, &response); err != nil {
+		if err := json.Unmarshal(result, &data); err != nil {
 			t.Fatalf("failed to parse response: %v", err)
 		}
 
-		if len(response.Data.Bean.Children) != 1 {
-			t.Errorf("expected 1 child, got %d", len(response.Data.Bean.Children))
+		if len(data.Bean.Children) != 1 {
+			t.Errorf("expected 1 child, got %d", len(data.Bean.Children))
 		}
-		if len(response.Data.Bean.Children) > 0 && response.Data.Bean.Children[0].ID != "child-1" {
-			t.Errorf("expected child id 'child-1', got %q", response.Data.Bean.Children[0].ID)
+		if len(data.Bean.Children) > 0 && data.Bean.Children[0].ID != "child-1" {
+			t.Errorf("expected child id 'child-1', got %q", data.Bean.Children[0].ID)
 		}
 	})
 
@@ -324,27 +299,25 @@ func TestExecuteQueryWithRelationships(t *testing.T) {
 			t.Fatalf("executeQuery() error = %v", err)
 		}
 
-		var response struct {
-			Data struct {
-				Bean struct {
-					ID        string `json:"id"`
-					BlockedBy []struct {
-						ID    string `json:"id"`
-						Title string `json:"title"`
-					} `json:"blockedBy"`
-				} `json:"bean"`
-			} `json:"data"`
+		var data struct {
+			Bean struct {
+				ID        string `json:"id"`
+				BlockedBy []struct {
+					ID    string `json:"id"`
+					Title string `json:"title"`
+				} `json:"blockedBy"`
+			} `json:"bean"`
 		}
 
-		if err := json.Unmarshal(result, &response); err != nil {
+		if err := json.Unmarshal(result, &data); err != nil {
 			t.Fatalf("failed to parse response: %v", err)
 		}
 
-		if len(response.Data.Bean.BlockedBy) != 1 {
-			t.Errorf("expected 1 blocker, got %d", len(response.Data.Bean.BlockedBy))
+		if len(data.Bean.BlockedBy) != 1 {
+			t.Errorf("expected 1 blocker, got %d", len(data.Bean.BlockedBy))
 		}
-		if len(response.Data.Bean.BlockedBy) > 0 && response.Data.Bean.BlockedBy[0].ID != "blocker-1" {
-			t.Errorf("expected blocker id 'blocker-1', got %q", response.Data.Bean.BlockedBy[0].ID)
+		if len(data.Bean.BlockedBy) > 0 && data.Bean.BlockedBy[0].ID != "blocker-1" {
+			t.Errorf("expected blocker id 'blocker-1', got %q", data.Bean.BlockedBy[0].ID)
 		}
 	})
 
@@ -355,27 +328,25 @@ func TestExecuteQueryWithRelationships(t *testing.T) {
 			t.Fatalf("executeQuery() error = %v", err)
 		}
 
-		var response struct {
-			Data struct {
-				Bean struct {
-					ID     string `json:"id"`
-					Blocks []struct {
-						ID    string `json:"id"`
-						Title string `json:"title"`
-					} `json:"blocks"`
-				} `json:"bean"`
-			} `json:"data"`
+		var data struct {
+			Bean struct {
+				ID     string `json:"id"`
+				Blocks []struct {
+					ID    string `json:"id"`
+					Title string `json:"title"`
+				} `json:"blocks"`
+			} `json:"bean"`
 		}
 
-		if err := json.Unmarshal(result, &response); err != nil {
+		if err := json.Unmarshal(result, &data); err != nil {
 			t.Fatalf("failed to parse response: %v", err)
 		}
 
-		if len(response.Data.Bean.Blocks) != 1 {
-			t.Errorf("expected 1 blocked bean, got %d", len(response.Data.Bean.Blocks))
+		if len(data.Bean.Blocks) != 1 {
+			t.Errorf("expected 1 blocked bean, got %d", len(data.Bean.Blocks))
 		}
-		if len(response.Data.Bean.Blocks) > 0 && response.Data.Bean.Blocks[0].ID != "child-1" {
-			t.Errorf("expected blocked id 'child-1', got %q", response.Data.Bean.Blocks[0].ID)
+		if len(data.Bean.Blocks) > 0 && data.Bean.Blocks[0].ID != "child-1" {
+			t.Errorf("expected blocked id 'child-1', got %q", data.Bean.Blocks[0].ID)
 		}
 	})
 }
@@ -424,21 +395,19 @@ func TestExecuteQueryWithFilters(t *testing.T) {
 			t.Fatalf("executeQuery() error = %v", err)
 		}
 
-		var response struct {
-			Data struct {
-				Beans []struct {
-					ID   string `json:"id"`
-					Type string `json:"type"`
-				} `json:"beans"`
-			} `json:"data"`
+		var data struct {
+			Beans []struct {
+				ID   string `json:"id"`
+				Type string `json:"type"`
+			} `json:"beans"`
 		}
 
-		if err := json.Unmarshal(result, &response); err != nil {
+		if err := json.Unmarshal(result, &data); err != nil {
 			t.Fatalf("failed to parse response: %v", err)
 		}
 
-		if len(response.Data.Beans) != 1 {
-			t.Errorf("expected 1 bean with type 'bug', got %d", len(response.Data.Beans))
+		if len(data.Beans) != 1 {
+			t.Errorf("expected 1 bean with type 'bug', got %d", len(data.Beans))
 		}
 	})
 
@@ -449,21 +418,19 @@ func TestExecuteQueryWithFilters(t *testing.T) {
 			t.Fatalf("executeQuery() error = %v", err)
 		}
 
-		var response struct {
-			Data struct {
-				Beans []struct {
-					ID       string `json:"id"`
-					Priority string `json:"priority"`
-				} `json:"beans"`
-			} `json:"data"`
+		var data struct {
+			Beans []struct {
+				ID       string `json:"id"`
+				Priority string `json:"priority"`
+			} `json:"beans"`
 		}
 
-		if err := json.Unmarshal(result, &response); err != nil {
+		if err := json.Unmarshal(result, &data); err != nil {
 			t.Fatalf("failed to parse response: %v", err)
 		}
 
-		if len(response.Data.Beans) != 2 {
-			t.Errorf("expected 2 beans with priority 'critical' or 'high', got %d", len(response.Data.Beans))
+		if len(data.Beans) != 2 {
+			t.Errorf("expected 2 beans with priority 'critical' or 'high', got %d", len(data.Beans))
 		}
 	})
 
@@ -474,21 +441,19 @@ func TestExecuteQueryWithFilters(t *testing.T) {
 			t.Fatalf("executeQuery() error = %v", err)
 		}
 
-		var response struct {
-			Data struct {
-				Beans []struct {
-					ID   string   `json:"id"`
-					Tags []string `json:"tags"`
-				} `json:"beans"`
-			} `json:"data"`
+		var data struct {
+			Beans []struct {
+				ID   string   `json:"id"`
+				Tags []string `json:"tags"`
+			} `json:"beans"`
 		}
 
-		if err := json.Unmarshal(result, &response); err != nil {
+		if err := json.Unmarshal(result, &data); err != nil {
 			t.Fatalf("failed to parse response: %v", err)
 		}
 
-		if len(response.Data.Beans) != 2 {
-			t.Errorf("expected 2 beans with tag 'frontend', got %d", len(response.Data.Beans))
+		if len(data.Beans) != 2 {
+			t.Errorf("expected 2 beans with tag 'frontend', got %d", len(data.Beans))
 		}
 	})
 
@@ -499,23 +464,21 @@ func TestExecuteQueryWithFilters(t *testing.T) {
 			t.Fatalf("executeQuery() error = %v", err)
 		}
 
-		var response struct {
-			Data struct {
-				Beans []struct {
-					ID     string `json:"id"`
-					Status string `json:"status"`
-				} `json:"beans"`
-			} `json:"data"`
+		var data struct {
+			Beans []struct {
+				ID     string `json:"id"`
+				Status string `json:"status"`
+			} `json:"beans"`
 		}
 
-		if err := json.Unmarshal(result, &response); err != nil {
+		if err := json.Unmarshal(result, &data); err != nil {
 			t.Fatalf("failed to parse response: %v", err)
 		}
 
-		if len(response.Data.Beans) != 2 {
-			t.Errorf("expected 2 beans (excluding completed), got %d", len(response.Data.Beans))
+		if len(data.Beans) != 2 {
+			t.Errorf("expected 2 beans (excluding completed), got %d", len(data.Beans))
 		}
-		for _, b := range response.Data.Beans {
+		for _, b := range data.Beans {
 			if b.Status == "completed" {
 				t.Errorf("should not include completed beans, got bean with status %q", b.Status)
 			}
@@ -529,20 +492,18 @@ func TestExecuteQueryWithFilters(t *testing.T) {
 			t.Fatalf("executeQuery() error = %v", err)
 		}
 
-		var response struct {
-			Data struct {
-				Beans []struct {
-					ID string `json:"id"`
-				} `json:"beans"`
-			} `json:"data"`
+		var data struct {
+			Beans []struct {
+				ID string `json:"id"`
+			} `json:"beans"`
 		}
 
-		if err := json.Unmarshal(result, &response); err != nil {
+		if err := json.Unmarshal(result, &data); err != nil {
 			t.Fatalf("failed to parse response: %v", err)
 		}
 
-		if len(response.Data.Beans) != 2 {
-			t.Errorf("expected 2 beans matching combined filters, got %d", len(response.Data.Beans))
+		if len(data.Beans) != 2 {
+			t.Errorf("expected 2 beans matching combined filters, got %d", len(data.Beans))
 		}
 	})
 }

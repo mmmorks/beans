@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
 	"github.com/vektah/gqlparser/v2/formatter"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 	"hmans.dev/beans/internal/graph"
 )
 
@@ -132,6 +133,8 @@ func readFromStdin() (string, error) {
 }
 
 // executeQuery runs a GraphQL query against the beans core.
+// On success, it returns just the data portion of the response.
+// On error, it returns an error so the CLI can handle it appropriately.
 func executeQuery(query string, variables map[string]any, operationName string) ([]byte, error) {
 	es := graph.NewExecutableSchema(graph.Config{
 		Resolvers: &graph.Resolver{Core: core},
@@ -148,14 +151,33 @@ func executeQuery(query string, variables map[string]any, operationName string) 
 
 	opCtx, errs := exec.CreateOperationContext(ctx, params)
 	if errs != nil {
-		return json.Marshal(graphql.Response{Errors: errs})
+		return nil, formatGraphQLErrors(errs)
 	}
 
 	ctx = graphql.WithOperationContext(ctx, opCtx)
 	handler, ctx := exec.DispatchOperation(ctx, opCtx)
 	resp := handler(ctx)
 
-	return json.Marshal(resp)
+	if len(resp.Errors) > 0 {
+		return nil, formatGraphQLErrors(resp.Errors)
+	}
+
+	return resp.Data, nil
+}
+
+// formatGraphQLErrors formats GraphQL errors into a single error.
+func formatGraphQLErrors(errs gqlerror.List) error {
+	if len(errs) == 0 {
+		return nil
+	}
+	if len(errs) == 1 {
+		return fmt.Errorf("graphql: %s", errs[0].Message)
+	}
+	var msgs []string
+	for _, e := range errs {
+		msgs = append(msgs, e.Message)
+	}
+	return fmt.Errorf("graphql errors:\n  %s", strings.Join(msgs, "\n  "))
 }
 
 // prettyPrint outputs the JSON with colors and indentation.
