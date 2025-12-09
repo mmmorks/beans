@@ -1,9 +1,10 @@
 ---
 title: GraphQL Migration Epic
-status: in-progress
+status: completed
 type: epic
+priority: normal
 created_at: 2025-12-09T12:04:53Z
-updated_at: 2025-12-09T12:04:53Z
+updated_at: 2025-12-09T13:18:40Z
 ---
 
 ## Summary

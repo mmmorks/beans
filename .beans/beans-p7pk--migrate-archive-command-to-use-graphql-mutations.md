@@ -1,10 +1,10 @@
 ---
 title: Migrate 'archive' command to use GraphQL mutations
-status: todo
+status: scrapped
 type: task
 priority: normal
 created_at: 2025-12-09T12:04:26Z
-updated_at: 2025-12-09T12:06:08Z
+updated_at: 2025-12-09T13:18:36Z
 links:
     - blocks: beans-wp2o
     - parent: beans-7ao1

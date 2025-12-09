@@ -1,10 +1,10 @@
 ---
 title: Migrate 'check' command to use GraphQL
-status: todo
+status: scrapped
 type: task
 priority: normal
 created_at: 2025-12-09T12:04:04Z
-updated_at: 2025-12-09T12:06:08Z
+updated_at: 2025-12-09T13:18:36Z
 links:
     - parent: beans-7ao1
 ---
