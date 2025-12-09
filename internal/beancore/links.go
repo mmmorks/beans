@@ -1,7 +1,7 @@
 package beancore
 
 import (
-	"hmans.dev/beans/internal/bean"
+	"github.com/hmans/beans/internal/bean"
 )
 
 // IncomingLink represents a link from another bean to a target bean.

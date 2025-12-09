@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"hmans.dev/beans/internal/bean"
-	"hmans.dev/beans/internal/beancore"
-	"hmans.dev/beans/internal/config"
-	"hmans.dev/beans/internal/graph/model"
+	"github.com/hmans/beans/internal/bean"
+	"github.com/hmans/beans/internal/beancore"
+	"github.com/hmans/beans/internal/config"
+	"github.com/hmans/beans/internal/graph/model"
 )
 
 func setupTestResolver(t *testing.T) (*Resolver, *beancore.Core) {

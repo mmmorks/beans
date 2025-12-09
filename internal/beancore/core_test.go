@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"hmans.dev/beans/internal/bean"
-	"hmans.dev/beans/internal/config"
+	"github.com/hmans/beans/internal/bean"
+	"github.com/hmans/beans/internal/config"
 )
 
 func setupTestCore(t *testing.T) (*Core, string) {

@@ -1,6 +1,6 @@
 package graph
 
-import "hmans.dev/beans/internal/beancore"
+import "github.com/hmans/beans/internal/beancore"
 
 //go:generate go tool gqlgen generate
 

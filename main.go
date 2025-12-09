@@ -1,6 +1,6 @@
 package main
 
-import "hmans.dev/beans/cmd"
+import "github.com/hmans/beans/cmd"
 
 func main() {
 	cmd.Execute()

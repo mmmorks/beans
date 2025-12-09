@@ -5,8 +5,8 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
-	"hmans.dev/beans/internal/beancore"
-	"hmans.dev/beans/internal/output"
+	"github.com/hmans/beans/internal/beancore"
+	"github.com/hmans/beans/internal/output"
 )
 
 var (

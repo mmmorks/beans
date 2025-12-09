@@ -12,7 +12,7 @@ import (
 	"text/template"
 
 	"github.com/spf13/cobra"
-	"hmans.dev/beans/internal/bean"
+	"github.com/hmans/beans/internal/bean"
 )
 
 //go:embed roadmap.tmpl

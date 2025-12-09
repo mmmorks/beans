@@ -3,7 +3,7 @@ package beancore
 import (
 	"testing"
 
-	"hmans.dev/beans/internal/bean"
+	"github.com/hmans/beans/internal/bean"
 )
 
 func TestFindIncomingLinks(t *testing.T) {

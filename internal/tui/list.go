@@ -8,11 +8,11 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"hmans.dev/beans/internal/bean"
-	"hmans.dev/beans/internal/config"
-	"hmans.dev/beans/internal/graph"
-	"hmans.dev/beans/internal/graph/model"
-	"hmans.dev/beans/internal/ui"
+	"github.com/hmans/beans/internal/bean"
+	"github.com/hmans/beans/internal/config"
+	"github.com/hmans/beans/internal/graph"
+	"github.com/hmans/beans/internal/graph/model"
+	"github.com/hmans/beans/internal/ui"
 )
 
 // beanItem wraps a Bean to implement list.Item

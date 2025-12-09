@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"hmans.dev/beans/internal/output"
+	"github.com/hmans/beans/internal/output"
 )
 
 var (

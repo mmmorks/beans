@@ -13,9 +13,9 @@ run = "go test ./..."
 depends = "codegen"
 run = """
 go build -ldflags "\
-  -X hmans.dev/beans/cmd/beans.version=$(git describe --tags --always --dirty 2>/dev/null || echo dev) \
-  -X hmans.dev/beans/cmd/beans.commit=$(git rev-parse --short HEAD 2>/dev/null || echo unknown) \
-  -X hmans.dev/beans/cmd/beans.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  -X github.com/hmans/beans/cmd/beans.version=$(git describe --tags --always --dirty 2>/dev/null || echo dev) \
+  -X github.com/hmans/beans/cmd/beans.commit=$(git rev-parse --short HEAD 2>/dev/null || echo unknown) \
+  -X github.com/hmans/beans/cmd/beans.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   .
 """
 

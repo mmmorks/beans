@@ -6,7 +6,7 @@ import (
 	"text/template"
 
 	"github.com/spf13/cobra"
-	"hmans.dev/beans/internal/config"
+	"github.com/hmans/beans/internal/config"
 )
 
 //go:embed prompt.tmpl

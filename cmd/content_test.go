@@ -3,7 +3,7 @@ package cmd
 import (
 	"testing"
 
-	"hmans.dev/beans/internal/bean"
+	"github.com/hmans/beans/internal/bean"
 )
 
 func TestParseLink(t *testing.T) {

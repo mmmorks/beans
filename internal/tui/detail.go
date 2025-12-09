@@ -13,10 +13,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
-	"hmans.dev/beans/internal/bean"
-	"hmans.dev/beans/internal/config"
-	"hmans.dev/beans/internal/graph"
-	"hmans.dev/beans/internal/ui"
+	"github.com/hmans/beans/internal/bean"
+	"github.com/hmans/beans/internal/config"
+	"github.com/hmans/beans/internal/graph"
+	"github.com/hmans/beans/internal/ui"
 )
 
 // Cached glamour renderer - initialized once per width

@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"hmans.dev/beans/internal/bean"
-	"hmans.dev/beans/internal/config"
+	"github.com/hmans/beans/internal/bean"
+	"github.com/hmans/beans/internal/config"
 )
 
 const BeansDir = ".beans"

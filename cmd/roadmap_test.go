@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"hmans.dev/beans/internal/bean"
-	"hmans.dev/beans/internal/config"
+	"github.com/hmans/beans/internal/bean"
+	"github.com/hmans/beans/internal/config"
 )
 
 // mockConfig implements the StatusNames interface for testing.

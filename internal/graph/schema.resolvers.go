@@ -8,9 +8,9 @@ package graph
 import (
 	"context"
 
-	"hmans.dev/beans/internal/bean"
-	"hmans.dev/beans/internal/beancore"
-	"hmans.dev/beans/internal/graph/model"
+	"github.com/hmans/beans/internal/bean"
+	"github.com/hmans/beans/internal/beancore"
+	"github.com/hmans/beans/internal/graph/model"
 )
 
 // Links is the resolver for the links field.

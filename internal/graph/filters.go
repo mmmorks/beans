@@ -1,9 +1,9 @@
 package graph
 
 import (
-	"hmans.dev/beans/internal/bean"
-	"hmans.dev/beans/internal/beancore"
-	"hmans.dev/beans/internal/graph/model"
+	"github.com/hmans/beans/internal/bean"
+	"github.com/hmans/beans/internal/beancore"
+	"github.com/hmans/beans/internal/graph/model"
 )
 
 // filterByField filters beans to include only those where getter returns a value in values (OR logic).

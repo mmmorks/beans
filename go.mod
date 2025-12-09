@@ -1,4 +1,4 @@
-module hmans.dev/beans
+module github.com/hmans/beans
 
 go 1.24.6
 

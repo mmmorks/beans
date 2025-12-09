@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"hmans.dev/beans/internal/beancore"
-	"hmans.dev/beans/internal/config"
+	"github.com/hmans/beans/internal/beancore"
+	"github.com/hmans/beans/internal/config"
 )
 
 var core *beancore.Core

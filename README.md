@@ -25,6 +25,14 @@ Either download Beans from the [Releases section](https://github.com/hmans/beans
 brew install hmans/beans/beans
 ```
 
+Alternatively, install directly via Go:
+
+```bash
+go install github.com/hmans/beans@latest
+```
+
+## Setup
+
 Now initialize Beans in your project:
 
 ```bash

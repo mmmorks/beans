@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"hmans.dev/beans/internal/tui"
+	"github.com/hmans/beans/internal/tui"
 )
 
 var tuiCmd = &cobra.Command{

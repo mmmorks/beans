@@ -15,10 +15,10 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
+	"github.com/hmans/beans/internal/bean"
+	"github.com/hmans/beans/internal/graph/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
-	"hmans.dev/beans/internal/bean"
-	"hmans.dev/beans/internal/graph/model"
 )
 
 // region    ************************** generated!.gotpl **************************
@@ -406,7 +406,7 @@ func (ec *executionContext) field_Query_bean_args(ctx context.Context, rawArgs m
 func (ec *executionContext) field_Query_beans_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOBeanFilter2ᚖhmansᚗdevᚋbeansᚋinternalᚋgraphᚋmodelᚐBeanFilter)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "filter", ec.unmarshalOBeanFilter2ᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋgraphᚋmodelᚐBeanFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -795,7 +795,7 @@ func (ec *executionContext) _Bean_links(ctx context.Context, field graphql.Colle
 			return ec.resolvers.Bean().Links(ctx, obj)
 		},
 		nil,
-		ec.marshalNLink2ᚕᚖhmansᚗdevᚋbeansᚋinternalᚋbeanᚐLinkᚄ,
+		ec.marshalNLink2ᚕᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐLinkᚄ,
 		true,
 		true,
 	)
@@ -832,7 +832,7 @@ func (ec *executionContext) _Bean_blockedBy(ctx context.Context, field graphql.C
 			return ec.resolvers.Bean().BlockedBy(ctx, obj)
 		},
 		nil,
-		ec.marshalNBean2ᚕᚖhmansᚗdevᚋbeansᚋinternalᚋbeanᚐBeanᚄ,
+		ec.marshalNBean2ᚕᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐBeanᚄ,
 		true,
 		true,
 	)
@@ -899,7 +899,7 @@ func (ec *executionContext) _Bean_blocks(ctx context.Context, field graphql.Coll
 			return ec.resolvers.Bean().Blocks(ctx, obj)
 		},
 		nil,
-		ec.marshalNBean2ᚕᚖhmansᚗdevᚋbeansᚋinternalᚋbeanᚐBeanᚄ,
+		ec.marshalNBean2ᚕᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐBeanᚄ,
 		true,
 		true,
 	)
@@ -966,7 +966,7 @@ func (ec *executionContext) _Bean_parent(ctx context.Context, field graphql.Coll
 			return ec.resolvers.Bean().Parent(ctx, obj)
 		},
 		nil,
-		ec.marshalOBean2ᚖhmansᚗdevᚋbeansᚋinternalᚋbeanᚐBean,
+		ec.marshalOBean2ᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐBean,
 		true,
 		false,
 	)
@@ -1033,7 +1033,7 @@ func (ec *executionContext) _Bean_children(ctx context.Context, field graphql.Co
 			return ec.resolvers.Bean().Children(ctx, obj)
 		},
 		nil,
-		ec.marshalNBean2ᚕᚖhmansᚗdevᚋbeansᚋinternalᚋbeanᚐBeanᚄ,
+		ec.marshalNBean2ᚕᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐBeanᚄ,
 		true,
 		true,
 	)
@@ -1100,7 +1100,7 @@ func (ec *executionContext) _Bean_duplicates(ctx context.Context, field graphql.
 			return ec.resolvers.Bean().Duplicates(ctx, obj)
 		},
 		nil,
-		ec.marshalNBean2ᚕᚖhmansᚗdevᚋbeansᚋinternalᚋbeanᚐBeanᚄ,
+		ec.marshalNBean2ᚕᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐBeanᚄ,
 		true,
 		true,
 	)
@@ -1167,7 +1167,7 @@ func (ec *executionContext) _Bean_related(ctx context.Context, field graphql.Col
 			return ec.resolvers.Bean().Related(ctx, obj)
 		},
 		nil,
-		ec.marshalNBean2ᚕᚖhmansᚗdevᚋbeansᚋinternalᚋbeanᚐBeanᚄ,
+		ec.marshalNBean2ᚕᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐBeanᚄ,
 		true,
 		true,
 	)
@@ -1292,7 +1292,7 @@ func (ec *executionContext) _Link_targetBean(ctx context.Context, field graphql.
 			return ec.resolvers.Link().TargetBean(ctx, obj)
 		},
 		nil,
-		ec.marshalOBean2ᚖhmansᚗdevᚋbeansᚋinternalᚋbeanᚐBean,
+		ec.marshalOBean2ᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐBean,
 		true,
 		false,
 	)
@@ -1360,7 +1360,7 @@ func (ec *executionContext) _Query_bean(ctx context.Context, field graphql.Colle
 			return ec.resolvers.Query().Bean(ctx, fc.Args["id"].(string))
 		},
 		nil,
-		ec.marshalOBean2ᚖhmansᚗdevᚋbeansᚋinternalᚋbeanᚐBean,
+		ec.marshalOBean2ᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐBean,
 		true,
 		false,
 	)
@@ -1439,7 +1439,7 @@ func (ec *executionContext) _Query_beans(ctx context.Context, field graphql.Coll
 			return ec.resolvers.Query().Beans(ctx, fc.Args["filter"].(*model.BeanFilter))
 		},
 		nil,
-		ec.marshalNBean2ᚕᚖhmansᚗdevᚋbeansᚋinternalᚋbeanᚐBeanᚄ,
+		ec.marshalNBean2ᚕᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐBeanᚄ,
 		true,
 		true,
 	)
@@ -3133,28 +3133,28 @@ func (ec *executionContext) unmarshalInputBeanFilter(ctx context.Context, obj an
 			it.ExcludeTags = data
 		case "hasLinks":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasLinks"))
-			data, err := ec.unmarshalOLinkFilter2ᚕᚖhmansᚗdevᚋbeansᚋinternalᚋgraphᚋmodelᚐLinkFilterᚄ(ctx, v)
+			data, err := ec.unmarshalOLinkFilter2ᚕᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋgraphᚋmodelᚐLinkFilterᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.HasLinks = data
 		case "linkedAs":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedAs"))
-			data, err := ec.unmarshalOLinkFilter2ᚕᚖhmansᚗdevᚋbeansᚋinternalᚋgraphᚋmodelᚐLinkFilterᚄ(ctx, v)
+			data, err := ec.unmarshalOLinkFilter2ᚕᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋgraphᚋmodelᚐLinkFilterᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.LinkedAs = data
 		case "noLinks":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("noLinks"))
-			data, err := ec.unmarshalOLinkFilter2ᚕᚖhmansᚗdevᚋbeansᚋinternalᚋgraphᚋmodelᚐLinkFilterᚄ(ctx, v)
+			data, err := ec.unmarshalOLinkFilter2ᚕᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋgraphᚋmodelᚐLinkFilterᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.NoLinks = data
 		case "noLinkedAs":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("noLinkedAs"))
-			data, err := ec.unmarshalOLinkFilter2ᚕᚖhmansᚗdevᚋbeansᚋinternalᚋgraphᚋmodelᚐLinkFilterᚄ(ctx, v)
+			data, err := ec.unmarshalOLinkFilter2ᚕᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋgraphᚋmodelᚐLinkFilterᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4045,7 +4045,7 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
-func (ec *executionContext) marshalNBean2ᚕᚖhmansᚗdevᚋbeansᚋinternalᚋbeanᚐBeanᚄ(ctx context.Context, sel ast.SelectionSet, v []*bean.Bean) graphql.Marshaler {
+func (ec *executionContext) marshalNBean2ᚕᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐBeanᚄ(ctx context.Context, sel ast.SelectionSet, v []*bean.Bean) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -4069,7 +4069,7 @@ func (ec *executionContext) marshalNBean2ᚕᚖhmansᚗdevᚋbeansᚋinternalᚋ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNBean2ᚖhmansᚗdevᚋbeansᚋinternalᚋbeanᚐBean(ctx, sel, v[i])
+			ret[i] = ec.marshalNBean2ᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐBean(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -4089,7 +4089,7 @@ func (ec *executionContext) marshalNBean2ᚕᚖhmansᚗdevᚋbeansᚋinternalᚋ
 	return ret
 }
 
-func (ec *executionContext) marshalNBean2ᚖhmansᚗdevᚋbeansᚋinternalᚋbeanᚐBean(ctx context.Context, sel ast.SelectionSet, v *bean.Bean) graphql.Marshaler {
+func (ec *executionContext) marshalNBean2ᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐBean(ctx context.Context, sel ast.SelectionSet, v *bean.Bean) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
@@ -4131,7 +4131,7 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
-func (ec *executionContext) marshalNLink2ᚕᚖhmansᚗdevᚋbeansᚋinternalᚋbeanᚐLinkᚄ(ctx context.Context, sel ast.SelectionSet, v []*bean.Link) graphql.Marshaler {
+func (ec *executionContext) marshalNLink2ᚕᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐLinkᚄ(ctx context.Context, sel ast.SelectionSet, v []*bean.Link) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -4155,7 +4155,7 @@ func (ec *executionContext) marshalNLink2ᚕᚖhmansᚗdevᚋbeansᚋinternalᚋ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNLink2ᚖhmansᚗdevᚋbeansᚋinternalᚋbeanᚐLink(ctx, sel, v[i])
+			ret[i] = ec.marshalNLink2ᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐLink(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -4175,7 +4175,7 @@ func (ec *executionContext) marshalNLink2ᚕᚖhmansᚗdevᚋbeansᚋinternalᚋ
 	return ret
 }
 
-func (ec *executionContext) marshalNLink2ᚖhmansᚗdevᚋbeansᚋinternalᚋbeanᚐLink(ctx context.Context, sel ast.SelectionSet, v *bean.Link) graphql.Marshaler {
+func (ec *executionContext) marshalNLink2ᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐLink(ctx context.Context, sel ast.SelectionSet, v *bean.Link) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
@@ -4185,7 +4185,7 @@ func (ec *executionContext) marshalNLink2ᚖhmansᚗdevᚋbeansᚋinternalᚋbea
 	return ec._Link(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNLinkFilter2ᚖhmansᚗdevᚋbeansᚋinternalᚋgraphᚋmodelᚐLinkFilter(ctx context.Context, v any) (*model.LinkFilter, error) {
+func (ec *executionContext) unmarshalNLinkFilter2ᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋgraphᚋmodelᚐLinkFilter(ctx context.Context, v any) (*model.LinkFilter, error) {
 	res, err := ec.unmarshalInputLinkFilter(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
@@ -4511,14 +4511,14 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
-func (ec *executionContext) marshalOBean2ᚖhmansᚗdevᚋbeansᚋinternalᚋbeanᚐBean(ctx context.Context, sel ast.SelectionSet, v *bean.Bean) graphql.Marshaler {
+func (ec *executionContext) marshalOBean2ᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐBean(ctx context.Context, sel ast.SelectionSet, v *bean.Bean) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Bean(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalOBeanFilter2ᚖhmansᚗdevᚋbeansᚋinternalᚋgraphᚋmodelᚐBeanFilter(ctx context.Context, v any) (*model.BeanFilter, error) {
+func (ec *executionContext) unmarshalOBeanFilter2ᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋgraphᚋmodelᚐBeanFilter(ctx context.Context, v any) (*model.BeanFilter, error) {
 	if v == nil {
 		return nil, nil
 	}
@@ -4556,7 +4556,7 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
-func (ec *executionContext) unmarshalOLinkFilter2ᚕᚖhmansᚗdevᚋbeansᚋinternalᚋgraphᚋmodelᚐLinkFilterᚄ(ctx context.Context, v any) ([]*model.LinkFilter, error) {
+func (ec *executionContext) unmarshalOLinkFilter2ᚕᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋgraphᚋmodelᚐLinkFilterᚄ(ctx context.Context, v any) ([]*model.LinkFilter, error) {
 	if v == nil {
 		return nil, nil
 	}
@@ -4566,7 +4566,7 @@ func (ec *executionContext) unmarshalOLinkFilter2ᚕᚖhmansᚗdevᚋbeansᚋint
 	res := make([]*model.LinkFilter, len(vSlice))
 	for i := range vSlice {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalNLinkFilter2ᚖhmansᚗdevᚋbeansᚋinternalᚋgraphᚋmodelᚐLinkFilter(ctx, vSlice[i])
+		res[i], err = ec.unmarshalNLinkFilter2ᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋgraphᚋmodelᚐLinkFilter(ctx, vSlice[i])
 		if err != nil {
 			return nil, err
 		}

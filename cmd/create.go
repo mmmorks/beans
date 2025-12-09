@@ -5,10 +5,10 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"hmans.dev/beans/internal/bean"
-	"hmans.dev/beans/internal/config"
-	"hmans.dev/beans/internal/output"
-	"hmans.dev/beans/internal/ui"
+	"github.com/hmans/beans/internal/bean"
+	"github.com/hmans/beans/internal/config"
+	"github.com/hmans/beans/internal/output"
+	"github.com/hmans/beans/internal/ui"
 )
 
 var (

@@ -4,9 +4,9 @@ import (
 	"context"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"hmans.dev/beans/internal/beancore"
-	"hmans.dev/beans/internal/config"
-	"hmans.dev/beans/internal/graph"
+	"github.com/hmans/beans/internal/beancore"
+	"github.com/hmans/beans/internal/config"
+	"github.com/hmans/beans/internal/graph"
 )
 
 // viewState represents which view is currently active
