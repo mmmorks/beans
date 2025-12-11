@@ -68,31 +68,10 @@ The recommended way to integrate Beans with Claude Code is through the `beans-pr
 /plugin install beans-prime
 ```
 
-> **IMPORTANT:** Restart Claude Code after installing the plugin to ensure it loads correctly.
+> **IMPORTANT:**
+> Restart Claude Code after installing the plugin to ensure it loads correctly.
 
-If you prefer not to use the plugin system, you can manually add the necessary hooks to your Claude Code `settings.json`:
-
-```json
-{
-  // ... other settings ...
-  "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "",
-        "hooks": [{ "type": "command", "command": "beans prime" }]
-      }
-    ],
-    "PreCompact": [
-      {
-        "matcher": "",
-        "hooks": [{ "type": "command", "command": "beans prime" }]
-      }
-    ]
-  }
-}
-```
-
-This runs `beans prime` at session start and before context compaction, injecting instructions that teach Claude to use Beans for task tracking instead of its built-in TodoWrite tool.
+If you prefer not to use the plugin system, you can manually add [the necessary hooks](extras/claude/plugins/beans-prime/hooks/hooks.json) to your Claude Code `settings.json`.
 
 ### Other Agents
 
