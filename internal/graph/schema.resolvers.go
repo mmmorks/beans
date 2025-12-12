@@ -330,8 +330,12 @@ func (r *queryResolver) Beans(ctx context.Context, filter *model.BeanFilter) ([]
 	if filter.NoBlocks != nil && *filter.NoBlocks {
 		result = filterByNoBlocks(result)
 	}
-	if filter.IsBlocked != nil && *filter.IsBlocked {
-		result = filterByIsBlocked(result, r.Core)
+	if filter.IsBlocked != nil {
+		if *filter.IsBlocked {
+			result = filterByIsBlocked(result, r.Core)
+		} else {
+			result = filterByNotBlocked(result, r.Core)
+		}
 	}
 
 	return result, nil

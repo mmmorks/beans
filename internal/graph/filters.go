@@ -187,3 +187,22 @@ func filterByIsBlocked(beans []*bean.Bean, core *beancore.Core) []*bean.Bean {
 	}
 	return result
 }
+
+// filterByNotBlocked filters beans that are NOT blocked by others.
+func filterByNotBlocked(beans []*bean.Bean, core *beancore.Core) []*bean.Bean {
+	var result []*bean.Bean
+	for _, b := range beans {
+		isBlocked := false
+		incoming := core.FindIncomingLinks(b.ID)
+		for _, link := range incoming {
+			if link.LinkType == "blocks" {
+				isBlocked = true
+				break
+			}
+		}
+		if !isBlocked {
+			result = append(result, b)
+		}
+	}
+	return result
+}

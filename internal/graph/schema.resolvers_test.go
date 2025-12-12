@@ -488,7 +488,7 @@ func TestQueryBeansWithParentAndBlocks(t *testing.T) {
 		}
 	})
 
-	t.Run("filter isBlocked", func(t *testing.T) {
+	t.Run("filter isBlocked true", func(t *testing.T) {
 		qr := resolver.Query()
 		isBlockedBool := true
 		filter := &model.BeanFilter{
@@ -503,6 +503,28 @@ func TestQueryBeansWithParentAndBlocks(t *testing.T) {
 		}
 		if got[0].ID != "has-parent" {
 			t.Errorf("Beans()[0].ID = %q, want %q", got[0].ID, "has-parent")
+		}
+	})
+
+	t.Run("filter isBlocked false", func(t *testing.T) {
+		qr := resolver.Query()
+		isBlockedBool := false
+		filter := &model.BeanFilter{
+			IsBlocked: &isBlockedBool,
+		}
+		got, err := qr.Beans(ctx, filter)
+		if err != nil {
+			t.Fatalf("Beans() error = %v", err)
+		}
+		// Should return all beans except "has-parent" (which is blocked by "has-blocks")
+		if len(got) != 2 {
+			t.Errorf("Beans() count = %d, want 2", len(got))
+		}
+		// Verify "has-parent" is not in results
+		for _, b := range got {
+			if b.ID == "has-parent" {
+				t.Errorf("Beans() should not contain blocked bean 'has-parent'")
+			}
 		}
 	})
 
