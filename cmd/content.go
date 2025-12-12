@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/hmans/beans/internal/bean"
-	"github.com/hmans/beans/internal/beancore"
 	"github.com/hmans/beans/internal/output"
 )
 
@@ -39,25 +38,6 @@ func resolveContent(value, file string) (string, error) {
 	}
 
 	return "", nil
-}
-
-// parseLink parses a link in the format "type:id".
-func parseLink(s string) (linkType, targetID string, err error) {
-	parts := strings.SplitN(s, ":", 2)
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		return "", "", fmt.Errorf("invalid link format: %q (expected type:id)", s)
-	}
-	return parts[0], parts[1], nil
-}
-
-// isKnownLinkType checks if a link type is recognized.
-func isKnownLinkType(linkType string) bool {
-	for _, t := range beancore.KnownLinkTypes {
-		if t == linkType {
-			return true
-		}
-	}
-	return false
 }
 
 // applyTags adds tags to a bean, returning an error if any tag is invalid.

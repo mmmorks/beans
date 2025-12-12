@@ -40,6 +40,8 @@ type BeanFilter struct {
 	ParentID *string `json:"parentId,omitempty"`
 	// Include only beans that are blocking other beans
 	HasBlocking *bool `json:"hasBlocking,omitempty"`
+	// Include only beans that are blocking this specific bean ID
+	BlockingID *string `json:"blockingId,omitempty"`
 	// Include only beans that are blocked by others
 	IsBlocked *bool `json:"isBlocked,omitempty"`
 	// Exclude beans that have a parent

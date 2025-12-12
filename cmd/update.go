@@ -14,19 +14,19 @@ import (
 )
 
 var (
-	updateStatus   string
-	updateType     string
-	updatePriority string
-	updateTitle    string
-	updateBody     string
-	updateBodyFile string
-	updateParent   string
-	updateNoParent   bool
-	updateBlocking   []string
-	updateUnblocking []string
-	updateTag        []string
-	updateUntag    []string
-	updateJSON     bool
+	updateStatus         string
+	updateType           string
+	updatePriority       string
+	updateTitle          string
+	updateBody           string
+	updateBodyFile       string
+	updateParent         string
+	updateRemoveParent   bool
+	updateBlocking       []string
+	updateRemoveBlocking []string
+	updateTag            []string
+	updateRemoveTag      []string
+	updateJSON           bool
 )
 
 var updateCmd = &cobra.Command{
@@ -35,17 +35,17 @@ var updateCmd = &cobra.Command{
 	Long: `Updates one or more properties of an existing bean.
 
 Use flags to specify which properties to update:
-  --status       Change the status
-  --type         Change the type
-  --priority     Change the priority
-  --title        Change the title
-  --body         Change the body (use '-' to read from stdin)
-  --parent       Set parent bean ID
-  --no-parent    Remove parent
-  --blocking     Add to blocking list (can be repeated)
-  --unblocking   Remove from blocking list (can be repeated)
-  --tag          Add a tag (can be repeated)
-  --untag        Remove a tag (can be repeated)`,
+  --status           Change the status
+  --type             Change the type
+  --priority         Change the priority
+  --title            Change the title
+  --body             Change the body (use '-' to read from stdin)
+  --parent           Set parent bean ID
+  --remove-parent    Remove parent
+  --blocking         Add to blocking list (can be repeated)
+  --remove-blocking  Remove from blocking list (can be repeated)
+  --tag              Add a tag (can be repeated)
+  --remove-tag       Remove a tag (can be repeated)`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
@@ -79,9 +79,9 @@ Use flags to specify which properties to update:
 		}
 
 		// Handle parent changes
-		if cmd.Flags().Changed("parent") || updateNoParent {
+		if cmd.Flags().Changed("parent") || updateRemoveParent {
 			var parentID *string
-			if !updateNoParent && updateParent != "" {
+			if !updateRemoveParent && updateParent != "" {
 				parentID = &updateParent
 			}
 			b, err = resolver.Mutation().SetParent(ctx, b.ID, parentID)
@@ -101,7 +101,7 @@ Use flags to specify which properties to update:
 		}
 
 		// Process blocking removals
-		for _, targetID := range updateUnblocking {
+		for _, targetID := range updateRemoveBlocking {
 			b, err = resolver.Mutation().RemoveBlocking(ctx, b.ID, targetID)
 			if err != nil {
 				return cmdError(updateJSON, output.ErrValidation, "%s", err)
@@ -112,7 +112,7 @@ Use flags to specify which properties to update:
 		// Require at least one change
 		if len(changes) == 0 {
 			return cmdError(updateJSON, output.ErrValidation,
-				"no changes specified (use --status, --type, --priority, --title, --body, --parent, --blocking, --unblocking, --tag, or --untag)")
+				"no changes specified (use --status, --type, --priority, --title, --body, --parent, --blocking, --tag, or their --remove-* variants)")
 		}
 
 		// Output result
@@ -168,8 +168,8 @@ func buildUpdateInput(cmd *cobra.Command, existingTags []string) (model.UpdateBe
 		changes = append(changes, "body")
 	}
 
-	if len(updateTag) > 0 || len(updateUntag) > 0 {
-		input.Tags = mergeTags(existingTags, updateTag, updateUntag)
+	if len(updateTag) > 0 || len(updateRemoveTag) > 0 {
+		input.Tags = mergeTags(existingTags, updateTag, updateRemoveTag)
 		changes = append(changes, "tags")
 	}
 
@@ -204,12 +204,12 @@ func init() {
 	updateCmd.Flags().StringVarP(&updateBody, "body", "d", "", "New body (use '-' to read from stdin)")
 	updateCmd.Flags().StringVar(&updateBodyFile, "body-file", "", "Read body from file")
 	updateCmd.Flags().StringVar(&updateParent, "parent", "", "Set parent bean ID")
-	updateCmd.Flags().BoolVar(&updateNoParent, "no-parent", false, "Remove parent")
+	updateCmd.Flags().BoolVar(&updateRemoveParent, "remove-parent", false, "Remove parent")
 	updateCmd.Flags().StringArrayVar(&updateBlocking, "blocking", nil, "ID of bean this blocks (can be repeated)")
-	updateCmd.Flags().StringArrayVar(&updateUnblocking, "unblocking", nil, "ID of bean to unblock (can be repeated)")
+	updateCmd.Flags().StringArrayVar(&updateRemoveBlocking, "remove-blocking", nil, "ID of bean to unblock (can be repeated)")
 	updateCmd.Flags().StringArrayVar(&updateTag, "tag", nil, "Add tag (can be repeated)")
-	updateCmd.Flags().StringArrayVar(&updateUntag, "untag", nil, "Remove tag (can be repeated)")
-	updateCmd.MarkFlagsMutuallyExclusive("parent", "no-parent")
+	updateCmd.Flags().StringArrayVar(&updateRemoveTag, "remove-tag", nil, "Remove tag (can be repeated)")
+	updateCmd.MarkFlagsMutuallyExclusive("parent", "remove-parent")
 	updateCmd.Flags().BoolVar(&updateJSON, "json", false, "Output as JSON")
 	updateCmd.MarkFlagsMutuallyExclusive("body", "body-file")
 	rootCmd.AddCommand(updateCmd)

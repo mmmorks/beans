@@ -162,6 +162,20 @@ func filterByHasBlocking(beans []*bean.Bean) []*bean.Bean {
 	return result
 }
 
+// filterByBlockingID filters beans that are blocking a specific bean ID.
+func filterByBlockingID(beans []*bean.Bean, targetID string) []*bean.Bean {
+	var result []*bean.Bean
+	for _, b := range beans {
+		for _, blocked := range b.Blocking {
+			if blocked == targetID {
+				result = append(result, b)
+				break
+			}
+		}
+	}
+	return result
+}
+
 // filterByNoBlocking filters beans that aren't blocking other beans.
 func filterByNoBlocking(beans []*bean.Bean) []*bean.Bean {
 	var result []*bean.Bean

@@ -24,9 +24,6 @@ var (
 	ErrAmbiguousID = errors.New("ambiguous ID prefix matches multiple beans")
 )
 
-// KnownLinkTypes lists the recognized relationship types.
-var KnownLinkTypes = []string{"blocking", "parent"}
-
 // Core provides thread-safe in-memory storage for beans with filesystem persistence.
 type Core struct {
 	root   string         // absolute path to .beans directory
