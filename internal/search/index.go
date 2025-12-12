@@ -18,6 +18,14 @@ type beanDocument struct {
 	Slug  string `json:"slug"`
 	Title string `json:"title"`
 	Body  string `json:"body"`
+
+	// Link targets for reverse lookup (finding incoming links)
+	MilestoneTarget string   `json:"milestone_target,omitempty"`
+	EpicTarget      string   `json:"epic_target,omitempty"`
+	FeatureTarget   string   `json:"feature_target,omitempty"`
+	BlockTargets    []string `json:"block_targets,omitempty"`
+	RelatedTargets  []string `json:"related_targets,omitempty"`
+	DuplicateTargets []string `json:"duplicate_targets,omitempty"`
 }
 
 // NewIndex creates a new in-memory Bleve index.
@@ -47,6 +55,14 @@ func buildIndexMapping() mapping.IndexMapping {
 	beanMapping.AddFieldMappingsAt("title", textFieldMapping)
 	beanMapping.AddFieldMappingsAt("body", textFieldMapping)
 
+	// Link target fields for reverse lookup (keyword fields for exact matching)
+	beanMapping.AddFieldMappingsAt("milestone_target", keywordFieldMapping)
+	beanMapping.AddFieldMappingsAt("epic_target", keywordFieldMapping)
+	beanMapping.AddFieldMappingsAt("feature_target", keywordFieldMapping)
+	beanMapping.AddFieldMappingsAt("block_targets", keywordFieldMapping)
+	beanMapping.AddFieldMappingsAt("related_targets", keywordFieldMapping)
+	beanMapping.AddFieldMappingsAt("duplicate_targets", keywordFieldMapping)
+
 	// Create the index mapping with BM25 scoring for better relevance ranking
 	indexMapping := bleve.NewIndexMapping()
 	indexMapping.DefaultMapping = beanMapping
@@ -71,10 +87,16 @@ func (idx *Index) Close() error {
 // IndexBean adds or updates a bean in the search index.
 func (idx *Index) IndexBean(b *bean.Bean) error {
 	doc := beanDocument{
-		ID:    b.ID,
-		Slug:  b.Slug,
-		Title: b.Title,
-		Body:  b.Body,
+		ID:               b.ID,
+		Slug:             b.Slug,
+		Title:            b.Title,
+		Body:             b.Body,
+		MilestoneTarget:  b.Milestone,
+		EpicTarget:       b.Epic,
+		FeatureTarget:    b.Feature,
+		BlockTargets:     b.Blocks,
+		RelatedTargets:   b.Related,
+		DuplicateTargets: b.Duplicates,
 	}
 	return idx.index.Index(b.ID, doc)
 }
@@ -124,14 +146,67 @@ func (idx *Index) IndexBeans(beans []*bean.Bean) error {
 	batch := idx.index.NewBatch()
 	for _, b := range beans {
 		doc := beanDocument{
-			ID:    b.ID,
-			Slug:  b.Slug,
-			Title: b.Title,
-			Body:  b.Body,
+			ID:               b.ID,
+			Slug:             b.Slug,
+			Title:            b.Title,
+			Body:             b.Body,
+			MilestoneTarget:  b.Milestone,
+			EpicTarget:       b.Epic,
+			FeatureTarget:    b.Feature,
+			BlockTargets:     b.Blocks,
+			RelatedTargets:   b.Related,
+			DuplicateTargets: b.Duplicates,
 		}
 		if err := batch.Index(b.ID, doc); err != nil {
 			return err
 		}
 	}
 	return idx.index.Batch(batch)
+}
+
+// IncomingLinkResult represents a bean that links to a target with a specific link type.
+type IncomingLinkResult struct {
+	FromID   string
+	LinkType string
+}
+
+// FindIncomingLinks finds all beans that link to the given target ID.
+// Returns a slice of results with the source bean ID and link type.
+func (idx *Index) FindIncomingLinks(targetID string) ([]IncomingLinkResult, error) {
+	var results []IncomingLinkResult
+
+	// Search each link type field
+	linkFields := []struct {
+		field    string
+		linkType string
+	}{
+		{"milestone_target", "milestone"},
+		{"epic_target", "epic"},
+		{"feature_target", "feature"},
+		{"block_targets", "blocks"},
+		{"related_targets", "related"},
+		{"duplicate_targets", "duplicates"},
+	}
+
+	for _, lf := range linkFields {
+		query := bleve.NewTermQuery(targetID)
+		query.SetField(lf.field)
+
+		searchRequest := bleve.NewSearchRequest(query)
+		searchRequest.Size = DefaultSearchLimit
+
+		result, err := idx.index.Search(searchRequest)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, hit := range result.Hits {
+			results = append(results, IncomingLinkResult{
+				FromID:   hit.ID,
+				LinkType: lf.linkType,
+			})
+		}
+	}
+
+	return results, nil
 }

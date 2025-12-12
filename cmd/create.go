@@ -50,6 +50,50 @@ var createCmd = &cobra.Command{
 			return cmdError(createJSON, output.ErrValidation, "invalid priority: %s (must be %s)", createPriority, cfg.PriorityList())
 		}
 
+		// Validate link targets exist and have correct types
+		if createMilestone != "" {
+			target, err := core.Get(createMilestone)
+			if err != nil {
+				return cmdError(createJSON, output.ErrValidation, "milestone %q not found", createMilestone)
+			}
+			if target.Type != "milestone" {
+				return cmdError(createJSON, output.ErrValidation, "milestone target %q is type %q, not milestone", createMilestone, target.Type)
+			}
+		}
+		if createEpic != "" {
+			target, err := core.Get(createEpic)
+			if err != nil {
+				return cmdError(createJSON, output.ErrValidation, "epic %q not found", createEpic)
+			}
+			if target.Type != "epic" {
+				return cmdError(createJSON, output.ErrValidation, "epic target %q is type %q, not epic", createEpic, target.Type)
+			}
+		}
+		if createFeature != "" {
+			target, err := core.Get(createFeature)
+			if err != nil {
+				return cmdError(createJSON, output.ErrValidation, "feature %q not found", createFeature)
+			}
+			if target.Type != "feature" {
+				return cmdError(createJSON, output.ErrValidation, "feature target %q is type %q, not feature", createFeature, target.Type)
+			}
+		}
+		for _, id := range createBlock {
+			if _, err := core.Get(id); err != nil {
+				return cmdError(createJSON, output.ErrValidation, "block target %q not found", id)
+			}
+		}
+		for _, id := range createRelated {
+			if _, err := core.Get(id); err != nil {
+				return cmdError(createJSON, output.ErrValidation, "related target %q not found", id)
+			}
+		}
+		for _, id := range createDuplicate {
+			if _, err := core.Get(id); err != nil {
+				return cmdError(createJSON, output.ErrValidation, "duplicate target %q not found", id)
+			}
+		}
+
 		body, err := resolveContent(createBody, createBodyFile)
 		if err != nil {
 			return cmdError(createJSON, output.ErrFileError, "%s", err)
@@ -92,34 +136,34 @@ var createCmd = &cobra.Command{
 		// Apply hierarchy links via separate mutations
 		if createMilestone != "" {
 			if b, err = mutation.SetMilestone(ctx, b.ID, &createMilestone); err != nil {
-				return cmdError(createJSON, output.ErrFileError, "failed to set milestone: %v", err)
+				return cmdError(createJSON, output.ErrValidation, "failed to set milestone: %v", err)
 			}
 		}
 		if createEpic != "" {
 			if b, err = mutation.SetEpic(ctx, b.ID, &createEpic); err != nil {
-				return cmdError(createJSON, output.ErrFileError, "failed to set epic: %v", err)
+				return cmdError(createJSON, output.ErrValidation, "failed to set epic: %v", err)
 			}
 		}
 		if createFeature != "" {
 			if b, err = mutation.SetFeature(ctx, b.ID, &createFeature); err != nil {
-				return cmdError(createJSON, output.ErrFileError, "failed to set feature: %v", err)
+				return cmdError(createJSON, output.ErrValidation, "failed to set feature: %v", err)
 			}
 		}
 
 		// Apply relationship links via separate mutations
 		for _, target := range createBlock {
 			if b, err = mutation.AddBlock(ctx, b.ID, target); err != nil {
-				return cmdError(createJSON, output.ErrFileError, "failed to add block: %v", err)
+				return cmdError(createJSON, output.ErrValidation, "failed to add block: %v", err)
 			}
 		}
 		for _, target := range createRelated {
 			if b, err = mutation.AddRelated(ctx, b.ID, target); err != nil {
-				return cmdError(createJSON, output.ErrFileError, "failed to add related: %v", err)
+				return cmdError(createJSON, output.ErrValidation, "failed to add related: %v", err)
 			}
 		}
 		for _, target := range createDuplicate {
 			if b, err = mutation.AddDuplicate(ctx, b.ID, target); err != nil {
-				return cmdError(createJSON, output.ErrFileError, "failed to add duplicate: %v", err)
+				return cmdError(createJSON, output.ErrValidation, "failed to add duplicate: %v", err)
 			}
 		}
 

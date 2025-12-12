@@ -77,7 +77,35 @@ func getAllLinkTargets(b *bean.Bean) [][2]string {
 }
 
 // FindIncomingLinks returns all beans that link TO the given bean ID.
+// Uses the Bleve search index for O(1) lookup when available, falls back to O(n) scan.
 func (c *Core) FindIncomingLinks(targetID string) []IncomingLink {
+	// Try to use the search index if available
+	c.mu.RLock()
+	idx := c.searchIndex
+	c.mu.RUnlock()
+
+	if idx != nil {
+		// Use indexed lookup
+		indexResults, err := idx.FindIncomingLinks(targetID)
+		if err == nil {
+			c.mu.RLock()
+			defer c.mu.RUnlock()
+
+			var result []IncomingLink
+			for _, ir := range indexResults {
+				if b, ok := c.beans[ir.FromID]; ok {
+					result = append(result, IncomingLink{
+						FromBean: b,
+						LinkType: ir.LinkType,
+					})
+				}
+			}
+			return result
+		}
+		// Fall through to scan on error
+	}
+
+	// Fallback: scan all beans (used when index not initialized)
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -300,7 +328,7 @@ func canonicalCycleKey(path []string) string {
 
 	// Rotate to start from minimum
 	key := ""
-	for i := 0; i < len(cycle); i++ {
+	for i := range len(cycle) {
 		idx := (minIdx + i) % len(cycle)
 		if i > 0 {
 			key += "->"

@@ -34,48 +34,48 @@ type Mutation {
   """
   Set or clear the milestone for a bean
   """
-  setMilestone(id: ID!, target: String): Bean!
+  setMilestone(id: ID!, target: ID): Bean!
 
   """
   Set or clear the epic for a bean
   """
-  setEpic(id: ID!, target: String): Bean!
+  setEpic(id: ID!, target: ID): Bean!
 
   """
   Set or clear the feature for a bean (bean must be a task or bug)
   """
-  setFeature(id: ID!, target: String): Bean!
+  setFeature(id: ID!, target: ID): Bean!
 
   # Relationship link mutations (multiple targets)
   """
   Add a block relationship (this bean blocks target)
   """
-  addBlock(id: ID!, target: String!): Bean!
+  addBlock(id: ID!, target: ID!): Bean!
 
   """
   Remove a block relationship
   """
-  removeBlock(id: ID!, target: String!): Bean!
+  removeBlock(id: ID!, target: ID!): Bean!
 
   """
   Add a related relationship
   """
-  addRelated(id: ID!, target: String!): Bean!
+  addRelated(id: ID!, target: ID!): Bean!
 
   """
   Remove a related relationship
   """
-  removeRelated(id: ID!, target: String!): Bean!
+  removeRelated(id: ID!, target: ID!): Bean!
 
   """
   Add a duplicate relationship
   """
-  addDuplicate(id: ID!, target: String!): Bean!
+  addDuplicate(id: ID!, target: ID!): Bean!
 
   """
   Remove a duplicate relationship
   """
-  removeDuplicate(id: ID!, target: String!): Bean!
+  removeDuplicate(id: ID!, target: ID!): Bean!
 }
 
 """

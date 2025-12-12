@@ -612,7 +612,7 @@ func (ec *executionContext) field_Mutation_addBlock_args(ctx context.Context, ra
 		return nil, err
 	}
 	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "target", ec.unmarshalNString2string)
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "target", ec.unmarshalNID2string)
 	if err != nil {
 		return nil, err
 	}
@@ -628,7 +628,7 @@ func (ec *executionContext) field_Mutation_addDuplicate_args(ctx context.Context
 		return nil, err
 	}
 	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "target", ec.unmarshalNString2string)
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "target", ec.unmarshalNID2string)
 	if err != nil {
 		return nil, err
 	}
@@ -644,7 +644,7 @@ func (ec *executionContext) field_Mutation_addRelated_args(ctx context.Context, 
 		return nil, err
 	}
 	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "target", ec.unmarshalNString2string)
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "target", ec.unmarshalNID2string)
 	if err != nil {
 		return nil, err
 	}
@@ -682,7 +682,7 @@ func (ec *executionContext) field_Mutation_removeBlock_args(ctx context.Context,
 		return nil, err
 	}
 	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "target", ec.unmarshalNString2string)
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "target", ec.unmarshalNID2string)
 	if err != nil {
 		return nil, err
 	}
@@ -698,7 +698,7 @@ func (ec *executionContext) field_Mutation_removeDuplicate_args(ctx context.Cont
 		return nil, err
 	}
 	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "target", ec.unmarshalNString2string)
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "target", ec.unmarshalNID2string)
 	if err != nil {
 		return nil, err
 	}
@@ -714,7 +714,7 @@ func (ec *executionContext) field_Mutation_removeRelated_args(ctx context.Contex
 		return nil, err
 	}
 	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "target", ec.unmarshalNString2string)
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "target", ec.unmarshalNID2string)
 	if err != nil {
 		return nil, err
 	}
@@ -730,7 +730,7 @@ func (ec *executionContext) field_Mutation_setEpic_args(ctx context.Context, raw
 		return nil, err
 	}
 	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "target", ec.unmarshalOString2ᚖstring)
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "target", ec.unmarshalOID2ᚖstring)
 	if err != nil {
 		return nil, err
 	}
@@ -746,7 +746,7 @@ func (ec *executionContext) field_Mutation_setFeature_args(ctx context.Context, 
 		return nil, err
 	}
 	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "target", ec.unmarshalOString2ᚖstring)
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "target", ec.unmarshalOID2ᚖstring)
 	if err != nil {
 		return nil, err
 	}
@@ -762,7 +762,7 @@ func (ec *executionContext) field_Mutation_setMilestone_args(ctx context.Context
 		return nil, err
 	}
 	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "target", ec.unmarshalOString2ᚖstring)
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "target", ec.unmarshalOID2ᚖstring)
 	if err != nil {
 		return nil, err
 	}
@@ -7021,6 +7021,24 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	_ = sel
 	_ = ctx
 	res := graphql.MarshalBoolean(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOID2ᚖstring(ctx context.Context, v any) (*string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalID(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalID(*v)
 	return res
 }
 

@@ -1,6 +1,7 @@
 package search
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/hmans/beans/internal/bean"
@@ -217,14 +218,7 @@ func TestSearch_BooleanQuery(t *testing.T) {
 	}
 
 	// Should match aaa1 (has both terms)
-	found := false
-	for _, id := range ids {
-		if id == "aaa1" {
-			found = true
-			break
-		}
-	}
-	if !found {
+	if !slices.Contains(ids, "aaa1") {
 		t.Errorf("Search(User Authentication) = %v, expected to include aaa1", ids)
 	}
 }
@@ -346,7 +340,7 @@ func TestSearch_Limit(t *testing.T) {
 	idx := setupTestIndex(t)
 
 	// Index many beans
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		b := &bean.Bean{
 			ID:    bean.NewID("", 4),
 			Title: "Test Bean",
@@ -389,4 +383,91 @@ func TestSearch_DefaultLimit(t *testing.T) {
 	if len(ids) != 1 {
 		t.Errorf("Search with limit 0 (default) returned %d results, want 1", len(ids))
 	}
+}
+
+func TestFindIncomingLinks(t *testing.T) {
+	idx := setupTestIndex(t)
+
+	// Create beans with various link types
+	epic := &bean.Bean{ID: "epic1", Title: "Epic"}
+	milestone := &bean.Bean{ID: "milestone1", Title: "Milestone"}
+	feature := &bean.Bean{ID: "feature1", Title: "Feature", Epic: "epic1"}
+	task1 := &bean.Bean{ID: "task1", Title: "Task 1", Epic: "epic1", Milestone: "milestone1"}
+	task2 := &bean.Bean{ID: "task2", Title: "Task 2", Epic: "epic1", Blocks: []string{"task1"}}
+	task3 := &bean.Bean{ID: "task3", Title: "Task 3", Related: []string{"task1", "task2"}}
+
+	beans := []*bean.Bean{epic, milestone, feature, task1, task2, task3}
+	if err := idx.IndexBeans(beans); err != nil {
+		t.Fatalf("IndexBeans() error = %v", err)
+	}
+
+	t.Run("find beans linking to epic", func(t *testing.T) {
+		results, err := idx.FindIncomingLinks("epic1")
+		if err != nil {
+			t.Fatalf("FindIncomingLinks() error = %v", err)
+		}
+
+		// Should find feature1, task1, task2 all linking to epic1
+		if len(results) != 3 {
+			t.Errorf("FindIncomingLinks(epic1) returned %d results, want 3", len(results))
+		}
+
+		// Verify all have link type "epic"
+		for _, r := range results {
+			if r.LinkType != "epic" {
+				t.Errorf("unexpected link type %q, want epic", r.LinkType)
+			}
+		}
+	})
+
+	t.Run("find beans linking to milestone", func(t *testing.T) {
+		results, err := idx.FindIncomingLinks("milestone1")
+		if err != nil {
+			t.Fatalf("FindIncomingLinks() error = %v", err)
+		}
+
+		if len(results) != 1 {
+			t.Errorf("FindIncomingLinks(milestone1) returned %d results, want 1", len(results))
+		}
+		if results[0].FromID != "task1" || results[0].LinkType != "milestone" {
+			t.Errorf("unexpected result: %+v", results[0])
+		}
+	})
+
+	t.Run("find beans blocking task1", func(t *testing.T) {
+		results, err := idx.FindIncomingLinks("task1")
+		if err != nil {
+			t.Fatalf("FindIncomingLinks() error = %v", err)
+		}
+
+		// task2 blocks task1, task3 is related to task1
+		blockCount := 0
+		relatedCount := 0
+		for _, r := range results {
+			if r.LinkType == "blocks" {
+				blockCount++
+			}
+			if r.LinkType == "related" {
+				relatedCount++
+			}
+		}
+
+		if blockCount != 1 {
+			t.Errorf("expected 1 blocks link to task1, got %d", blockCount)
+		}
+		if relatedCount != 1 {
+			t.Errorf("expected 1 related link to task1, got %d", relatedCount)
+		}
+	})
+
+	t.Run("no incoming links", func(t *testing.T) {
+		results, err := idx.FindIncomingLinks("nonexistent")
+		if err != nil {
+			t.Fatalf("FindIncomingLinks() error = %v", err)
+		}
+
+		if len(results) != 0 {
+			t.Errorf("FindIncomingLinks(nonexistent) returned %d results, want 0", len(results))
+		}
+	})
 }
