@@ -56,8 +56,6 @@ type ComplexityRoot struct {
 		Blocks         func(childComplexity int) int
 		Body           func(childComplexity int) int
 		CreatedAt      func(childComplexity int) int
-		DuplicateIds   func(childComplexity int) int
-		Duplicates     func(childComplexity int) int
 		Epic           func(childComplexity int) int
 		EpicID         func(childComplexity int) int
 		EpicItems      func(childComplexity int) int
@@ -81,18 +79,16 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddBlock        func(childComplexity int, id string, target string) int
-		AddDuplicate    func(childComplexity int, id string, target string) int
-		AddRelated      func(childComplexity int, id string, target string) int
-		CreateBean      func(childComplexity int, input model.CreateBeanInput) int
-		DeleteBean      func(childComplexity int, id string) int
-		RemoveBlock     func(childComplexity int, id string, target string) int
-		RemoveDuplicate func(childComplexity int, id string, target string) int
-		RemoveRelated   func(childComplexity int, id string, target string) int
-		SetEpic         func(childComplexity int, id string, target *string) int
-		SetFeature      func(childComplexity int, id string, target *string) int
-		SetMilestone    func(childComplexity int, id string, target *string) int
-		UpdateBean      func(childComplexity int, id string, input model.UpdateBeanInput) int
+		AddBlock      func(childComplexity int, id string, target string) int
+		AddRelated    func(childComplexity int, id string, target string) int
+		CreateBean    func(childComplexity int, input model.CreateBeanInput) int
+		DeleteBean    func(childComplexity int, id string) int
+		RemoveBlock   func(childComplexity int, id string, target string) int
+		RemoveRelated func(childComplexity int, id string, target string) int
+		SetEpic       func(childComplexity int, id string, target *string) int
+		SetFeature    func(childComplexity int, id string, target *string) int
+		SetMilestone  func(childComplexity int, id string, target *string) int
+		UpdateBean    func(childComplexity int, id string, input model.UpdateBeanInput) int
 	}
 
 	Query struct {
@@ -110,10 +106,8 @@ type BeanResolver interface {
 	Feature(ctx context.Context, obj *bean.Bean) (*bean.Bean, error)
 	BlockIds(ctx context.Context, obj *bean.Bean) ([]string, error)
 	RelatedIds(ctx context.Context, obj *bean.Bean) ([]string, error)
-	DuplicateIds(ctx context.Context, obj *bean.Bean) ([]string, error)
 	BlockedBy(ctx context.Context, obj *bean.Bean) ([]*bean.Bean, error)
 	Blocks(ctx context.Context, obj *bean.Bean) ([]*bean.Bean, error)
-	Duplicates(ctx context.Context, obj *bean.Bean) ([]*bean.Bean, error)
 	Related(ctx context.Context, obj *bean.Bean) ([]*bean.Bean, error)
 	MilestoneItems(ctx context.Context, obj *bean.Bean) ([]*bean.Bean, error)
 	EpicItems(ctx context.Context, obj *bean.Bean) ([]*bean.Bean, error)
@@ -130,8 +124,6 @@ type MutationResolver interface {
 	RemoveBlock(ctx context.Context, id string, target string) (*bean.Bean, error)
 	AddRelated(ctx context.Context, id string, target string) (*bean.Bean, error)
 	RemoveRelated(ctx context.Context, id string, target string) (*bean.Bean, error)
-	AddDuplicate(ctx context.Context, id string, target string) (*bean.Bean, error)
-	RemoveDuplicate(ctx context.Context, id string, target string) (*bean.Bean, error)
 }
 type QueryResolver interface {
 	Bean(ctx context.Context, id string) (*bean.Bean, error)
@@ -187,18 +179,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Bean.CreatedAt(childComplexity), true
-	case "Bean.duplicateIds":
-		if e.complexity.Bean.DuplicateIds == nil {
-			break
-		}
-
-		return e.complexity.Bean.DuplicateIds(childComplexity), true
-	case "Bean.duplicates":
-		if e.complexity.Bean.Duplicates == nil {
-			break
-		}
-
-		return e.complexity.Bean.Duplicates(childComplexity), true
 	case "Bean.epic":
 		if e.complexity.Bean.Epic == nil {
 			break
@@ -331,17 +311,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.AddBlock(childComplexity, args["id"].(string), args["target"].(string)), true
-	case "Mutation.addDuplicate":
-		if e.complexity.Mutation.AddDuplicate == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_addDuplicate_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.AddDuplicate(childComplexity, args["id"].(string), args["target"].(string)), true
 	case "Mutation.addRelated":
 		if e.complexity.Mutation.AddRelated == nil {
 			break
@@ -386,17 +355,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.RemoveBlock(childComplexity, args["id"].(string), args["target"].(string)), true
-	case "Mutation.removeDuplicate":
-		if e.complexity.Mutation.RemoveDuplicate == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_removeDuplicate_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.RemoveDuplicate(childComplexity, args["id"].(string), args["target"].(string)), true
 	case "Mutation.removeRelated":
 		if e.complexity.Mutation.RemoveRelated == nil {
 			break
@@ -620,22 +578,6 @@ func (ec *executionContext) field_Mutation_addBlock_args(ctx context.Context, ra
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_addDuplicate_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "target", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["target"] = arg1
-	return args, nil
-}
-
 func (ec *executionContext) field_Mutation_addRelated_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -675,22 +617,6 @@ func (ec *executionContext) field_Mutation_deleteBean_args(ctx context.Context, 
 }
 
 func (ec *executionContext) field_Mutation_removeBlock_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "target", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["target"] = arg1
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_removeDuplicate_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
@@ -1339,14 +1265,10 @@ func (ec *executionContext) fieldContext_Bean_milestone(_ context.Context, field
 				return ec.fieldContext_Bean_blockIds(ctx, field)
 			case "relatedIds":
 				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
 			case "blockedBy":
 				return ec.fieldContext_Bean_blockedBy(ctx, field)
 			case "blocks":
 				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
 			case "related":
 				return ec.fieldContext_Bean_related(ctx, field)
 			case "milestoneItems":
@@ -1424,14 +1346,10 @@ func (ec *executionContext) fieldContext_Bean_epic(_ context.Context, field grap
 				return ec.fieldContext_Bean_blockIds(ctx, field)
 			case "relatedIds":
 				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
 			case "blockedBy":
 				return ec.fieldContext_Bean_blockedBy(ctx, field)
 			case "blocks":
 				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
 			case "related":
 				return ec.fieldContext_Bean_related(ctx, field)
 			case "milestoneItems":
@@ -1509,14 +1427,10 @@ func (ec *executionContext) fieldContext_Bean_feature(_ context.Context, field g
 				return ec.fieldContext_Bean_blockIds(ctx, field)
 			case "relatedIds":
 				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
 			case "blockedBy":
 				return ec.fieldContext_Bean_blockedBy(ctx, field)
 			case "blocks":
 				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
 			case "related":
 				return ec.fieldContext_Bean_related(ctx, field)
 			case "milestoneItems":
@@ -1578,35 +1492,6 @@ func (ec *executionContext) _Bean_relatedIds(ctx context.Context, field graphql.
 }
 
 func (ec *executionContext) fieldContext_Bean_relatedIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Bean",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Bean_duplicateIds(ctx context.Context, field graphql.CollectedField, obj *bean.Bean) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Bean_duplicateIds,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Bean().DuplicateIds(ctx, obj)
-		},
-		nil,
-		ec.marshalNString2ᚕstringᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Bean_duplicateIds(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Bean",
 		Field:      field,
@@ -1681,14 +1566,10 @@ func (ec *executionContext) fieldContext_Bean_blockedBy(_ context.Context, field
 				return ec.fieldContext_Bean_blockIds(ctx, field)
 			case "relatedIds":
 				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
 			case "blockedBy":
 				return ec.fieldContext_Bean_blockedBy(ctx, field)
 			case "blocks":
 				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
 			case "related":
 				return ec.fieldContext_Bean_related(ctx, field)
 			case "milestoneItems":
@@ -1766,99 +1647,10 @@ func (ec *executionContext) fieldContext_Bean_blocks(_ context.Context, field gr
 				return ec.fieldContext_Bean_blockIds(ctx, field)
 			case "relatedIds":
 				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
 			case "blockedBy":
 				return ec.fieldContext_Bean_blockedBy(ctx, field)
 			case "blocks":
 				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
-			case "related":
-				return ec.fieldContext_Bean_related(ctx, field)
-			case "milestoneItems":
-				return ec.fieldContext_Bean_milestoneItems(ctx, field)
-			case "epicItems":
-				return ec.fieldContext_Bean_epicItems(ctx, field)
-			case "featureItems":
-				return ec.fieldContext_Bean_featureItems(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Bean", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Bean_duplicates(ctx context.Context, field graphql.CollectedField, obj *bean.Bean) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Bean_duplicates,
-		func(ctx context.Context) (any, error) {
-			return ec.resolvers.Bean().Duplicates(ctx, obj)
-		},
-		nil,
-		ec.marshalNBean2ᚕᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐBeanᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Bean_duplicates(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Bean",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Bean_id(ctx, field)
-			case "slug":
-				return ec.fieldContext_Bean_slug(ctx, field)
-			case "path":
-				return ec.fieldContext_Bean_path(ctx, field)
-			case "title":
-				return ec.fieldContext_Bean_title(ctx, field)
-			case "status":
-				return ec.fieldContext_Bean_status(ctx, field)
-			case "type":
-				return ec.fieldContext_Bean_type(ctx, field)
-			case "priority":
-				return ec.fieldContext_Bean_priority(ctx, field)
-			case "tags":
-				return ec.fieldContext_Bean_tags(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Bean_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_Bean_updatedAt(ctx, field)
-			case "body":
-				return ec.fieldContext_Bean_body(ctx, field)
-			case "milestoneId":
-				return ec.fieldContext_Bean_milestoneId(ctx, field)
-			case "epicId":
-				return ec.fieldContext_Bean_epicId(ctx, field)
-			case "featureId":
-				return ec.fieldContext_Bean_featureId(ctx, field)
-			case "milestone":
-				return ec.fieldContext_Bean_milestone(ctx, field)
-			case "epic":
-				return ec.fieldContext_Bean_epic(ctx, field)
-			case "feature":
-				return ec.fieldContext_Bean_feature(ctx, field)
-			case "blockIds":
-				return ec.fieldContext_Bean_blockIds(ctx, field)
-			case "relatedIds":
-				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
-			case "blockedBy":
-				return ec.fieldContext_Bean_blockedBy(ctx, field)
-			case "blocks":
-				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
 			case "related":
 				return ec.fieldContext_Bean_related(ctx, field)
 			case "milestoneItems":
@@ -1936,14 +1728,10 @@ func (ec *executionContext) fieldContext_Bean_related(_ context.Context, field g
 				return ec.fieldContext_Bean_blockIds(ctx, field)
 			case "relatedIds":
 				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
 			case "blockedBy":
 				return ec.fieldContext_Bean_blockedBy(ctx, field)
 			case "blocks":
 				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
 			case "related":
 				return ec.fieldContext_Bean_related(ctx, field)
 			case "milestoneItems":
@@ -2021,14 +1809,10 @@ func (ec *executionContext) fieldContext_Bean_milestoneItems(_ context.Context, 
 				return ec.fieldContext_Bean_blockIds(ctx, field)
 			case "relatedIds":
 				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
 			case "blockedBy":
 				return ec.fieldContext_Bean_blockedBy(ctx, field)
 			case "blocks":
 				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
 			case "related":
 				return ec.fieldContext_Bean_related(ctx, field)
 			case "milestoneItems":
@@ -2106,14 +1890,10 @@ func (ec *executionContext) fieldContext_Bean_epicItems(_ context.Context, field
 				return ec.fieldContext_Bean_blockIds(ctx, field)
 			case "relatedIds":
 				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
 			case "blockedBy":
 				return ec.fieldContext_Bean_blockedBy(ctx, field)
 			case "blocks":
 				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
 			case "related":
 				return ec.fieldContext_Bean_related(ctx, field)
 			case "milestoneItems":
@@ -2191,14 +1971,10 @@ func (ec *executionContext) fieldContext_Bean_featureItems(_ context.Context, fi
 				return ec.fieldContext_Bean_blockIds(ctx, field)
 			case "relatedIds":
 				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
 			case "blockedBy":
 				return ec.fieldContext_Bean_blockedBy(ctx, field)
 			case "blocks":
 				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
 			case "related":
 				return ec.fieldContext_Bean_related(ctx, field)
 			case "milestoneItems":
@@ -2277,14 +2053,10 @@ func (ec *executionContext) fieldContext_Mutation_createBean(ctx context.Context
 				return ec.fieldContext_Bean_blockIds(ctx, field)
 			case "relatedIds":
 				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
 			case "blockedBy":
 				return ec.fieldContext_Bean_blockedBy(ctx, field)
 			case "blocks":
 				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
 			case "related":
 				return ec.fieldContext_Bean_related(ctx, field)
 			case "milestoneItems":
@@ -2374,14 +2146,10 @@ func (ec *executionContext) fieldContext_Mutation_updateBean(ctx context.Context
 				return ec.fieldContext_Bean_blockIds(ctx, field)
 			case "relatedIds":
 				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
 			case "blockedBy":
 				return ec.fieldContext_Bean_blockedBy(ctx, field)
 			case "blocks":
 				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
 			case "related":
 				return ec.fieldContext_Bean_related(ctx, field)
 			case "milestoneItems":
@@ -2512,14 +2280,10 @@ func (ec *executionContext) fieldContext_Mutation_setMilestone(ctx context.Conte
 				return ec.fieldContext_Bean_blockIds(ctx, field)
 			case "relatedIds":
 				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
 			case "blockedBy":
 				return ec.fieldContext_Bean_blockedBy(ctx, field)
 			case "blocks":
 				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
 			case "related":
 				return ec.fieldContext_Bean_related(ctx, field)
 			case "milestoneItems":
@@ -2609,14 +2373,10 @@ func (ec *executionContext) fieldContext_Mutation_setEpic(ctx context.Context, f
 				return ec.fieldContext_Bean_blockIds(ctx, field)
 			case "relatedIds":
 				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
 			case "blockedBy":
 				return ec.fieldContext_Bean_blockedBy(ctx, field)
 			case "blocks":
 				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
 			case "related":
 				return ec.fieldContext_Bean_related(ctx, field)
 			case "milestoneItems":
@@ -2706,14 +2466,10 @@ func (ec *executionContext) fieldContext_Mutation_setFeature(ctx context.Context
 				return ec.fieldContext_Bean_blockIds(ctx, field)
 			case "relatedIds":
 				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
 			case "blockedBy":
 				return ec.fieldContext_Bean_blockedBy(ctx, field)
 			case "blocks":
 				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
 			case "related":
 				return ec.fieldContext_Bean_related(ctx, field)
 			case "milestoneItems":
@@ -2803,14 +2559,10 @@ func (ec *executionContext) fieldContext_Mutation_addBlock(ctx context.Context, 
 				return ec.fieldContext_Bean_blockIds(ctx, field)
 			case "relatedIds":
 				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
 			case "blockedBy":
 				return ec.fieldContext_Bean_blockedBy(ctx, field)
 			case "blocks":
 				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
 			case "related":
 				return ec.fieldContext_Bean_related(ctx, field)
 			case "milestoneItems":
@@ -2900,14 +2652,10 @@ func (ec *executionContext) fieldContext_Mutation_removeBlock(ctx context.Contex
 				return ec.fieldContext_Bean_blockIds(ctx, field)
 			case "relatedIds":
 				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
 			case "blockedBy":
 				return ec.fieldContext_Bean_blockedBy(ctx, field)
 			case "blocks":
 				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
 			case "related":
 				return ec.fieldContext_Bean_related(ctx, field)
 			case "milestoneItems":
@@ -2997,14 +2745,10 @@ func (ec *executionContext) fieldContext_Mutation_addRelated(ctx context.Context
 				return ec.fieldContext_Bean_blockIds(ctx, field)
 			case "relatedIds":
 				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
 			case "blockedBy":
 				return ec.fieldContext_Bean_blockedBy(ctx, field)
 			case "blocks":
 				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
 			case "related":
 				return ec.fieldContext_Bean_related(ctx, field)
 			case "milestoneItems":
@@ -3094,14 +2838,10 @@ func (ec *executionContext) fieldContext_Mutation_removeRelated(ctx context.Cont
 				return ec.fieldContext_Bean_blockIds(ctx, field)
 			case "relatedIds":
 				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
 			case "blockedBy":
 				return ec.fieldContext_Bean_blockedBy(ctx, field)
 			case "blocks":
 				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
 			case "related":
 				return ec.fieldContext_Bean_related(ctx, field)
 			case "milestoneItems":
@@ -3122,200 +2862,6 @@ func (ec *executionContext) fieldContext_Mutation_removeRelated(ctx context.Cont
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_removeRelated_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_addDuplicate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_addDuplicate,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().AddDuplicate(ctx, fc.Args["id"].(string), fc.Args["target"].(string))
-		},
-		nil,
-		ec.marshalNBean2ᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐBean,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_addDuplicate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Bean_id(ctx, field)
-			case "slug":
-				return ec.fieldContext_Bean_slug(ctx, field)
-			case "path":
-				return ec.fieldContext_Bean_path(ctx, field)
-			case "title":
-				return ec.fieldContext_Bean_title(ctx, field)
-			case "status":
-				return ec.fieldContext_Bean_status(ctx, field)
-			case "type":
-				return ec.fieldContext_Bean_type(ctx, field)
-			case "priority":
-				return ec.fieldContext_Bean_priority(ctx, field)
-			case "tags":
-				return ec.fieldContext_Bean_tags(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Bean_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_Bean_updatedAt(ctx, field)
-			case "body":
-				return ec.fieldContext_Bean_body(ctx, field)
-			case "milestoneId":
-				return ec.fieldContext_Bean_milestoneId(ctx, field)
-			case "epicId":
-				return ec.fieldContext_Bean_epicId(ctx, field)
-			case "featureId":
-				return ec.fieldContext_Bean_featureId(ctx, field)
-			case "milestone":
-				return ec.fieldContext_Bean_milestone(ctx, field)
-			case "epic":
-				return ec.fieldContext_Bean_epic(ctx, field)
-			case "feature":
-				return ec.fieldContext_Bean_feature(ctx, field)
-			case "blockIds":
-				return ec.fieldContext_Bean_blockIds(ctx, field)
-			case "relatedIds":
-				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
-			case "blockedBy":
-				return ec.fieldContext_Bean_blockedBy(ctx, field)
-			case "blocks":
-				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
-			case "related":
-				return ec.fieldContext_Bean_related(ctx, field)
-			case "milestoneItems":
-				return ec.fieldContext_Bean_milestoneItems(ctx, field)
-			case "epicItems":
-				return ec.fieldContext_Bean_epicItems(ctx, field)
-			case "featureItems":
-				return ec.fieldContext_Bean_featureItems(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Bean", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_addDuplicate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_removeDuplicate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Mutation_removeDuplicate,
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Mutation().RemoveDuplicate(ctx, fc.Args["id"].(string), fc.Args["target"].(string))
-		},
-		nil,
-		ec.marshalNBean2ᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐBean,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Mutation_removeDuplicate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Bean_id(ctx, field)
-			case "slug":
-				return ec.fieldContext_Bean_slug(ctx, field)
-			case "path":
-				return ec.fieldContext_Bean_path(ctx, field)
-			case "title":
-				return ec.fieldContext_Bean_title(ctx, field)
-			case "status":
-				return ec.fieldContext_Bean_status(ctx, field)
-			case "type":
-				return ec.fieldContext_Bean_type(ctx, field)
-			case "priority":
-				return ec.fieldContext_Bean_priority(ctx, field)
-			case "tags":
-				return ec.fieldContext_Bean_tags(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Bean_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_Bean_updatedAt(ctx, field)
-			case "body":
-				return ec.fieldContext_Bean_body(ctx, field)
-			case "milestoneId":
-				return ec.fieldContext_Bean_milestoneId(ctx, field)
-			case "epicId":
-				return ec.fieldContext_Bean_epicId(ctx, field)
-			case "featureId":
-				return ec.fieldContext_Bean_featureId(ctx, field)
-			case "milestone":
-				return ec.fieldContext_Bean_milestone(ctx, field)
-			case "epic":
-				return ec.fieldContext_Bean_epic(ctx, field)
-			case "feature":
-				return ec.fieldContext_Bean_feature(ctx, field)
-			case "blockIds":
-				return ec.fieldContext_Bean_blockIds(ctx, field)
-			case "relatedIds":
-				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
-			case "blockedBy":
-				return ec.fieldContext_Bean_blockedBy(ctx, field)
-			case "blocks":
-				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
-			case "related":
-				return ec.fieldContext_Bean_related(ctx, field)
-			case "milestoneItems":
-				return ec.fieldContext_Bean_milestoneItems(ctx, field)
-			case "epicItems":
-				return ec.fieldContext_Bean_epicItems(ctx, field)
-			case "featureItems":
-				return ec.fieldContext_Bean_featureItems(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Bean", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_removeDuplicate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3385,14 +2931,10 @@ func (ec *executionContext) fieldContext_Query_bean(ctx context.Context, field g
 				return ec.fieldContext_Bean_blockIds(ctx, field)
 			case "relatedIds":
 				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
 			case "blockedBy":
 				return ec.fieldContext_Bean_blockedBy(ctx, field)
 			case "blocks":
 				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
 			case "related":
 				return ec.fieldContext_Bean_related(ctx, field)
 			case "milestoneItems":
@@ -3482,14 +3024,10 @@ func (ec *executionContext) fieldContext_Query_beans(ctx context.Context, field 
 				return ec.fieldContext_Bean_blockIds(ctx, field)
 			case "relatedIds":
 				return ec.fieldContext_Bean_relatedIds(ctx, field)
-			case "duplicateIds":
-				return ec.fieldContext_Bean_duplicateIds(ctx, field)
 			case "blockedBy":
 				return ec.fieldContext_Bean_blockedBy(ctx, field)
 			case "blocks":
 				return ec.fieldContext_Bean_blocks(ctx, field)
-			case "duplicates":
-				return ec.fieldContext_Bean_duplicates(ctx, field)
 			case "related":
 				return ec.fieldContext_Bean_related(ctx, field)
 			case "milestoneItems":
@@ -5680,42 +5218,6 @@ func (ec *executionContext) _Bean(ctx context.Context, sel ast.SelectionSet, obj
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "duplicateIds":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Bean_duplicateIds(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "blockedBy":
 			field := field
 
@@ -5762,42 +5264,6 @@ func (ec *executionContext) _Bean(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Bean_blocks(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "duplicates":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Bean_duplicates(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -6076,20 +5542,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "removeRelated":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_removeRelated(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "addDuplicate":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_addDuplicate(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "removeDuplicate":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_removeDuplicate(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

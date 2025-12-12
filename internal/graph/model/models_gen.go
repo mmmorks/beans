@@ -111,8 +111,6 @@ const (
 	LinkTypeBlocks LinkType = "BLOCKS"
 	// Relationship: beans are related
 	LinkTypeRelated LinkType = "RELATED"
-	// Relationship: beans are duplicates
-	LinkTypeDuplicates LinkType = "DUPLICATES"
 )
 
 var AllLinkType = []LinkType{
@@ -121,12 +119,11 @@ var AllLinkType = []LinkType{
 	LinkTypeFeature,
 	LinkTypeBlocks,
 	LinkTypeRelated,
-	LinkTypeDuplicates,
 }
 
 func (e LinkType) IsValid() bool {
 	switch e {
-	case LinkTypeMilestone, LinkTypeEpic, LinkTypeFeature, LinkTypeBlocks, LinkTypeRelated, LinkTypeDuplicates:
+	case LinkTypeMilestone, LinkTypeEpic, LinkTypeFeature, LinkTypeBlocks, LinkTypeRelated:
 		return true
 	}
 	return false

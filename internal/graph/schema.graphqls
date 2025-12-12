@@ -67,15 +67,6 @@ type Mutation {
   """
   removeRelated(id: ID!, target: ID!): Bean!
 
-  """
-  Add a duplicate relationship
-  """
-  addDuplicate(id: ID!, target: ID!): Bean!
-
-  """
-  Remove a duplicate relationship
-  """
-  removeDuplicate(id: ID!, target: ID!): Bean!
 }
 
 """
@@ -162,16 +153,12 @@ type Bean {
   blockIds: [String!]!
   "IDs of related beans"
   relatedIds: [String!]!
-  "IDs of duplicate beans"
-  duplicateIds: [String!]!
 
   # Computed relationship fields (resolved beans)
   "Beans that block this one (incoming 'blocks' links)"
   blockedBy: [Bean!]!
   "Beans this one blocks (outgoing 'blocks' links)"
   blocks: [Bean!]!
-  "Duplicate beans (bidirectional)"
-  duplicates: [Bean!]!
   "Related beans (bidirectional)"
   related: [Bean!]!
 
@@ -198,8 +185,6 @@ enum LinkType {
   BLOCKS
   "Relationship: beans are related"
   RELATED
-  "Relationship: beans are duplicates"
-  DUPLICATES
 }
 
 """

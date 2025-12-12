@@ -174,19 +174,6 @@ func hasOutgoingLink(b *bean.Bean, filter *model.LinkFilter) bool {
 			}
 		}
 		return false
-	case model.LinkTypeDuplicates:
-		if len(b.Duplicates) == 0 {
-			return false
-		}
-		if filter.Target == nil {
-			return true
-		}
-		for _, target := range b.Duplicates {
-			if target == *filter.Target {
-				return true
-			}
-		}
-		return false
 	default:
 		return false
 	}

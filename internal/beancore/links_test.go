@@ -132,15 +132,10 @@ func TestDetectCycle(t *testing.T) {
 	})
 
 	t.Run("ignores non-hierarchical links", func(t *testing.T) {
-		// "related" and "duplicates" links should not be checked for cycles
+		// "related" links should not be checked for cycles
 		cycle := core.DetectCycle("ccc3", "related", "aaa1")
 		if cycle != nil {
 			t.Errorf("DetectCycle should ignore 'related' links, got: %v", cycle)
-		}
-
-		cycle = core.DetectCycle("ccc3", "duplicates", "aaa1")
-		if cycle != nil {
-			t.Errorf("DetectCycle should ignore 'duplicates' links, got: %v", cycle)
 		}
 	})
 

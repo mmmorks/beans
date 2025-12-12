@@ -32,12 +32,10 @@ var (
 	updateNoFeature   bool
 
 	// Relationship link flags
-	updateBlock      []string
-	updateUnblock    []string
-	updateRelated    []string
-	updateUnrelated  []string
-	updateDuplicate  []string
-	updateUnduplicate []string
+	updateBlock     []string
+	updateUnblock   []string
+	updateRelated   []string
+	updateUnrelated []string
 
 	updateJSON bool
 )
@@ -62,8 +60,7 @@ Hierarchy links:
 
 Relationship links:
   --block/--unblock             Add/remove block relationships
-  --related/--unrelated         Add/remove related relationships
-  --duplicate/--unduplicate     Add/remove duplicate relationships`,
+  --related/--unrelated         Add/remove related relationships`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
@@ -169,22 +166,6 @@ Relationship links:
 				return cmdError(updateJSON, output.ErrValidation, "failed to remove related: %s", err)
 			}
 			changes = append(changes, "related")
-		}
-
-		// Process duplicate changes
-		for _, target := range updateDuplicate {
-			b, err = resolver.Mutation().AddDuplicate(ctx, b.ID, target)
-			if err != nil {
-				return cmdError(updateJSON, output.ErrValidation, "failed to add duplicate: %s", err)
-			}
-			changes = append(changes, "duplicates")
-		}
-		for _, target := range updateUnduplicate {
-			b, err = resolver.Mutation().RemoveDuplicate(ctx, b.ID, target)
-			if err != nil {
-				return cmdError(updateJSON, output.ErrValidation, "failed to remove duplicate: %s", err)
-			}
-			changes = append(changes, "duplicates")
 		}
 
 		// Require at least one change
@@ -297,8 +278,6 @@ func init() {
 	updateCmd.Flags().StringArrayVar(&updateUnblock, "unblock", nil, "Remove block relationship (can be repeated)")
 	updateCmd.Flags().StringArrayVar(&updateRelated, "related", nil, "Add related relationship (can be repeated)")
 	updateCmd.Flags().StringArrayVar(&updateUnrelated, "unrelated", nil, "Remove related relationship (can be repeated)")
-	updateCmd.Flags().StringArrayVar(&updateDuplicate, "duplicate", nil, "Add duplicate relationship (can be repeated)")
-	updateCmd.Flags().StringArrayVar(&updateUnduplicate, "unduplicate", nil, "Remove duplicate relationship (can be repeated)")
 
 	updateCmd.Flags().BoolVar(&updateJSON, "json", false, "Output as JSON")
 	updateCmd.MarkFlagsMutuallyExclusive("body", "body-file")

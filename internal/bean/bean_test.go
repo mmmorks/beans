@@ -551,8 +551,6 @@ blocks:
     - def456
 related:
     - xyz789
-duplicates:
-    - dup1
 ---`
 		bean, err := Parse(strings.NewReader(input))
 		if err != nil {
@@ -563,9 +561,6 @@ duplicates:
 		}
 		if len(bean.Related) != 1 || bean.Related[0] != "xyz789" {
 			t.Errorf("Related = %v, want [xyz789]", bean.Related)
-		}
-		if len(bean.Duplicates) != 1 || bean.Duplicates[0] != "dup1" {
-			t.Errorf("Duplicates = %v, want [dup1]", bean.Duplicates)
 		}
 	})
 
@@ -581,7 +576,7 @@ status: todo
 		if bean.Milestone != "" || bean.Epic != "" || bean.Feature != "" {
 			t.Error("expected empty hierarchy links")
 		}
-		if len(bean.Blocks) != 0 || len(bean.Related) != 0 || len(bean.Duplicates) != 0 {
+		if len(bean.Blocks) != 0 || len(bean.Related) != 0 {
 			t.Error("expected empty relationship links")
 		}
 	})
@@ -647,14 +642,13 @@ func TestRenderWithLinks(t *testing.T) {
 
 func TestLinksRoundtrip(t *testing.T) {
 	original := &Bean{
-		Title:      "Test",
-		Status:     "todo",
-		Milestone:  "m1",
-		Epic:       "e1",
-		Feature:    "f1",
-		Blocks:     []string{"b1", "b2"},
-		Related:    []string{"r1"},
-		Duplicates: []string{"d1", "d2", "d3"},
+		Title:     "Test",
+		Status:    "todo",
+		Milestone: "m1",
+		Epic:      "e1",
+		Feature:   "f1",
+		Blocks:    []string{"b1", "b2"},
+		Related:   []string{"r1"},
 	}
 
 	rendered, err := original.Render()
@@ -681,9 +675,6 @@ func TestLinksRoundtrip(t *testing.T) {
 	}
 	if len(parsed.Related) != len(original.Related) {
 		t.Errorf("Related count = %d, want %d", len(parsed.Related), len(original.Related))
-	}
-	if len(parsed.Duplicates) != len(original.Duplicates) {
-		t.Errorf("Duplicates count = %d, want %d", len(parsed.Duplicates), len(original.Duplicates))
 	}
 }
 

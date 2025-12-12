@@ -162,11 +162,6 @@ func formatLinks(b *bean.Bean) string {
 			ui.Muted.Render("related:"),
 			ui.ID.Render(target)))
 	}
-	for _, target := range b.Duplicates {
-		parts = append(parts, fmt.Sprintf("%s %s",
-			ui.Muted.Render("duplicates:"),
-			ui.ID.Render(target)))
-	}
 
 	return strings.Join(parts, "\n")
 }

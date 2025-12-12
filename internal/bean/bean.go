@@ -124,9 +124,8 @@ type Bean struct {
 	Feature   string `yaml:"feature,omitempty" json:"feature,omitempty"`
 
 	// Relationship links (multiple targets)
-	Blocks     []string `yaml:"blocks,omitempty" json:"blocks,omitempty"`
-	Related    []string `yaml:"related,omitempty" json:"related,omitempty"`
-	Duplicates []string `yaml:"duplicates,omitempty" json:"duplicates,omitempty"`
+	Blocks  []string `yaml:"blocks,omitempty" json:"blocks,omitempty"`
+	Related []string `yaml:"related,omitempty" json:"related,omitempty"`
 }
 
 // Link helper methods for Blocks
@@ -163,23 +162,6 @@ func (b *Bean) RemoveRelated(target string) {
 	b.Related = sliceRemove(b.Related, target)
 }
 
-// Link helper methods for Duplicates
-
-// HasDuplicate returns true if this bean is a duplicate of the given target.
-func (b *Bean) HasDuplicate(target string) bool {
-	return sliceContains(b.Duplicates, target)
-}
-
-// AddDuplicate adds a duplicate relationship to the given target.
-func (b *Bean) AddDuplicate(target string) {
-	b.Duplicates = sliceAdd(b.Duplicates, target)
-}
-
-// RemoveDuplicate removes a duplicate relationship to the given target.
-func (b *Bean) RemoveDuplicate(target string) {
-	b.Duplicates = sliceRemove(b.Duplicates, target)
-}
-
 // frontMatter is the subset of Bean that gets serialized to YAML front matter.
 // Used for parsing via yaml.v2 (from frontmatter lib).
 type frontMatter struct {
@@ -197,9 +179,8 @@ type frontMatter struct {
 	Feature   string `yaml:"feature,omitempty"`
 
 	// Relationship links
-	Blocks     []string `yaml:"blocks,omitempty"`
-	Related    []string `yaml:"related,omitempty"`
-	Duplicates []string `yaml:"duplicates,omitempty"`
+	Blocks  []string `yaml:"blocks,omitempty"`
+	Related []string `yaml:"related,omitempty"`
 }
 
 // Parse reads a bean from a reader (markdown with YAML front matter).
@@ -224,9 +205,8 @@ func Parse(r io.Reader) (*Bean, error) {
 		Epic:      fm.Epic,
 		Feature:   fm.Feature,
 		// Relationship links
-		Blocks:     fm.Blocks,
-		Related:    fm.Related,
-		Duplicates: fm.Duplicates,
+		Blocks:  fm.Blocks,
+		Related: fm.Related,
 	}, nil
 }
 
@@ -246,9 +226,8 @@ type renderFrontMatter struct {
 	Feature   string `yaml:"feature,omitempty"`
 
 	// Relationship links
-	Blocks     []string `yaml:"blocks,omitempty"`
-	Related    []string `yaml:"related,omitempty"`
-	Duplicates []string `yaml:"duplicates,omitempty"`
+	Blocks  []string `yaml:"blocks,omitempty"`
+	Related []string `yaml:"related,omitempty"`
 }
 
 // Render serializes the bean back to markdown with YAML front matter.
@@ -266,9 +245,8 @@ func (b *Bean) Render() ([]byte, error) {
 		Epic:      b.Epic,
 		Feature:   b.Feature,
 		// Relationship links
-		Blocks:     b.Blocks,
-		Related:    b.Related,
-		Duplicates: b.Duplicates,
+		Blocks:  b.Blocks,
+		Related: b.Related,
 	}
 
 	fmBytes, err := yaml.Marshal(&fm)

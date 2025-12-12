@@ -28,7 +28,7 @@ var (
 var HierarchyLinkFields = []string{"milestone", "epic", "feature"}
 
 // RelationshipLinkFields are the multi-target relationship link fields.
-var RelationshipLinkFields = []string{"blocks", "related", "duplicates"}
+var RelationshipLinkFields = []string{"blocks", "related"}
 
 // Core provides thread-safe in-memory storage for beans with filesystem persistence.
 type Core struct {
@@ -171,9 +171,6 @@ func (c *Core) loadBean(path string) (*bean.Bean, error) {
 	}
 	if b.Related == nil {
 		b.Related = []string{}
-	}
-	if b.Duplicates == nil {
-		b.Duplicates = []string{}
 	}
 	if b.CreatedAt == nil {
 		if b.UpdatedAt != nil {

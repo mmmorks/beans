@@ -455,8 +455,6 @@ func (m detailModel) formatLinkLabel(linkType string, incoming bool) string {
 			return "In epic"
 		case "feature":
 			return "In feature"
-		case "duplicates":
-			return "Duplicated by"
 		case "related":
 			return "Related"
 		default:
@@ -474,8 +472,6 @@ func (m detailModel) formatLinkLabel(linkType string, incoming bool) string {
 		return "Epic"
 	case "feature":
 		return "Feature"
-	case "duplicates":
-		return "Duplicates"
 	case "related":
 		return "Related"
 	default:
@@ -503,11 +499,6 @@ func (m detailModel) resolveAllLinks() []resolvedLink {
 	if blocks, _ := beanResolver.Blocks(ctx, m.bean); blocks != nil {
 		for _, b := range blocks {
 			links = append(links, resolvedLink{linkType: "blocks", bean: b, incoming: false})
-		}
-	}
-	if duplicates, _ := beanResolver.Duplicates(ctx, m.bean); duplicates != nil {
-		for _, b := range duplicates {
-			links = append(links, resolvedLink{linkType: "duplicates", bean: b, incoming: false})
 		}
 	}
 	if related, _ := beanResolver.Related(ctx, m.bean); related != nil {
@@ -538,7 +529,7 @@ func (m detailModel) resolveAllLinks() []resolvedLink {
 			links = append(links, resolvedLink{linkType: "feature", bean: b, incoming: true})
 		}
 	}
-	// Note: duplicates and related are bidirectional, already handled above
+	// Note: related is bidirectional, already handled above
 
 	// Sort all links by link type label first, then by bean status/type/title
 	// This keeps link categories together while ordering beans consistently with the main list

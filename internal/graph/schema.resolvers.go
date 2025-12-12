@@ -83,11 +83,6 @@ func (r *beanResolver) RelatedIds(ctx context.Context, obj *bean.Bean) ([]string
 	return obj.Related, nil
 }
 
-// DuplicateIds is the resolver for the duplicateIds field.
-func (r *beanResolver) DuplicateIds(ctx context.Context, obj *bean.Bean) ([]string, error) {
-	return obj.Duplicates, nil
-}
-
 // BlockedBy is the resolver for the blockedBy field.
 func (r *beanResolver) BlockedBy(ctx context.Context, obj *bean.Bean) ([]*bean.Bean, error) {
 	incoming := r.Core.FindIncomingLinks(obj.ID)
@@ -108,31 +103,6 @@ func (r *beanResolver) Blocks(ctx context.Context, obj *bean.Bean) ([]*bean.Bean
 			result = append(result, target)
 		}
 	}
-	return result, nil
-}
-
-// Duplicates is the resolver for the duplicates field.
-// Bidirectional: returns both outgoing and incoming 'duplicates' links.
-func (r *beanResolver) Duplicates(ctx context.Context, obj *bean.Bean) ([]*bean.Bean, error) {
-	seen := make(map[string]bool)
-	var result []*bean.Bean
-
-	// Outgoing links
-	for _, targetID := range obj.Duplicates {
-		if target, err := r.Core.Get(targetID); err == nil && !seen[target.ID] {
-			seen[target.ID] = true
-			result = append(result, target)
-		}
-	}
-
-	// Incoming links
-	for _, link := range r.Core.FindIncomingLinks(obj.ID) {
-		if link.LinkType == "duplicates" && !seen[link.FromBean.ID] {
-			seen[link.FromBean.ID] = true
-			result = append(result, link.FromBean)
-		}
-	}
-
 	return result, nil
 }
 
@@ -400,38 +370,6 @@ func (r *mutationResolver) RemoveRelated(ctx context.Context, id string, target 
 	}
 
 	b.RemoveRelated(target)
-
-	if err := r.Core.Update(b); err != nil {
-		return nil, err
-	}
-
-	return b, nil
-}
-
-// AddDuplicate is the resolver for the addDuplicate field.
-func (r *mutationResolver) AddDuplicate(ctx context.Context, id string, target string) (*bean.Bean, error) {
-	b, err := r.Core.Get(id)
-	if err != nil {
-		return nil, err
-	}
-
-	b.AddDuplicate(target)
-
-	if err := r.Core.Update(b); err != nil {
-		return nil, err
-	}
-
-	return b, nil
-}
-
-// RemoveDuplicate is the resolver for the removeDuplicate field.
-func (r *mutationResolver) RemoveDuplicate(ctx context.Context, id string, target string) (*bean.Bean, error) {
-	b, err := r.Core.Get(id)
-	if err != nil {
-		return nil, err
-	}
-
-	b.RemoveDuplicate(target)
 
 	if err := r.Core.Update(b); err != nil {
 		return nil, err
