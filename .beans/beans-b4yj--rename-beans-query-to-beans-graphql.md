@@ -1,9 +1,10 @@
 ---
 title: Rename 'beans query' to 'beans graphql'
-status: backlog
+status: todo
 type: feature
+priority: normal
 created_at: 2025-12-12T22:38:27Z
-updated_at: 2025-12-12T22:38:27Z
+updated_at: 2025-12-12T23:04:42Z
 parent: beans-xnp8
 ---
 

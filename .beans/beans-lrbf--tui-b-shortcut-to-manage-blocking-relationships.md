@@ -1,9 +1,10 @@
 ---
 title: 'TUI: ''b'' shortcut to manage blocking relationships'
-status: backlog
+status: todo
 type: feature
+priority: normal
 created_at: 2025-12-12T22:38:27Z
-updated_at: 2025-12-12T22:38:27Z
+updated_at: 2025-12-12T23:04:44Z
 parent: beans-xnp8
 ---
 

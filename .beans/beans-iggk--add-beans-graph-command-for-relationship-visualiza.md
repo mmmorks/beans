@@ -2,11 +2,12 @@
 title: Add beans graph command for relationship visualization
 status: backlog
 type: feature
+priority: normal
 tags:
     - cli
     - visualization
 created_at: 2025-12-07T11:29:37Z
-updated_at: 2025-12-08T17:02:44Z
+updated_at: 2025-12-12T23:15:13Z
 ---
 
 

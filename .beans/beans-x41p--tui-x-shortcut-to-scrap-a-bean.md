@@ -1,9 +1,10 @@
 ---
 title: 'TUI: ''x'' shortcut to scrap a bean'
-status: backlog
+status: todo
 type: feature
+priority: normal
 created_at: 2025-12-12T22:39:31Z
-updated_at: 2025-12-12T22:39:31Z
+updated_at: 2025-12-12T23:04:46Z
 parent: beans-xnp8
 ---
 
