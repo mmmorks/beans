@@ -18,14 +18,20 @@ https://github.com/user-attachments/assets/dbe45408-d3ed-4681-a436-a5e3046163da
 
 ## Features
 
-- Track tasks, bugs, features, and more right alongside your code.
-- Plain old Markdown files stored in a `.beans` directory in your project. Easy to version control, readable and editable by humans and machines alike!
-- Use the `beans` CLI to create, list, view, update, and archive beans; but more importantly, let your coding agent do it for you!
-- Supercharge your robot friend with full context about your project and its open tasks. A built-in GraphQL query engine allows your agent to get exactly the information it needs, keeping token use to a minimum.
-- A beautiful built-in TUI for browsing and managing your beans from the terminal.
-- Generates a Markdown roadmap document for your project from your data.
+- **Track tasks, bugs, features**, and more right alongside your code.
+- **Plain old Markdown files** stored in a `.beans` directory in your project. Easy to version control, readable and editable by humans and machines alike!
+- Use the `beans` CLI to create, list, view, update, and archive beans; but more importantly, **let your coding agent do it for you**!
+- **Supercharge your robot friend** with full context about your project and its open tasks. A built-in **GraphQL query engine** allows your agent to get exactly the information it needs, keeping token use to a minimum.
+- A beautiful **built-in** TUI for browsing and managing your beans from the terminal.
+- Generates a **Markdown roadmap document** for your project from your data.
 
 ## Installation
+
+We'll need to do three things:
+
+1. Install the `beans` CLI tool.
+2. Configure your project to use it.
+3. Configure your coding agent to interact with it.
 
 Either download Beans from the [Releases section](https://github.com/hmans/beans/releases), or install it via Homebrew:
 
@@ -39,17 +45,17 @@ Alternatively, install directly via Go:
 go install github.com/hmans/beans@latest
 ```
 
-## Setup
+## Configure Your Project
 
-Now initialize Beans in your project:
+Inside the root directory of your project, run:
 
 ```bash
 beans init
 ```
 
-This will create a `.beans/` directory in your project and a `.beans.yml` configuration file at the project root. Everything is meant to be tracked in your version control system.
+This will create a `.beans/` directory and a `.beans.yml` configuration file at the project root. All of it is meant to be tracked in your version control system.
 
-You can interact with your Beans through the `beans` CLI. To get a list of available commands:
+From this point onward, you can interact with your Beans through the `beans` CLI. To get a list of available commands:
 
 ```bash
 beans help
@@ -82,7 +88,7 @@ An official Beans plugin for Claude is in the works, but for the time being, ple
 
 You can use Beans with other coding agents by configuring them to run `beans prime` to get the prompt instructions for task management. We'll add specific integrations for popular agents over time.
 
-## Usage
+## Usage Hints
 
 Assuming you have integrated Beans into your coding agent correctly, it will already know how to create and manage beans for you. You can use the usual assortment of natural language inquiries. If you've just
 added Beans to an existing project, you could try asking your agent to identify potential tasks and create beans for them:
@@ -101,3 +107,11 @@ You can also specifically ask it to start working on a particular bean:
 
 This project currently does not accept contributions -- it's just way too early for that!
 But if you do have suggestions or feedback, please feel free to open an issue.
+
+## License
+
+This project is licensed under the Apache-2.0 License. See the [LICENSE](LICENSE) file for details.
+
+## Getting in Touch
+
+If you have any questions, suggestions, or just want to say hi, feel free to reach out to me [on Bluesky](https://bsky.app/profile/hmans.dev), or [open an issue](https://github.com/hmans/beans/issues) in this repository.
