@@ -440,7 +440,7 @@ func TestQueryBeansWithLinks(t *testing.T) {
 	t.Run("filter hasLinks epic", func(t *testing.T) {
 		qr := resolver.Query()
 		filter := &model.BeanFilter{
-			HasLinks: []*model.LinkFilter{{Type: "epic"}},
+			HasLinks: []*model.LinkFilter{{Type: model.LinkTypeEpic}},
 		}
 		got, err := qr.Beans(ctx, filter)
 		if err != nil {
@@ -457,7 +457,7 @@ func TestQueryBeansWithLinks(t *testing.T) {
 	t.Run("filter noLinks epic", func(t *testing.T) {
 		qr := resolver.Query()
 		filter := &model.BeanFilter{
-			NoLinks: []*model.LinkFilter{{Type: "epic"}},
+			NoLinks: []*model.LinkFilter{{Type: model.LinkTypeEpic}},
 		}
 		got, err := qr.Beans(ctx, filter)
 		if err != nil {
@@ -471,7 +471,7 @@ func TestQueryBeansWithLinks(t *testing.T) {
 	t.Run("filter linkedAs blocks", func(t *testing.T) {
 		qr := resolver.Query()
 		filter := &model.BeanFilter{
-			LinkedAs: []*model.LinkFilter{{Type: "blocks"}},
+			LinkedAs: []*model.LinkFilter{{Type: model.LinkTypeBlocks}},
 		}
 		got, err := qr.Beans(ctx, filter)
 		if err != nil {
@@ -488,7 +488,7 @@ func TestQueryBeansWithLinks(t *testing.T) {
 	t.Run("filter noLinkedAs blocks", func(t *testing.T) {
 		qr := resolver.Query()
 		filter := &model.BeanFilter{
-			NoLinkedAs: []*model.LinkFilter{{Type: "blocks"}},
+			NoLinkedAs: []*model.LinkFilter{{Type: model.LinkTypeBlocks}},
 		}
 		got, err := qr.Beans(ctx, filter)
 		if err != nil {
@@ -504,7 +504,7 @@ func TestQueryBeansWithLinks(t *testing.T) {
 		qr := resolver.Query()
 		target := "has-parent"
 		filter := &model.BeanFilter{
-			HasLinks: []*model.LinkFilter{{Type: "blocks", Target: &target}},
+			HasLinks: []*model.LinkFilter{{Type: model.LinkTypeBlocks, Target: &target}},
 		}
 		got, err := qr.Beans(ctx, filter)
 		if err != nil {
@@ -522,7 +522,7 @@ func TestQueryBeansWithLinks(t *testing.T) {
 		qr := resolver.Query()
 		target := "no-links"
 		filter := &model.BeanFilter{
-			HasLinks: []*model.LinkFilter{{Type: "blocks", Target: &target}},
+			HasLinks: []*model.LinkFilter{{Type: model.LinkTypeBlocks, Target: &target}},
 		}
 		got, err := qr.Beans(ctx, filter)
 		if err != nil {
@@ -537,7 +537,7 @@ func TestQueryBeansWithLinks(t *testing.T) {
 		qr := resolver.Query()
 		target := "has-parent"
 		filter := &model.BeanFilter{
-			NoLinks: []*model.LinkFilter{{Type: "blocks", Target: &target}},
+			NoLinks: []*model.LinkFilter{{Type: model.LinkTypeBlocks, Target: &target}},
 		}
 		got, err := qr.Beans(ctx, filter)
 		if err != nil {

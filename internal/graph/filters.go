@@ -1,6 +1,8 @@
 package graph
 
 import (
+	"strings"
+
 	"github.com/hmans/beans/internal/bean"
 	"github.com/hmans/beans/internal/beancore"
 	"github.com/hmans/beans/internal/graph/model"
@@ -122,7 +124,7 @@ outer:
 // hasOutgoingLink checks if a bean has an outgoing link matching the filter.
 func hasOutgoingLink(b *bean.Bean, filter *model.LinkFilter) bool {
 	switch filter.Type {
-	case "milestone":
+	case model.LinkTypeMilestone:
 		if b.Milestone == "" {
 			return false
 		}
@@ -130,7 +132,7 @@ func hasOutgoingLink(b *bean.Bean, filter *model.LinkFilter) bool {
 			return true
 		}
 		return b.Milestone == *filter.Target
-	case "epic":
+	case model.LinkTypeEpic:
 		if b.Epic == "" {
 			return false
 		}
@@ -138,7 +140,7 @@ func hasOutgoingLink(b *bean.Bean, filter *model.LinkFilter) bool {
 			return true
 		}
 		return b.Epic == *filter.Target
-	case "feature":
+	case model.LinkTypeFeature:
 		if b.Feature == "" {
 			return false
 		}
@@ -146,7 +148,7 @@ func hasOutgoingLink(b *bean.Bean, filter *model.LinkFilter) bool {
 			return true
 		}
 		return b.Feature == *filter.Target
-	case "blocks":
+	case model.LinkTypeBlocks:
 		if len(b.Blocks) == 0 {
 			return false
 		}
@@ -159,7 +161,7 @@ func hasOutgoingLink(b *bean.Bean, filter *model.LinkFilter) bool {
 			}
 		}
 		return false
-	case "related":
+	case model.LinkTypeRelated:
 		if len(b.Related) == 0 {
 			return false
 		}
@@ -172,7 +174,7 @@ func hasOutgoingLink(b *bean.Bean, filter *model.LinkFilter) bool {
 			}
 		}
 		return false
-	case "duplicates":
+	case model.LinkTypeDuplicates:
 		if len(b.Duplicates) == 0 {
 			return false
 		}
@@ -227,6 +229,11 @@ outer:
 	return result
 }
 
+// linkTypeToString converts a LinkType enum to the lowercase string used internally.
+func linkTypeToString(lt model.LinkType) string {
+	return strings.ToLower(string(lt))
+}
+
 // filterByIncomingLinks filters beans to include only those that are targets of links matching the filters (OR logic).
 func filterByIncomingLinks(beans []*bean.Bean, filters []*model.LinkFilter, core *beancore.Core) []*bean.Bean {
 	if len(filters) == 0 {
@@ -240,7 +247,7 @@ func filterByIncomingLinks(beans []*bean.Bean, filters []*model.LinkFilter, core
 		for _, link := range incoming {
 			for _, f := range filters {
 				// For incoming links, we check the link type and optionally the source bean ID
-				if link.LinkType != f.Type {
+				if link.LinkType != linkTypeToString(f.Type) {
 					continue
 				}
 				if f.Target == nil {
@@ -277,7 +284,7 @@ outer:
 		incoming := core.FindIncomingLinks(b.ID)
 		for _, link := range incoming {
 			for _, f := range filters {
-				if link.LinkType != f.Type {
+				if link.LinkType != linkTypeToString(f.Type) {
 					continue
 				}
 				if f.Target == nil {

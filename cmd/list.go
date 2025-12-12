@@ -35,6 +35,27 @@ var (
 	listFull       bool
 )
 
+// stringToLinkType converts a CLI string to a LinkType enum value.
+func stringToLinkType(s string) model.LinkType {
+	switch strings.ToUpper(s) {
+	case "MILESTONE":
+		return model.LinkTypeMilestone
+	case "EPIC":
+		return model.LinkTypeEpic
+	case "FEATURE":
+		return model.LinkTypeFeature
+	case "BLOCKS":
+		return model.LinkTypeBlocks
+	case "RELATED":
+		return model.LinkTypeRelated
+	case "DUPLICATES":
+		return model.LinkTypeDuplicates
+	default:
+		// Return the input as-is converted to LinkType (will fail validation if invalid)
+		return model.LinkType(strings.ToUpper(s))
+	}
+}
+
 // parseLinkFilters parses CLI link filter strings (e.g., "blocks" or "blocks:id")
 // into GraphQL LinkFilter models.
 func parseLinkFilters(filters []string) []*model.LinkFilter {
@@ -44,7 +65,7 @@ func parseLinkFilters(filters []string) []*model.LinkFilter {
 	result := make([]*model.LinkFilter, len(filters))
 	for i, f := range filters {
 		parts := strings.SplitN(f, ":", 2)
-		lf := &model.LinkFilter{Type: parts[0]}
+		lf := &model.LinkFilter{Type: stringToLinkType(parts[0])}
 		if len(parts) == 2 {
 			target := parts[1]
 			lf.Target = &target

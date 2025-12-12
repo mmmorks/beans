@@ -30,7 +30,7 @@ If you identify something that should be changed or fixed after completing the u
 Use GraphQL to query for actionable beans (not completed, not blocked):
 
 ```bash
-beans query '{ beans(filter: { excludeStatus: ["completed", "scrapped"], noLinkedAs: [{type: "blocks"}] }) { id title status type priority } }'
+beans query '{ beans(filter: { excludeStatus: ["completed", "scrapped"], noLinkedAs: [{type: BLOCKS}] }) { id title status type priority } }'
 ```
 
 Other useful queries:
@@ -94,10 +94,10 @@ Beans can have relationships to other beans. Use these to express dependencies a
 beans query '{ bean(id: "abc") { title epic { id title } epicItems { id title status } blockedBy { title } blocks { title } } }'
 
 # Find beans blocked by something
-beans query '{ beans(filter: { linkedAs: [{type: "blocks"}] }) { id title blockedBy { title } } }'
+beans query '{ beans(filter: { linkedAs: [{type: BLOCKS}] }) { id title blockedBy { title } } }'
 
-# Find top-level beans (no parent)
-beans query '{ beans(filter: { noLinks: [{type: "epic"}] }) { id title type } }'
+# Find top-level beans (no epic)
+beans query '{ beans(filter: { noLinks: [{type: EPIC}] }) { id title type } }'
 ```
 
 ## Creating new beans

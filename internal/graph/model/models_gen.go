@@ -2,6 +2,13 @@
 
 package model
 
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"strconv"
+)
+
 // Filter options for querying beans
 type BeanFilter struct {
 	// Full-text search across slug, title, and body using Bleve query syntax.
@@ -74,8 +81,8 @@ type CreateBeanInput struct {
 
 // A link filter specifies both the link type and optionally a target bean ID.
 type LinkFilter struct {
-	// Link type (milestone, epic, feature, blocks, duplicates, related)
-	Type string `json:"type"`
+	// Link type to filter on
+	Type LinkType `json:"type"`
 	// Optional target bean ID - if omitted, matches any target
 	Target *string `json:"target,omitempty"`
 }
@@ -112,4 +119,74 @@ type UpdateBeanInput struct {
 	Related []string `json:"related,omitempty"`
 	// IDs of duplicate beans
 	Duplicates []string `json:"duplicates,omitempty"`
+}
+
+// Types of links between beans.
+type LinkType string
+
+const (
+	// Hierarchy: bean belongs to a milestone
+	LinkTypeMilestone LinkType = "MILESTONE"
+	// Hierarchy: bean belongs to an epic
+	LinkTypeEpic LinkType = "EPIC"
+	// Hierarchy: task/bug belongs to a feature
+	LinkTypeFeature LinkType = "FEATURE"
+	// Relationship: this bean blocks another
+	LinkTypeBlocks LinkType = "BLOCKS"
+	// Relationship: beans are related
+	LinkTypeRelated LinkType = "RELATED"
+	// Relationship: beans are duplicates
+	LinkTypeDuplicates LinkType = "DUPLICATES"
+)
+
+var AllLinkType = []LinkType{
+	LinkTypeMilestone,
+	LinkTypeEpic,
+	LinkTypeFeature,
+	LinkTypeBlocks,
+	LinkTypeRelated,
+	LinkTypeDuplicates,
+}
+
+func (e LinkType) IsValid() bool {
+	switch e {
+	case LinkTypeMilestone, LinkTypeEpic, LinkTypeFeature, LinkTypeBlocks, LinkTypeRelated, LinkTypeDuplicates:
+		return true
+	}
+	return false
+}
+
+func (e LinkType) String() string {
+	return string(e)
+}
+
+func (e *LinkType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = LinkType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid LinkType", str)
+	}
+	return nil
+}
+
+func (e LinkType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *LinkType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e LinkType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }

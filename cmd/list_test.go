@@ -153,22 +153,22 @@ func TestParseLinkFilters(t *testing.T) {
 		{
 			name:  "type only",
 			input: []string{"blocks"},
-			want:  []*model.LinkFilter{{Type: "blocks"}},
+			want:  []*model.LinkFilter{{Type: model.LinkTypeBlocks}},
 		},
 		{
 			name:  "type with target",
 			input: []string{"blocks:abc123"},
-			want:  []*model.LinkFilter{{Type: "blocks", Target: strPtr("abc123")}},
+			want:  []*model.LinkFilter{{Type: model.LinkTypeBlocks, Target: strPtr("abc123")}},
 		},
 		{
 			name:  "multiple filters",
-			input: []string{"blocks", "parent:epic1"},
-			want:  []*model.LinkFilter{{Type: "blocks"}, {Type: "parent", Target: strPtr("epic1")}},
+			input: []string{"blocks", "epic:epic1"},
+			want:  []*model.LinkFilter{{Type: model.LinkTypeBlocks}, {Type: model.LinkTypeEpic, Target: strPtr("epic1")}},
 		},
 		{
 			name:  "target with colons",
 			input: []string{"blocks:id:with:colons"},
-			want:  []*model.LinkFilter{{Type: "blocks", Target: strPtr("id:with:colons")}},
+			want:  []*model.LinkFilter{{Type: model.LinkTypeBlocks, Target: strPtr("id:with:colons")}},
 		},
 	}
 

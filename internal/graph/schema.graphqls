@@ -217,11 +217,29 @@ type Bean {
 }
 
 """
+Types of links between beans.
+"""
+enum LinkType {
+  "Hierarchy: bean belongs to a milestone"
+  MILESTONE
+  "Hierarchy: bean belongs to an epic"
+  EPIC
+  "Hierarchy: task/bug belongs to a feature"
+  FEATURE
+  "Relationship: this bean blocks another"
+  BLOCKS
+  "Relationship: beans are related"
+  RELATED
+  "Relationship: beans are duplicates"
+  DUPLICATES
+}
+
+"""
 A link filter specifies both the link type and optionally a target bean ID.
 """
 input LinkFilter {
-  "Link type (milestone, epic, feature, blocks, duplicates, related)"
-  type: String!
+  "Link type to filter on"
+  type: LinkType!
   "Optional target bean ID - if omitted, matches any target"
   target: String
 }

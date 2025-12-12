@@ -5301,7 +5301,7 @@ func (ec *executionContext) unmarshalInputLinkFilter(ctx context.Context, obj an
 		switch k {
 		case "type":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalNLinkType2githubᚗcomᚋhmansᚋbeansᚋinternalᚋgraphᚋmodelᚐLinkType(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -6725,6 +6725,16 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 func (ec *executionContext) unmarshalNLinkFilter2ᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋgraphᚋmodelᚐLinkFilter(ctx context.Context, v any) (*model.LinkFilter, error) {
 	res, err := ec.unmarshalInputLinkFilter(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNLinkType2githubᚗcomᚋhmansᚋbeansᚋinternalᚋgraphᚋmodelᚐLinkType(ctx context.Context, v any) (model.LinkType, error) {
+	var res model.LinkType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNLinkType2githubᚗcomᚋhmansᚋbeansᚋinternalᚋgraphᚋmodelᚐLinkType(ctx context.Context, sel ast.SelectionSet, v model.LinkType) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {
