@@ -385,7 +385,7 @@ func TestSearch_DefaultLimit(t *testing.T) {
 	}
 }
 
-func TestFindIncomingLinks(t *testing.T) {
+func TestFindLinkingBeans(t *testing.T) {
 	idx := setupTestIndex(t)
 
 	// Create beans with various link types
@@ -402,72 +402,51 @@ func TestFindIncomingLinks(t *testing.T) {
 	}
 
 	t.Run("find beans linking to epic", func(t *testing.T) {
-		results, err := idx.FindIncomingLinks("epic1")
+		ids, err := idx.FindLinkingBeans("epic1")
 		if err != nil {
-			t.Fatalf("FindIncomingLinks() error = %v", err)
+			t.Fatalf("FindLinkingBeans() error = %v", err)
 		}
 
 		// Should find feature1, task1, task2 all linking to epic1
-		if len(results) != 3 {
-			t.Errorf("FindIncomingLinks(epic1) returned %d results, want 3", len(results))
-		}
-
-		// Verify all have link type "epic"
-		for _, r := range results {
-			if r.LinkType != "epic" {
-				t.Errorf("unexpected link type %q, want epic", r.LinkType)
-			}
+		if len(ids) != 3 {
+			t.Errorf("FindLinkingBeans(epic1) returned %d results, want 3: %v", len(ids), ids)
 		}
 	})
 
 	t.Run("find beans linking to milestone", func(t *testing.T) {
-		results, err := idx.FindIncomingLinks("milestone1")
+		ids, err := idx.FindLinkingBeans("milestone1")
 		if err != nil {
-			t.Fatalf("FindIncomingLinks() error = %v", err)
+			t.Fatalf("FindLinkingBeans() error = %v", err)
 		}
 
-		if len(results) != 1 {
-			t.Errorf("FindIncomingLinks(milestone1) returned %d results, want 1", len(results))
+		if len(ids) != 1 {
+			t.Errorf("FindLinkingBeans(milestone1) returned %d results, want 1", len(ids))
 		}
-		if results[0].FromID != "task1" || results[0].LinkType != "milestone" {
-			t.Errorf("unexpected result: %+v", results[0])
+		if ids[0] != "task1" {
+			t.Errorf("expected task1, got %s", ids[0])
 		}
 	})
 
-	t.Run("find beans blocking task1", func(t *testing.T) {
-		results, err := idx.FindIncomingLinks("task1")
+	t.Run("find beans linking to task1", func(t *testing.T) {
+		ids, err := idx.FindLinkingBeans("task1")
 		if err != nil {
-			t.Fatalf("FindIncomingLinks() error = %v", err)
+			t.Fatalf("FindLinkingBeans() error = %v", err)
 		}
 
 		// task2 blocks task1, task3 is related to task1
-		blockCount := 0
-		relatedCount := 0
-		for _, r := range results {
-			if r.LinkType == "blocks" {
-				blockCount++
-			}
-			if r.LinkType == "related" {
-				relatedCount++
-			}
-		}
-
-		if blockCount != 1 {
-			t.Errorf("expected 1 blocks link to task1, got %d", blockCount)
-		}
-		if relatedCount != 1 {
-			t.Errorf("expected 1 related link to task1, got %d", relatedCount)
+		if len(ids) != 2 {
+			t.Errorf("FindLinkingBeans(task1) returned %d results, want 2: %v", len(ids), ids)
 		}
 	})
 
-	t.Run("no incoming links", func(t *testing.T) {
-		results, err := idx.FindIncomingLinks("nonexistent")
+	t.Run("no linking beans", func(t *testing.T) {
+		ids, err := idx.FindLinkingBeans("nonexistent")
 		if err != nil {
-			t.Fatalf("FindIncomingLinks() error = %v", err)
+			t.Fatalf("FindLinkingBeans() error = %v", err)
 		}
 
-		if len(results) != 0 {
-			t.Errorf("FindIncomingLinks(nonexistent) returned %d results, want 0", len(results))
+		if len(ids) != 0 {
+			t.Errorf("FindLinkingBeans(nonexistent) returned %d results, want 0", len(ids))
 		}
 	})
 }

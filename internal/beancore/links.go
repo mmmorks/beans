@@ -85,19 +85,24 @@ func (c *Core) FindIncomingLinks(targetID string) []IncomingLink {
 	c.mu.RUnlock()
 
 	if idx != nil {
-		// Use indexed lookup
-		indexResults, err := idx.FindIncomingLinks(targetID)
+		// Use indexed lookup (single query)
+		beanIDs, err := idx.FindLinkingBeans(targetID)
 		if err == nil {
 			c.mu.RLock()
 			defer c.mu.RUnlock()
 
 			var result []IncomingLink
-			for _, ir := range indexResults {
-				if b, ok := c.beans[ir.FromID]; ok {
-					result = append(result, IncomingLink{
-						FromBean: b,
-						LinkType: ir.LinkType,
-					})
+			for _, id := range beanIDs {
+				if b, ok := c.beans[id]; ok {
+					// Determine link type(s) from bean data
+					for _, link := range getAllLinkTargets(b) {
+						if link[1] == targetID {
+							result = append(result, IncomingLink{
+								FromBean: b,
+								LinkType: link[0],
+							})
+						}
+					}
 				}
 			}
 			return result
