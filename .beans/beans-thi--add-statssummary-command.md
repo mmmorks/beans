@@ -1,12 +1,12 @@
 ---
 title: Add stats/summary command
-status: backlog
+status: scrapped
 type: feature
 priority: normal
 tags:
     - cli
 created_at: 2025-12-07T17:08:36Z
-updated_at: 2025-12-11T20:28:46Z
+updated_at: 2025-12-12T07:52:19Z
 links:
     - parent: beans-7lmv
 ---
