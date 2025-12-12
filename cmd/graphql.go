@@ -25,35 +25,36 @@ var (
 	querySchemaOnly bool
 )
 
-var queryCmd = &cobra.Command{
-	Use:   "query <graphql>",
-	Short: "Execute a GraphQL query",
-	Long: `Execute a GraphQL query against the beans data.
+var graphqlCmd = &cobra.Command{
+	Use:     "graphql <query>",
+	Aliases: []string{"query"},
+	Short:   "Execute a GraphQL query or mutation",
+	Long: `Execute a GraphQL query or mutation against the beans data.
 
-The query argument should be a valid GraphQL query string.
+The argument should be a valid GraphQL query or mutation string.
 
 Examples:
   # List all beans
-  beans query '{ beans { id title status } }'
+  beans graphql '{ beans { id title status } }'
 
   # Get a specific bean
-  beans query '{ bean(id: "abc") { title status body } }'
+  beans graphql '{ bean(id: "abc") { title status body } }'
 
   # Filter beans by status
-  beans query '{ beans(filter: { status: ["todo", "in-progress"] }) { id title } }'
+  beans graphql '{ beans(filter: { status: ["todo", "in-progress"] }) { id title } }'
 
   # Get beans with relationships
-  beans query '{ beans { id title blockedBy { id title } children { id title } } }'
+  beans graphql '{ beans { id title blockedBy { id title } children { id title } } }'
 
   # Use variables
-  beans query -v '{"id": "abc"}' 'query GetBean($id: ID!) { bean(id: $id) { title } }'
+  beans graphql -v '{"id": "abc"}' 'query GetBean($id: ID!) { bean(id: $id) { title } }'
 
-  # Read query from stdin (useful for complex queries or escaping issues)
-  echo '{ beans { id title } }' | beans query
-  cat query.graphql | beans query
+  # Read from stdin (useful for complex queries or escaping issues)
+  echo '{ beans { id title } }' | beans graphql
+  cat query.graphql | beans graphql
 
   # Print the schema
-  beans query --schema`,
+  beans graphql --schema`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if querySchemaOnly {
 			return nil
@@ -206,9 +207,9 @@ func GetGraphQLSchema() string {
 }
 
 func init() {
-	queryCmd.Flags().BoolVar(&queryJSON, "json", false, "Output raw JSON (no formatting)")
-	queryCmd.Flags().StringVarP(&queryVariables, "variables", "v", "", "Query variables as JSON string")
-	queryCmd.Flags().StringVarP(&queryOperation, "operation", "o", "", "Operation name (for multi-operation documents)")
-	queryCmd.Flags().BoolVar(&querySchemaOnly, "schema", false, "Print the GraphQL schema and exit")
-	rootCmd.AddCommand(queryCmd)
+	graphqlCmd.Flags().BoolVar(&queryJSON, "json", false, "Output raw JSON (no formatting)")
+	graphqlCmd.Flags().StringVarP(&queryVariables, "variables", "v", "", "Query variables as JSON string")
+	graphqlCmd.Flags().StringVarP(&queryOperation, "operation", "o", "", "Operation name (for multi-operation documents)")
+	graphqlCmd.Flags().BoolVar(&querySchemaOnly, "schema", false, "Print the GraphQL schema and exit")
+	rootCmd.AddCommand(graphqlCmd)
 }
