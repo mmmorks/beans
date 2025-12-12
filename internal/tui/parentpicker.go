@@ -83,15 +83,16 @@ func (d parentItemDelegate) Render(w io.Writer, m list.Model, index int, listIte
 
 // parentPickerModel is the model for the parent picker view
 type parentPickerModel struct {
-	list         list.Model
-	beanID       string // the bean we're setting the parent for
-	beanType     string // type of the bean (to filter eligible parents)
+	list          list.Model
+	beanID        string // the bean we're setting the parent for
+	beanTitle     string // the bean's title
+	beanType      string // type of the bean (to filter eligible parents)
 	currentParent string // current parent ID (to highlight)
-	width        int
-	height       int
+	width         int
+	height        int
 }
 
-func newParentPickerModel(beanID, beanType, currentParent string, resolver *graph.Resolver, cfg *config.Config, width, height int) parentPickerModel {
+func newParentPickerModel(beanID, beanTitle, beanType, currentParent string, resolver *graph.Resolver, cfg *config.Config, width, height int) parentPickerModel {
 	// Get valid parent types for this bean type
 	validParentTypes := beancore.ValidParentTypes(beanType)
 
@@ -185,6 +186,7 @@ func newParentPickerModel(beanID, beanType, currentParent string, resolver *grap
 	return parentPickerModel{
 		list:          l,
 		beanID:        beanID,
+		beanTitle:     beanTitle,
 		beanType:      beanType,
 		currentParent: currentParent,
 		width:         width,
@@ -268,120 +270,19 @@ func (m parentPickerModel) View() string {
 		return "Loading..."
 	}
 
-	// Calculate modal dimensions (60% width, 60% height, with min/max constraints)
-	modalWidth := max(40, min(80, m.width*60/100))
-
-	// Show info about what we're editing
-	subtitle := ui.Muted.Render(fmt.Sprintf("Setting parent for %s (%s)", m.beanType, m.beanID))
-
-	// Footer
-	help := helpKeyStyle.Render("enter") + " " + helpStyle.Render("select") + "  " +
-		helpKeyStyle.Render("/") + " " + helpStyle.Render("filter") + "  " +
-		helpKeyStyle.Render("esc") + " " + helpStyle.Render("cancel")
-
-	// Simple bordered container
-	border := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(ui.ColorPrimary).
-		Padding(0, 1).
-		Width(modalWidth)
-
-	content := subtitle + "\n\n" + m.list.View() + "\n\n" + help
-
-	return border.Render(content)
+	return renderPickerModal(pickerModalConfig{
+		Title:       "Select Parent",
+		BeanTitle:   m.beanTitle,
+		BeanID:      m.beanID,
+		ListContent: m.list.View(),
+		Width:       m.width,
+		WidthPct:    60,
+		MaxWidth:    80,
+	})
 }
 
 // ModalView returns the picker rendered as a centered modal overlay on top of the background
 func (m parentPickerModel) ModalView(bgView string, fullWidth, fullHeight int) string {
 	modal := m.View()
 	return overlayModal(bgView, modal, fullWidth, fullHeight)
-}
-
-// overlayModal places a modal on top of a background view
-func overlayModal(bgView, modal string, width, height int) string {
-	// Split background into lines
-	bgLines := strings.Split(bgView, "\n")
-
-	// Pad or truncate background to fill the screen
-	for len(bgLines) < height {
-		bgLines = append(bgLines, "")
-	}
-	if len(bgLines) > height {
-		bgLines = bgLines[:height]
-	}
-
-	// Dim the background
-	dimStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#555"))
-	for i, line := range bgLines {
-		// Strip existing ANSI codes and dim the text
-		bgLines[i] = dimStyle.Render(stripAnsi(line))
-	}
-
-	// Split modal into lines
-	modalLines := strings.Split(modal, "\n")
-	modalHeight := len(modalLines)
-	modalWidth := lipgloss.Width(modal)
-
-	// Calculate center position
-	startY := (height - modalHeight) / 2
-	startX := (width - modalWidth) / 2
-	if startY < 0 {
-		startY = 0
-	}
-	if startX < 0 {
-		startX = 0
-	}
-
-	// Overlay modal onto background
-	for i, modalLine := range modalLines {
-		bgY := startY + i
-		if bgY >= 0 && bgY < len(bgLines) {
-			bgLines[bgY] = overlayLine(bgLines[bgY], modalLine, startX, width)
-		}
-	}
-
-	return strings.Join(bgLines, "\n")
-}
-
-// overlayLine places a modal line on top of a background line at position x
-func overlayLine(bgLine, modalLine string, startX, maxWidth int) string {
-	// Ensure background line is wide enough
-	bgRunes := []rune(stripAnsi(bgLine))
-	for len(bgRunes) < maxWidth {
-		bgRunes = append(bgRunes, ' ')
-	}
-
-	// Build result: prefix + modal + suffix
-	prefix := string(bgRunes[:startX])
-	modalWidth := lipgloss.Width(modalLine)
-	suffixStart := startX + modalWidth
-	suffix := ""
-	if suffixStart < len(bgRunes) {
-		suffix = string(bgRunes[suffixStart:])
-	}
-
-	// Dim the prefix and suffix
-	dimStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#555"))
-	return dimStyle.Render(prefix) + modalLine + dimStyle.Render(suffix)
-}
-
-// stripAnsi removes ANSI escape codes from a string
-func stripAnsi(s string) string {
-	// Simple ANSI stripper - handles common escape sequences
-	result := strings.Builder{}
-	inEscape := false
-	for _, r := range s {
-		if r == '\x1b' {
-			inEscape = true
-			continue
-		}
-		if inEscape {
-			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
-				inEscape = false
-			}
-			continue
-		}
-		result.WriteRune(r)
-	}
-	return result.String()
 }

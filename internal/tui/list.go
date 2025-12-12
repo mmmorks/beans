@@ -263,6 +263,7 @@ func (m listModel) Update(msg tea.Msg) (listModel, tea.Cmd) {
 					return m, func() tea.Msg {
 						return openParentPickerMsg{
 							beanID:        item.bean.ID,
+							beanTitle:     item.bean.Title,
 							beanType:      item.bean.Type,
 							currentParent: item.bean.Parent,
 						}
@@ -274,6 +275,7 @@ func (m listModel) Update(msg tea.Msg) (listModel, tea.Cmd) {
 					return m, func() tea.Msg {
 						return openStatusPickerMsg{
 							beanID:        item.bean.ID,
+							beanTitle:     item.bean.Title,
 							currentStatus: item.bean.Status,
 						}
 					}
@@ -284,6 +286,7 @@ func (m listModel) Update(msg tea.Msg) (listModel, tea.Cmd) {
 					return m, func() tea.Msg {
 						return openTypePickerMsg{
 							beanID:      item.bean.ID,
+							beanTitle:   item.bean.Title,
 							currentType: item.bean.Type,
 						}
 					}

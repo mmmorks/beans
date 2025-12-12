@@ -23,6 +23,7 @@ type closeStatusPickerMsg struct{}
 // openStatusPickerMsg requests opening the status picker for a bean
 type openStatusPickerMsg struct {
 	beanID        string
+	beanTitle     string
 	currentStatus string
 }
 
@@ -59,8 +60,8 @@ func (d statusItemDelegate) Render(w io.Writer, m list.Model, index int, listIte
 		cursor = "  "
 	}
 
-	// Render status with color
-	statusText := ui.RenderStatusWithColor(item.name, item.color, item.isArchive)
+	// Render status with color (text only)
+	statusText := ui.RenderStatusTextWithColor(item.name, item.color, item.isArchive)
 
 	// Add current indicator
 	var currentIndicator string
@@ -75,12 +76,13 @@ func (d statusItemDelegate) Render(w io.Writer, m list.Model, index int, listIte
 type statusPickerModel struct {
 	list          list.Model
 	beanID        string
+	beanTitle     string
 	currentStatus string
 	width         int
 	height        int
 }
 
-func newStatusPickerModel(beanID, currentStatus string, cfg *config.Config, width, height int) statusPickerModel {
+func newStatusPickerModel(beanID, beanTitle, currentStatus string, cfg *config.Config, width, height int) statusPickerModel {
 	// Get all statuses (hardcoded in config package)
 	statuses := config.DefaultStatuses
 
@@ -129,6 +131,7 @@ func newStatusPickerModel(beanID, currentStatus string, cfg *config.Config, widt
 	return statusPickerModel{
 		list:          l,
 		beanID:        beanID,
+		beanTitle:     beanTitle,
 		currentStatus: currentStatus,
 		width:         width,
 		height:        height,
@@ -178,29 +181,20 @@ func (m statusPickerModel) View() string {
 		return "Loading..."
 	}
 
-	modalWidth := max(40, min(60, m.width*50/100))
-
-	subtitle := ui.Muted.Render(fmt.Sprintf("Changing status for %s", m.beanID))
-
 	// Get description of currently selected status
 	var description string
 	if item, ok := m.list.SelectedItem().(statusItem); ok && item.description != "" {
-		description = ui.Muted.Render(item.description)
+		description = item.description
 	}
 
-	help := helpKeyStyle.Render("enter") + " " + helpStyle.Render("select") + "  " +
-		helpKeyStyle.Render("/") + " " + helpStyle.Render("filter") + "  " +
-		helpKeyStyle.Render("esc") + " " + helpStyle.Render("cancel")
-
-	border := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(ui.ColorPrimary).
-		Padding(0, 1).
-		Width(modalWidth)
-
-	content := subtitle + "\n\n" + m.list.View() + "\n\n" + description + "\n\n" + help
-
-	return border.Render(content)
+	return renderPickerModal(pickerModalConfig{
+		Title:       "Select Status",
+		BeanTitle:   m.beanTitle,
+		BeanID:      m.beanID,
+		ListContent: m.list.View(),
+		Description: description,
+		Width:       m.width,
+	})
 }
 
 // ModalView returns the picker rendered as a centered modal overlay on top of the background

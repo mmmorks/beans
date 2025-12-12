@@ -23,6 +23,7 @@ type closeTypePickerMsg struct{}
 // openTypePickerMsg requests opening the type picker for a bean
 type openTypePickerMsg struct {
 	beanID      string
+	beanTitle   string
 	currentType string
 }
 
@@ -74,12 +75,13 @@ func (d typeItemDelegate) Render(w io.Writer, m list.Model, index int, listItem 
 type typePickerModel struct {
 	list        list.Model
 	beanID      string
+	beanTitle   string
 	currentType string
 	width       int
 	height      int
 }
 
-func newTypePickerModel(beanID, currentType string, cfg *config.Config, width, height int) typePickerModel {
+func newTypePickerModel(beanID, beanTitle, currentType string, cfg *config.Config, width, height int) typePickerModel {
 	// Get all types (hardcoded in config package)
 	types := config.DefaultTypes
 
@@ -127,6 +129,7 @@ func newTypePickerModel(beanID, currentType string, cfg *config.Config, width, h
 	return typePickerModel{
 		list:        l,
 		beanID:      beanID,
+		beanTitle:   beanTitle,
 		currentType: currentType,
 		width:       width,
 		height:      height,
@@ -176,29 +179,20 @@ func (m typePickerModel) View() string {
 		return "Loading..."
 	}
 
-	modalWidth := max(40, min(60, m.width*50/100))
-
-	subtitle := ui.Muted.Render(fmt.Sprintf("Changing type for %s", m.beanID))
-
 	// Get description of currently selected type
 	var description string
 	if item, ok := m.list.SelectedItem().(typeItem); ok && item.description != "" {
-		description = ui.Muted.Render(item.description)
+		description = item.description
 	}
 
-	help := helpKeyStyle.Render("enter") + " " + helpStyle.Render("select") + "  " +
-		helpKeyStyle.Render("/") + " " + helpStyle.Render("filter") + "  " +
-		helpKeyStyle.Render("esc") + " " + helpStyle.Render("cancel")
-
-	border := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(ui.ColorPrimary).
-		Padding(0, 1).
-		Width(modalWidth)
-
-	content := subtitle + "\n\n" + m.list.View() + "\n\n" + description + "\n\n" + help
-
-	return border.Render(content)
+	return renderPickerModal(pickerModalConfig{
+		Title:       "Select Type",
+		BeanTitle:   m.beanTitle,
+		BeanID:      m.beanID,
+		ListContent: m.list.View(),
+		Description: description,
+		Width:       m.width,
+	})
 }
 
 // ModalView returns the picker rendered as a centered modal overlay on top of the background

@@ -39,6 +39,7 @@ type clearFilterMsg struct{}
 // openParentPickerMsg requests opening the parent picker for a bean
 type openParentPickerMsg struct {
 	beanID        string
+	beanTitle     string
 	beanType      string
 	currentParent string
 }
@@ -172,7 +173,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a, nil
 		}
 		a.previousState = a.state // Remember where we came from for the modal background
-		a.parentPicker = newParentPickerModel(msg.beanID, msg.beanType, msg.currentParent, a.resolver, a.config, a.width, a.height)
+		a.parentPicker = newParentPickerModel(msg.beanID, msg.beanTitle, msg.beanType, msg.currentParent, a.resolver, a.config, a.width, a.height)
 		a.state = viewParentPicker
 		return a, a.parentPicker.Init()
 
@@ -183,7 +184,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case openStatusPickerMsg:
 		a.previousState = a.state
-		a.statusPicker = newStatusPickerModel(msg.beanID, msg.currentStatus, a.config, a.width, a.height)
+		a.statusPicker = newStatusPickerModel(msg.beanID, msg.beanTitle, msg.currentStatus, a.config, a.width, a.height)
 		a.state = viewStatusPicker
 		return a, a.statusPicker.Init()
 
@@ -212,7 +213,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case openTypePickerMsg:
 		a.previousState = a.state
-		a.typePicker = newTypePickerModel(msg.beanID, msg.currentType, a.config, a.width, a.height)
+		a.typePicker = newTypePickerModel(msg.beanID, msg.beanTitle, msg.currentType, a.config, a.width, a.height)
 		a.state = viewTypePicker
 		return a, a.typePicker.Init()
 

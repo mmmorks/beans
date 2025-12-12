@@ -233,6 +233,20 @@ func RenderTypeText(typeName, color string) string {
 	return lipgloss.NewStyle().Foreground(c).Render(typeName)
 }
 
+// RenderTypeWithColor returns a styled type badge with colored background.
+func RenderTypeWithColor(typeName, color string) string {
+	if typeName == "" {
+		return ""
+	}
+	c := ResolveColor(color)
+	style := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#fff")).
+		Background(c).
+		Bold(true).
+		Padding(0, 1)
+	return style.Render(typeName)
+}
+
 // RenderPriorityWithColor returns a styled priority badge using the specified color.
 func RenderPriorityWithColor(priority, color string) string {
 	if priority == "" {

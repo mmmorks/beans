@@ -320,6 +320,7 @@ func (m detailModel) Update(msg tea.Msg) (detailModel, tea.Cmd) {
 			return m, func() tea.Msg {
 				return openParentPickerMsg{
 					beanID:        m.bean.ID,
+					beanTitle:     m.bean.Title,
 					beanType:      m.bean.Type,
 					currentParent: m.bean.Parent,
 				}
@@ -330,6 +331,7 @@ func (m detailModel) Update(msg tea.Msg) (detailModel, tea.Cmd) {
 			return m, func() tea.Msg {
 				return openStatusPickerMsg{
 					beanID:        m.bean.ID,
+					beanTitle:     m.bean.Title,
 					currentStatus: m.bean.Status,
 				}
 			}
@@ -339,6 +341,7 @@ func (m detailModel) Update(msg tea.Msg) (detailModel, tea.Cmd) {
 			return m, func() tea.Msg {
 				return openTypePickerMsg{
 					beanID:      m.bean.ID,
+					beanTitle:   m.bean.Title,
 					currentType: m.bean.Type,
 				}
 			}
