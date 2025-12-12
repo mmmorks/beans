@@ -36,14 +36,14 @@ type Mutation {
   setParent(id: ID!, parentId: String): Bean!
 
   """
-  Add a bean to the blocks list
+  Add a bean to the blocking list
   """
-  addBlock(id: ID!, targetId: ID!): Bean!
+  addBlocking(id: ID!, targetId: ID!): Bean!
 
   """
-  Remove a bean from the blocks list
+  Remove a bean from the blocking list
   """
-  removeBlock(id: ID!, targetId: ID!): Bean!
+  removeBlocking(id: ID!, targetId: ID!): Bean!
 }
 
 """
@@ -64,8 +64,8 @@ input CreateBeanInput {
   body: String
   "Parent bean ID (validated against type hierarchy)"
   parent: String
-  "Bean IDs this bean blocks"
-  blocks: [String!]
+  "Bean IDs this bean is blocking"
+  blocking: [String!]
 }
 
 """
@@ -116,14 +116,14 @@ type Bean {
   # Direct link fields
   "Parent bean ID (optional, type-restricted)"
   parentId: String
-  "IDs of beans this bean blocks"
-  blockIds: [String!]!
+  "IDs of beans this bean is blocking"
+  blockingIds: [String!]!
 
   # Computed relationship fields
-  "Beans that block this one (incoming 'blocks' links)"
+  "Beans that block this one (incoming blocking links)"
   blockedBy: [Bean!]!
-  "Beans this one blocks (resolved from blockIds)"
-  blocks: [Bean!]!
+  "Beans this one is blocking (resolved from blockingIds)"
+  blocking: [Bean!]!
   "Parent bean (resolved from parentId)"
   parent: Bean
   "Child beans (beans with this as parent)"
@@ -170,12 +170,12 @@ input BeanFilter {
   hasParent: Boolean
   "Include only beans with this specific parent ID"
   parentId: String
-  "Include only beans that block other beans"
-  hasBlocks: Boolean
+  "Include only beans that are blocking other beans"
+  hasBlocking: Boolean
   "Include only beans that are blocked by others"
   isBlocked: Boolean
   "Exclude beans that have a parent"
   noParent: Boolean
-  "Exclude beans that block other beans"
-  noBlocks: Boolean
+  "Exclude beans that are blocking other beans"
+  noBlocking: Boolean
 }

@@ -327,7 +327,7 @@ func TestBeanRelationships(t *testing.T) {
 		ID:     "blocker-1",
 		Title:  "Blocker",
 		Status: "todo",
-		Blocks: []string{"child-1"},
+		Blocking: []string{"child-1"},
 	}
 
 	core.Create(parent)
@@ -376,7 +376,7 @@ func TestBeanRelationships(t *testing.T) {
 
 	t.Run("blocks resolver", func(t *testing.T) {
 		br := resolver.Bean()
-		got, err := br.Blocks(ctx, blocker)
+		got, err := br.Blocking(ctx, blocker)
 		if err != nil {
 			t.Fatalf("Blocks() error = %v", err)
 		}
@@ -430,7 +430,7 @@ func TestQueryBeansWithParentAndBlocks(t *testing.T) {
 		ID:     "has-blocks",
 		Title:  "Has Blocks",
 		Status: "todo",
-		Blocks: []string{"has-parent"},
+		Blocking: []string{"has-parent"},
 	}
 
 	core.Create(noRels)
@@ -474,7 +474,7 @@ func TestQueryBeansWithParentAndBlocks(t *testing.T) {
 		qr := resolver.Query()
 		hasBlocksBool := true
 		filter := &model.BeanFilter{
-			HasBlocks: &hasBlocksBool,
+			HasBlocking: &hasBlocksBool,
 		}
 		got, err := qr.Beans(ctx, filter)
 		if err != nil {
@@ -606,7 +606,7 @@ func TestMutationCreateBean(t *testing.T) {
 			Body:     &body,
 			Tags:     []string{"tag1", "tag2"},
 			Parent:   &parent,
-			Blocks:   []string{"some-target"},
+			Blocking:   []string{"some-target"},
 		}
 		got, err := mr.CreateBean(ctx, input)
 		if err != nil {
@@ -630,8 +630,8 @@ func TestMutationCreateBean(t *testing.T) {
 		if got.Parent != "some-parent" {
 			t.Errorf("CreateBean().Parent = %q, want %q", got.Parent, "some-parent")
 		}
-		if len(got.Blocks) != 1 {
-			t.Errorf("CreateBean().Blocks count = %d, want 1", len(got.Blocks))
+		if len(got.Blocking) != 1 {
+			t.Errorf("CreateBean().Blocking count = %d, want 1", len(got.Blocking))
 		}
 	})
 }
@@ -767,7 +767,7 @@ func TestMutationSetParent(t *testing.T) {
 	})
 }
 
-func TestMutationAddRemoveBlock(t *testing.T) {
+func TestMutationAddRemoveBlocking(t *testing.T) {
 	resolver, core := setupTestResolver(t)
 	ctx := context.Background()
 
@@ -779,34 +779,34 @@ func TestMutationAddRemoveBlock(t *testing.T) {
 
 	t.Run("add block", func(t *testing.T) {
 		mr := resolver.Mutation()
-		got, err := mr.AddBlock(ctx, "blocker-1", "target-1")
+		got, err := mr.AddBlocking(ctx, "blocker-1", "target-1")
 		if err != nil {
-			t.Fatalf("AddBlock() error = %v", err)
+			t.Fatalf("AddBlocking() error = %v", err)
 		}
-		if len(got.Blocks) != 1 {
-			t.Errorf("AddBlock().Blocks count = %d, want 1", len(got.Blocks))
+		if len(got.Blocking) != 1 {
+			t.Errorf("AddBlocking().Blocking count = %d, want 1", len(got.Blocking))
 		}
-		if got.Blocks[0] != "target-1" {
-			t.Errorf("AddBlock().Blocks[0] = %q, want %q", got.Blocks[0], "target-1")
+		if got.Blocking[0] != "target-1" {
+			t.Errorf("AddBlocking().Blocking[0] = %q, want %q", got.Blocking[0], "target-1")
 		}
 	})
 
 	t.Run("remove block", func(t *testing.T) {
 		mr := resolver.Mutation()
-		got, err := mr.RemoveBlock(ctx, "blocker-1", "target-1")
+		got, err := mr.RemoveBlocking(ctx, "blocker-1", "target-1")
 		if err != nil {
-			t.Fatalf("RemoveBlock() error = %v", err)
+			t.Fatalf("RemoveBlocking() error = %v", err)
 		}
-		if len(got.Blocks) != 0 {
-			t.Errorf("RemoveBlock().Blocks count = %d, want 0", len(got.Blocks))
+		if len(got.Blocking) != 0 {
+			t.Errorf("RemoveBlocking().Blocking count = %d, want 0", len(got.Blocking))
 		}
 	})
 
 	t.Run("add block to nonexistent bean", func(t *testing.T) {
 		mr := resolver.Mutation()
-		_, err := mr.AddBlock(ctx, "nonexistent", "target-1")
+		_, err := mr.AddBlocking(ctx, "nonexistent", "target-1")
 		if err == nil {
-			t.Error("AddBlock() expected error for nonexistent bean")
+			t.Error("AddBlocking() expected error for nonexistent bean")
 		}
 	})
 }
@@ -848,7 +848,7 @@ func TestMutationDeleteBean(t *testing.T) {
 			Title:  "Linker",
 			Status: "todo",
 			Type:   "task",
-			Blocks: []string{"target-bean"},
+			Blocking: []string{"target-bean"},
 		}
 		core.Create(linker)
 
@@ -865,8 +865,8 @@ func TestMutationDeleteBean(t *testing.T) {
 		if updated == nil {
 			t.Fatal("Linker bean was deleted unexpectedly")
 		}
-		if len(updated.Blocks) != 0 {
-			t.Errorf("Linker still has %d blocks, want 0", len(updated.Blocks))
+		if len(updated.Blocking) != 0 {
+			t.Errorf("Linker still has %d blocks, want 0", len(updated.Blocking))
 		}
 	})
 

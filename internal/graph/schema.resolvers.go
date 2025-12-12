@@ -22,9 +22,9 @@ func (r *beanResolver) ParentID(ctx context.Context, obj *bean.Bean) (*string, e
 	return &obj.Parent, nil
 }
 
-// BlockIds is the resolver for the blockIds field.
-func (r *beanResolver) BlockIds(ctx context.Context, obj *bean.Bean) ([]string, error) {
-	return obj.Blocks, nil
+// BlockingIds is the resolver for the blockingIds field.
+func (r *beanResolver) BlockingIds(ctx context.Context, obj *bean.Bean) ([]string, error) {
+	return obj.Blocking, nil
 }
 
 // BlockedBy is the resolver for the blockedBy field.
@@ -32,17 +32,17 @@ func (r *beanResolver) BlockedBy(ctx context.Context, obj *bean.Bean) ([]*bean.B
 	incoming := r.Core.FindIncomingLinks(obj.ID)
 	var result []*bean.Bean
 	for _, link := range incoming {
-		if link.LinkType == "blocks" {
+		if link.LinkType == "blocking" {
 			result = append(result, link.FromBean)
 		}
 	}
 	return result, nil
 }
 
-// Blocks is the resolver for the blocks field.
-func (r *beanResolver) Blocks(ctx context.Context, obj *bean.Bean) ([]*bean.Bean, error) {
+// Blocking is the resolver for the blocking field.
+func (r *beanResolver) Blocking(ctx context.Context, obj *bean.Bean) ([]*bean.Bean, error) {
 	var result []*bean.Bean
-	for _, targetID := range obj.Blocks {
+	for _, targetID := range obj.Blocking {
 		// Filter out broken links
 		if target, err := r.Core.Get(targetID); err == nil {
 			result = append(result, target)
@@ -79,10 +79,10 @@ func (r *beanResolver) Children(ctx context.Context, obj *bean.Bean) ([]*bean.Be
 // CreateBean is the resolver for the createBean field.
 func (r *mutationResolver) CreateBean(ctx context.Context, input model.CreateBeanInput) (*bean.Bean, error) {
 	b := &bean.Bean{
-		Slug:   bean.Slugify(input.Title),
-		Title:  input.Title,
-		Type:   "task", // default
-		Blocks: []string{},
+		Slug:     bean.Slugify(input.Title),
+		Title:    input.Title,
+		Type:     "task", // default
+		Blocking: []string{},
 	}
 
 	// Optional fields with defaults documented in schema
@@ -110,9 +110,9 @@ func (r *mutationResolver) CreateBean(ctx context.Context, input model.CreateBea
 		b.Parent = *input.Parent
 	}
 
-	// Handle blocks
-	if len(input.Blocks) > 0 {
-		b.Blocks = input.Blocks
+	// Handle blocking
+	if len(input.Blocking) > 0 {
+		b.Blocking = input.Blocking
 	}
 
 	if err := r.Core.Create(b); err != nil {
@@ -207,8 +207,8 @@ func (r *mutationResolver) SetParent(ctx context.Context, id string, parentID *s
 	return b, nil
 }
 
-// AddBlock is the resolver for the addBlock field.
-func (r *mutationResolver) AddBlock(ctx context.Context, id string, targetID string) (*bean.Bean, error) {
+// AddBlocking is the resolver for the addBlocking field.
+func (r *mutationResolver) AddBlocking(ctx context.Context, id string, targetID string) (*bean.Bean, error) {
 	b, err := r.Core.Get(id)
 	if err != nil {
 		return nil, err
@@ -224,25 +224,25 @@ func (r *mutationResolver) AddBlock(ctx context.Context, id string, targetID str
 	}
 
 	// Check for cycles
-	if cycle := r.Core.DetectCycle(b.ID, "blocks", targetID); cycle != nil {
+	if cycle := r.Core.DetectCycle(b.ID, "blocking", targetID); cycle != nil {
 		return nil, fmt.Errorf("would create cycle: %v", cycle)
 	}
 
-	b.AddBlock(targetID)
+	b.AddBlocking(targetID)
 	if err := r.Core.Update(b); err != nil {
 		return nil, err
 	}
 	return b, nil
 }
 
-// RemoveBlock is the resolver for the removeBlock field.
-func (r *mutationResolver) RemoveBlock(ctx context.Context, id string, targetID string) (*bean.Bean, error) {
+// RemoveBlocking is the resolver for the removeBlocking field.
+func (r *mutationResolver) RemoveBlocking(ctx context.Context, id string, targetID string) (*bean.Bean, error) {
 	b, err := r.Core.Get(id)
 	if err != nil {
 		return nil, err
 	}
 
-	b.RemoveBlock(targetID)
+	b.RemoveBlocking(targetID)
 	if err := r.Core.Update(b); err != nil {
 		return nil, err
 	}
@@ -323,12 +323,12 @@ func (r *queryResolver) Beans(ctx context.Context, filter *model.BeanFilter) ([]
 		result = filterByParentID(result, *filter.ParentID)
 	}
 
-	// Blocks filters
-	if filter.HasBlocks != nil && *filter.HasBlocks {
-		result = filterByHasBlocks(result)
+	// Blocking filters
+	if filter.HasBlocking != nil && *filter.HasBlocking {
+		result = filterByHasBlocking(result)
 	}
-	if filter.NoBlocks != nil && *filter.NoBlocks {
-		result = filterByNoBlocks(result)
+	if filter.NoBlocking != nil && *filter.NoBlocking {
+		result = filterByNoBlocking(result)
 	}
 	if filter.IsBlocked != nil {
 		if *filter.IsBlocked {

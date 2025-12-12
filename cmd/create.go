@@ -80,9 +80,9 @@ var createCmd = &cobra.Command{
 			input.Parent = &createParent
 		}
 
-		// Add blocks
+		// Add blocking
 		if len(createBlock) > 0 {
-			input.Blocks = createBlock
+			input.Blocking = createBlock
 		}
 
 		// Create via GraphQL mutation

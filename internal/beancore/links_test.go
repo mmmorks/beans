@@ -17,7 +17,7 @@ func TestFindIncomingLinks(t *testing.T) {
 		ID:     "aaa1",
 		Title:  "Bean A",
 		Status: "todo",
-		Blocks: []string{"bbb2"},
+		Blocking: []string{"bbb2"},
 		Parent: "ccc3",
 	}
 	beanB := &bean.Bean{ID: "bbb2", Title: "Bean B", Status: "todo"}
@@ -26,7 +26,7 @@ func TestFindIncomingLinks(t *testing.T) {
 		ID:     "ddd4",
 		Title:  "Bean D",
 		Status: "todo",
-		Blocks: []string{"bbb2"},
+		Blocking: []string{"bbb2"},
 	}
 
 	for _, b := range []*bean.Bean{beanA, beanB, beanC, beanD} {
@@ -46,10 +46,10 @@ func TestFindIncomingLinks(t *testing.T) {
 		for _, link := range links {
 			fromIDs[link.FromBean.ID] = link.LinkType
 		}
-		if fromIDs["aaa1"] != "blocks" {
+		if fromIDs["aaa1"] != "blocking" {
 			t.Error("expected aaa1 -> bbb2 via blocks")
 		}
-		if fromIDs["ddd4"] != "blocks" {
+		if fromIDs["ddd4"] != "blocking" {
 			t.Error("expected ddd4 -> bbb2 via blocks")
 		}
 	})
@@ -87,13 +87,13 @@ func TestDetectCycle(t *testing.T) {
 		ID:     "aaa1",
 		Title:  "Bean A",
 		Status: "todo",
-		Blocks: []string{"bbb2"},
+		Blocking: []string{"bbb2"},
 	}
 	beanB := &bean.Bean{
 		ID:     "bbb2",
 		Title:  "Bean B",
 		Status: "todo",
-		Blocks: []string{"ccc3"},
+		Blocking: []string{"ccc3"},
 	}
 	beanC := &bean.Bean{
 		ID:     "ccc3",
@@ -109,7 +109,7 @@ func TestDetectCycle(t *testing.T) {
 
 	t.Run("would create cycle", func(t *testing.T) {
 		// Adding C blocks A would create: A -> B -> C -> A
-		cycle := core.DetectCycle("ccc3", "blocks", "aaa1")
+		cycle := core.DetectCycle("ccc3", "blocking", "aaa1")
 		if cycle == nil {
 			t.Error("DetectCycle should return cycle path when cycle would be created")
 		}
@@ -125,7 +125,7 @@ func TestDetectCycle(t *testing.T) {
 			t.Fatalf("Create error: %v", err)
 		}
 
-		cycle := core.DetectCycle("ddd4", "blocks", "aaa1")
+		cycle := core.DetectCycle("ddd4", "blocking", "aaa1")
 		if cycle != nil {
 			t.Errorf("DetectCycle should return nil when no cycle, got: %v", cycle)
 		}
@@ -176,14 +176,14 @@ func TestCheckAllLinks(t *testing.T) {
 		ID:     "aaa1",
 		Title:  "Bean A",
 		Status: "todo",
-		Blocks: []string{"bbb2", "aaa1"}, // aaa1 is self-reference
+		Blocking: []string{"bbb2", "aaa1"}, // aaa1 is self-reference
 		Parent: "nonexistent",
 	}
 	beanB := &bean.Bean{
 		ID:     "bbb2",
 		Title:  "Bean B",
 		Status: "todo",
-		Blocks: []string{"aaa1"}, // creates cycle
+		Blocking: []string{"aaa1"}, // creates cycle
 	}
 
 	for _, b := range []*bean.Bean{beanA, beanB} {
@@ -212,7 +212,7 @@ func TestCheckAllLinks(t *testing.T) {
 		}
 		if len(result.SelfLinks) > 0 {
 			sl := result.SelfLinks[0]
-			if sl.BeanID != "aaa1" || sl.LinkType != "blocks" {
+			if sl.BeanID != "aaa1" || sl.LinkType != "blocking" {
 				t.Errorf("unexpected self-link: %+v", sl)
 			}
 		}
@@ -224,7 +224,7 @@ func TestCheckAllLinks(t *testing.T) {
 		}
 		if len(result.Cycles) > 0 {
 			c := result.Cycles[0]
-			if c.LinkType != "blocks" {
+			if c.LinkType != "blocking" {
 				t.Errorf("cycle link type = %q, want 'blocks'", c.LinkType)
 			}
 			if len(c.Path) < 3 {
@@ -254,7 +254,7 @@ func TestCheckAllLinksClean(t *testing.T) {
 		ID:     "aaa1",
 		Title:  "Bean A",
 		Status: "todo",
-		Blocks: []string{"bbb2"},
+		Blocking: []string{"bbb2"},
 	}
 	beanB := &bean.Bean{
 		ID:     "bbb2",
@@ -284,14 +284,14 @@ func TestRemoveLinksTo(t *testing.T) {
 		ID:     "aaa1",
 		Title:  "Bean A",
 		Status: "todo",
-		Blocks: []string{"target"},
+		Blocking: []string{"target"},
 		Parent: "target",
 	}
 	beanB := &bean.Bean{
 		ID:     "bbb2",
 		Title:  "Bean B",
 		Status: "todo",
-		Blocks: []string{"target"},
+		Blocking: []string{"target"},
 	}
 	target := &bean.Bean{
 		ID:     "target",
@@ -317,13 +317,13 @@ func TestRemoveLinksTo(t *testing.T) {
 
 	// Verify links are gone
 	loadedA, _ := core.Get("aaa1")
-	if loadedA.Parent != "" || len(loadedA.Blocks) != 0 {
-		t.Errorf("Bean A still has relationships: parent=%q blocks=%v", loadedA.Parent, loadedA.Blocks)
+	if loadedA.Parent != "" || len(loadedA.Blocking) != 0 {
+		t.Errorf("Bean A still has relationships: parent=%q blocks=%v", loadedA.Parent, loadedA.Blocking)
 	}
 
 	loadedB, _ := core.Get("bbb2")
-	if len(loadedB.Blocks) != 0 {
-		t.Errorf("Bean B still has %d blocks, want 0", len(loadedB.Blocks))
+	if len(loadedB.Blocking) != 0 {
+		t.Errorf("Bean B still has %d blocks, want 0", len(loadedB.Blocking))
 	}
 }
 
@@ -335,7 +335,7 @@ func TestFixBrokenLinks(t *testing.T) {
 		ID:     "aaa1",
 		Title:  "Bean A",
 		Status: "todo",
-		Blocks: []string{"bbb2", "aaa1"}, // bbb2 is valid, aaa1 is self-reference
+		Blocking: []string{"bbb2", "aaa1"}, // bbb2 is valid, aaa1 is self-reference
 		Parent: "nonexistent",             // broken
 	}
 	beanB := &bean.Bean{
@@ -362,10 +362,10 @@ func TestFixBrokenLinks(t *testing.T) {
 
 	// Verify only valid link remains
 	loadedA, _ := core.Get("aaa1")
-	if len(loadedA.Blocks) != 1 {
-		t.Errorf("Bean A has %d blocks, want 1", len(loadedA.Blocks))
+	if len(loadedA.Blocking) != 1 {
+		t.Errorf("Bean A has %d blocks, want 1", len(loadedA.Blocking))
 	}
-	if !loadedA.BlocksBean("bbb2") {
+	if !loadedA.IsBlocking("bbb2") {
 		t.Error("valid 'blocks' link should be preserved")
 	}
 	if loadedA.Parent != "" {
@@ -390,9 +390,9 @@ func TestLinkCheckResultMethods(t *testing.T) {
 
 	t.Run("with issues", func(t *testing.T) {
 		r := &LinkCheckResult{
-			BrokenLinks: []BrokenLink{{BeanID: "a", LinkType: "blocks", Target: "x"}},
+			BrokenLinks: []BrokenLink{{BeanID: "a", LinkType: "blocking", Target: "x"}},
 			SelfLinks:   []SelfLink{{BeanID: "b", LinkType: "parent"}},
-			Cycles:      []Cycle{{LinkType: "blocks", Path: []string{"a", "b", "a"}}},
+			Cycles:      []Cycle{{LinkType: "blocking", Path: []string{"a", "b", "a"}}},
 		}
 		if !r.HasIssues() {
 			t.Error("result with issues should have issues")

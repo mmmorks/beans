@@ -420,7 +420,7 @@ func TestBlocksPreserved(t *testing.T) {
 		Slug:   "blocker",
 		Title:  "Blocker Bean",
 		Status: "todo",
-		Blocks: []string{"bbb2"},
+		Blocking: []string{"bbb2"},
 	}
 	if err := core.Create(beanA); err != nil {
 		t.Fatalf("Create beanA error = %v", err)
@@ -453,13 +453,13 @@ func TestBlocksPreserved(t *testing.T) {
 	}
 
 	// Bean A should have direct blocks link
-	if !loadedA.BlocksBean("bbb2") {
-		t.Errorf("Bean A Blocks = %v, want [bbb2]", loadedA.Blocks)
+	if !loadedA.IsBlocking("bbb2") {
+		t.Errorf("Bean A Blocks = %v, want [bbb2]", loadedA.Blocking)
 	}
 
 	// Bean B should have no blocks
-	if len(loadedB.Blocks) != 0 {
-		t.Errorf("Bean B Blocks = %v, want empty", loadedB.Blocks)
+	if len(loadedB.Blocking) != 0 {
+		t.Errorf("Bean B Blocks = %v, want empty", loadedB.Blocking)
 	}
 }
 

@@ -91,22 +91,22 @@ Use flags to specify which properties to update:
 			changes = append(changes, "parent")
 		}
 
-		// Process block additions
+		// Process blocking additions
 		for _, targetID := range updateBlock {
-			b, err = resolver.Mutation().AddBlock(ctx, b.ID, targetID)
+			b, err = resolver.Mutation().AddBlocking(ctx, b.ID, targetID)
 			if err != nil {
 				return cmdError(updateJSON, output.ErrValidation, "%s", err)
 			}
-			changes = append(changes, "blocks")
+			changes = append(changes, "blocking")
 		}
 
-		// Process block removals
+		// Process blocking removals
 		for _, targetID := range updateUnblock {
-			b, err = resolver.Mutation().RemoveBlock(ctx, b.ID, targetID)
+			b, err = resolver.Mutation().RemoveBlocking(ctx, b.ID, targetID)
 			if err != nil {
 				return cmdError(updateJSON, output.ErrValidation, "%s", err)
 			}
-			changes = append(changes, "blocks")
+			changes = append(changes, "blocking")
 		}
 
 		// Require at least one change

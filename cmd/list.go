@@ -25,12 +25,12 @@ var (
 	listNoPriority []string
 	listTag        []string
 	listNoTag      []string
-	listHasParent  bool
-	listNoParent   bool
-	listParentID   string
-	listHasBlocks  bool
-	listNoBlocks   bool
-	listIsBlocked  bool
+	listHasParent   bool
+	listNoParent    bool
+	listParentID    string
+	listHasBlocking bool
+	listNoBlocking  bool
+	listIsBlocked   bool
 	listQuiet      bool
 	listSort       string
 	listFull       bool
@@ -83,11 +83,11 @@ Search Syntax (--search/-S):
 		if listParentID != "" {
 			filter.ParentID = &listParentID
 		}
-		if listHasBlocks {
-			filter.HasBlocks = &listHasBlocks
+		if listHasBlocking {
+			filter.HasBlocking = &listHasBlocking
 		}
-		if listNoBlocks {
-			filter.NoBlocks = &listNoBlocks
+		if listNoBlocking {
+			filter.NoBlocking = &listNoBlocking
 		}
 		if listIsBlocked {
 			filter.IsBlocked = &listIsBlocked
@@ -272,8 +272,8 @@ func init() {
 	listCmd.Flags().BoolVar(&listHasParent, "has-parent", false, "Filter beans with a parent")
 	listCmd.Flags().BoolVar(&listNoParent, "no-parent", false, "Filter beans without a parent")
 	listCmd.Flags().StringVar(&listParentID, "parent", "", "Filter by parent ID")
-	listCmd.Flags().BoolVar(&listHasBlocks, "has-blocks", false, "Filter beans that block others")
-	listCmd.Flags().BoolVar(&listNoBlocks, "no-blocks", false, "Filter beans that don't block others")
+	listCmd.Flags().BoolVar(&listHasBlocking, "has-blocking", false, "Filter beans that are blocking others")
+	listCmd.Flags().BoolVar(&listNoBlocking, "no-blocking", false, "Filter beans that aren't blocking others")
 	listCmd.Flags().BoolVar(&listIsBlocked, "is-blocked", false, "Filter beans that are blocked by others")
 	listCmd.Flags().BoolVarP(&listQuiet, "quiet", "q", false, "Only output IDs (one per line)")
 	listCmd.Flags().StringVar(&listSort, "sort", "", "Sort by: created, updated, status, priority, id (default: status, priority, type, title)")

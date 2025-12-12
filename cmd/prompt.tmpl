@@ -70,8 +70,8 @@ Beans can have relationships to other beans. Use these to express dependencies a
 **Parent (single value):**
 - `parent` - assigns a bean to a parent bean (type-restricted hierarchy: milestone → epic → feature → task/bug)
 
-**Blocks (multiple values):**
-- `blocks` - this bean blocks another bean (prevents work on the blocked bean until this one is done)
+**Blocking (multiple values):**
+- `blocking` - this bean is blocking another bean (prevents work on the blocked bean until this one is done)
 
 **Managing relationships (CLI):**
 
@@ -84,7 +84,7 @@ Beans can have relationships to other beans. Use these to express dependencies a
 
 ```bash
 # Get a bean with its relationships
-beans query '{ bean(id: "abc") { title parent { id title } children { id title status } blockedBy { title } blocks { title } } }'
+beans query '{ bean(id: "abc") { title parent { id title } children { id title status } blockedBy { title } blocking { title } } }'
 
 # Find beans blocked by something
 beans query '{ beans(filter: { isBlocked: true }) { id title blockedBy { title } } }'

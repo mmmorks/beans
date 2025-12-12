@@ -25,7 +25,7 @@ var (
 )
 
 // KnownLinkTypes lists the recognized relationship types.
-var KnownLinkTypes = []string{"blocks", "parent"}
+var KnownLinkTypes = []string{"blocking", "parent"}
 
 // Core provides thread-safe in-memory storage for beans with filesystem persistence.
 type Core struct {
@@ -162,8 +162,8 @@ func (c *Core) loadBean(path string) (*bean.Bean, error) {
 	if b.Tags == nil {
 		b.Tags = []string{}
 	}
-	if b.Blocks == nil {
-		b.Blocks = []string{}
+	if b.Blocking == nil {
+		b.Blocking = []string{}
 	}
 	if b.CreatedAt == nil {
 		if b.UpdatedAt != nil {

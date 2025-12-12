@@ -518,12 +518,12 @@ func TestBeanJSONSerialization(t *testing.T) {
 	})
 }
 
-func TestParseWithParentAndBlocks(t *testing.T) {
+func TestParseWithParentAndBlocking(t *testing.T) {
 	tests := []struct {
-		name           string
-		input          string
-		expectedParent string
-		expectedBlocks []string
+		name             string
+		input            string
+		expectedParent   string
+		expectedBlocking []string
 	}{
 		{
 			name: "with parent only",
@@ -532,32 +532,32 @@ title: Test
 status: todo
 parent: xyz789
 ---`,
-			expectedParent: "xyz789",
-			expectedBlocks: nil,
+			expectedParent:   "xyz789",
+			expectedBlocking: nil,
 		},
 		{
-			name: "with blocks only",
+			name: "with blocking only",
 			input: `---
 title: Test
 status: todo
-blocks:
+blocking:
   - abc123
   - def456
 ---`,
-			expectedParent: "",
-			expectedBlocks: []string{"abc123", "def456"},
+			expectedParent:   "",
+			expectedBlocking: []string{"abc123", "def456"},
 		},
 		{
-			name: "with parent and blocks",
+			name: "with parent and blocking",
 			input: `---
 title: Test
 status: todo
 parent: xyz789
-blocks:
+blocking:
   - abc123
 ---`,
-			expectedParent: "xyz789",
-			expectedBlocks: []string{"abc123"},
+			expectedParent:   "xyz789",
+			expectedBlocking: []string{"abc123"},
 		},
 		{
 			name: "no relationships",
@@ -565,8 +565,8 @@ blocks:
 title: Test
 status: todo
 ---`,
-			expectedParent: "",
-			expectedBlocks: nil,
+			expectedParent:   "",
+			expectedBlocking: nil,
 		},
 	}
 
@@ -581,25 +581,25 @@ status: todo
 				t.Errorf("Parent = %q, want %q", bean.Parent, tt.expectedParent)
 			}
 
-			if len(tt.expectedBlocks) == 0 && len(bean.Blocks) == 0 {
+			if len(tt.expectedBlocking) == 0 && len(bean.Blocking) == 0 {
 				return // Both empty, OK
 			}
 
-			if len(bean.Blocks) != len(tt.expectedBlocks) {
-				t.Errorf("Blocks count = %d, want %d", len(bean.Blocks), len(tt.expectedBlocks))
+			if len(bean.Blocking) != len(tt.expectedBlocking) {
+				t.Errorf("Blocking count = %d, want %d", len(bean.Blocking), len(tt.expectedBlocking))
 				return
 			}
 
-			for i, expected := range tt.expectedBlocks {
-				if bean.Blocks[i] != expected {
-					t.Errorf("Blocks[%d] = %q, want %q", i, bean.Blocks[i], expected)
+			for i, expected := range tt.expectedBlocking {
+				if bean.Blocking[i] != expected {
+					t.Errorf("Blocking[%d] = %q, want %q", i, bean.Blocking[i], expected)
 				}
 			}
 		})
 	}
 }
 
-func TestRenderWithParentAndBlocks(t *testing.T) {
+func TestRenderWithParentAndBlocking(t *testing.T) {
 	tests := []struct {
 		name     string
 		bean     *Bean
@@ -617,29 +617,29 @@ func TestRenderWithParentAndBlocks(t *testing.T) {
 			},
 		},
 		{
-			name: "with blocks only",
+			name: "with blocking only",
 			bean: &Bean{
-				Title:  "Test Bean",
-				Status: "todo",
-				Blocks: []string{"abc123", "def456"},
+				Title:    "Test Bean",
+				Status:   "todo",
+				Blocking: []string{"abc123", "def456"},
 			},
 			contains: []string{
-				"blocks:",
+				"blocking:",
 				"- abc123",
 				"- def456",
 			},
 		},
 		{
-			name: "with parent and blocks",
+			name: "with parent and blocking",
 			bean: &Bean{
-				Title:  "Test Bean",
-				Status: "todo",
-				Parent: "xyz789",
-				Blocks: []string{"abc123"},
+				Title:    "Test Bean",
+				Status:   "todo",
+				Parent:   "xyz789",
+				Blocking: []string{"abc123"},
 			},
 			contains: []string{
 				"parent: xyz789",
-				"blocks:",
+				"blocking:",
 				"- abc123",
 			},
 		},
@@ -669,52 +669,52 @@ func TestRenderWithParentAndBlocks(t *testing.T) {
 				}
 			}
 
-			// Check that empty parent/blocks don't appear in output
+			// Check that empty parent/blocking don't appear in output
 			if tt.bean.Parent == "" && strings.Contains(result, "parent:") {
 				t.Errorf("output should not contain 'parent:' when no parent\ngot:\n%s", result)
 			}
-			if len(tt.bean.Blocks) == 0 && strings.Contains(result, "blocks:") {
-				t.Errorf("output should not contain 'blocks:' when no blocks\ngot:\n%s", result)
+			if len(tt.bean.Blocking) == 0 && strings.Contains(result, "blocking:") {
+				t.Errorf("output should not contain 'blocking:' when no blocking\ngot:\n%s", result)
 			}
 		})
 	}
 }
 
-func TestParentAndBlocksRoundtrip(t *testing.T) {
+func TestParentAndBlockingRoundtrip(t *testing.T) {
 	tests := []struct {
-		name   string
-		parent string
-		blocks []string
+		name     string
+		parent   string
+		blocking []string
 	}{
 		{
-			name:   "parent only",
-			parent: "xyz789",
-			blocks: nil,
+			name:     "parent only",
+			parent:   "xyz789",
+			blocking: nil,
 		},
 		{
-			name:   "single block",
-			parent: "",
-			blocks: []string{"abc123"},
+			name:     "single blocking",
+			parent:   "",
+			blocking: []string{"abc123"},
 		},
 		{
-			name:   "multiple blocks",
-			parent: "",
-			blocks: []string{"abc123", "def456"},
+			name:     "multiple blocking",
+			parent:   "",
+			blocking: []string{"abc123", "def456"},
 		},
 		{
-			name:   "parent and blocks",
-			parent: "xyz789",
-			blocks: []string{"abc123", "def456"},
+			name:     "parent and blocking",
+			parent:   "xyz789",
+			blocking: []string{"abc123", "def456"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			original := &Bean{
-				Title:  "Test",
-				Status: "todo",
-				Parent: tt.parent,
-				Blocks: tt.blocks,
+				Title:    "Test",
+				Status:   "todo",
+				Parent:   tt.parent,
+				Blocking: tt.blocking,
 			}
 
 			rendered, err := original.Render()
@@ -731,14 +731,14 @@ func TestParentAndBlocksRoundtrip(t *testing.T) {
 				t.Errorf("Parent: got %q, want %q", parsed.Parent, tt.parent)
 			}
 
-			if len(parsed.Blocks) != len(tt.blocks) {
-				t.Errorf("Blocks count: got %d, want %d", len(parsed.Blocks), len(tt.blocks))
+			if len(parsed.Blocking) != len(tt.blocking) {
+				t.Errorf("Blocking count: got %d, want %d", len(parsed.Blocking), len(tt.blocking))
 				return
 			}
 
-			for i, expected := range tt.blocks {
-				if parsed.Blocks[i] != expected {
-					t.Errorf("Blocks[%d] = %q, want %q", i, parsed.Blocks[i], expected)
+			for i, expected := range tt.blocking {
+				if parsed.Blocking[i] != expected {
+					t.Errorf("Blocking[%d] = %q, want %q", i, parsed.Blocking[i], expected)
 				}
 			}
 		})
@@ -758,55 +758,55 @@ func TestBeanRelationshipMethods(t *testing.T) {
 		}
 	})
 
-	t.Run("BlocksBean", func(t *testing.T) {
-		b := &Bean{Blocks: []string{"abc", "def"}}
-		if !b.BlocksBean("abc") {
-			t.Error("expected BlocksBean('abc') = true")
+	t.Run("IsBlocking", func(t *testing.T) {
+		b := &Bean{Blocking: []string{"abc", "def"}}
+		if !b.IsBlocking("abc") {
+			t.Error("expected IsBlocking('abc') = true")
 		}
-		if !b.BlocksBean("def") {
-			t.Error("expected BlocksBean('def') = true")
+		if !b.IsBlocking("def") {
+			t.Error("expected IsBlocking('def') = true")
 		}
-		if b.BlocksBean("xyz") {
-			t.Error("expected BlocksBean('xyz') = false")
+		if b.IsBlocking("xyz") {
+			t.Error("expected IsBlocking('xyz') = false")
 		}
 
 		empty := &Bean{}
-		if empty.BlocksBean("abc") {
-			t.Error("expected BlocksBean('abc') = false for empty blocks")
+		if empty.IsBlocking("abc") {
+			t.Error("expected IsBlocking('abc') = false for empty blocks")
 		}
 	})
 
-	t.Run("AddBlock", func(t *testing.T) {
-		b := &Bean{Blocks: []string{"abc"}}
-		b.AddBlock("def")
-		if len(b.Blocks) != 2 {
-			t.Errorf("AddBlock new: got len=%d, want 2", len(b.Blocks))
+	t.Run("AddBlocking", func(t *testing.T) {
+		b := &Bean{Blocking: []string{"abc"}}
+		b.AddBlocking("def")
+		if len(b.Blocking) != 2 {
+			t.Errorf("AddBlocking new: got len=%d, want 2", len(b.Blocking))
 		}
-		if !b.BlocksBean("def") {
-			t.Error("AddBlock didn't add the block")
+		if !b.IsBlocking("def") {
+			t.Error("AddBlocking didn't add the block")
 		}
 
 		// Adding duplicate should not add
-		b.AddBlock("abc")
-		if len(b.Blocks) != 2 {
-			t.Errorf("AddBlock duplicate: got len=%d, want 2", len(b.Blocks))
+		b.AddBlocking("abc")
+		if len(b.Blocking) != 2 {
+			t.Errorf("AddBlocking duplicate: got len=%d, want 2", len(b.Blocking))
 		}
 	})
 
-	t.Run("RemoveBlock", func(t *testing.T) {
-		b := &Bean{Blocks: []string{"abc", "def", "ghi"}}
-		b.RemoveBlock("def")
-		if len(b.Blocks) != 2 {
-			t.Errorf("RemoveBlock existing: got len=%d, want 2", len(b.Blocks))
+	t.Run("RemoveBlocking", func(t *testing.T) {
+		b := &Bean{Blocking: []string{"abc", "def", "ghi"}}
+		b.RemoveBlocking("def")
+		if len(b.Blocking) != 2 {
+			t.Errorf("RemoveBlocking existing: got len=%d, want 2", len(b.Blocking))
 		}
-		if b.BlocksBean("def") {
-			t.Error("RemoveBlock didn't remove the block")
+		if b.IsBlocking("def") {
+			t.Error("RemoveBlocking didn't remove the block")
 		}
 
 		// Removing non-existent should not change anything
-		b.RemoveBlock("nonexistent")
-		if len(b.Blocks) != 2 {
-			t.Errorf("RemoveBlock non-existent: got len=%d, want 2", len(b.Blocks))
+		b.RemoveBlocking("nonexistent")
+		if len(b.Blocking) != 2 {
+			t.Errorf("RemoveBlocking non-existent: got len=%d, want 2", len(b.Blocking))
 		}
 	})
 }

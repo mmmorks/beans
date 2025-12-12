@@ -38,14 +38,14 @@ type BeanFilter struct {
 	HasParent *bool `json:"hasParent,omitempty"`
 	// Include only beans with this specific parent ID
 	ParentID *string `json:"parentId,omitempty"`
-	// Include only beans that block other beans
-	HasBlocks *bool `json:"hasBlocks,omitempty"`
+	// Include only beans that are blocking other beans
+	HasBlocking *bool `json:"hasBlocking,omitempty"`
 	// Include only beans that are blocked by others
 	IsBlocked *bool `json:"isBlocked,omitempty"`
 	// Exclude beans that have a parent
 	NoParent *bool `json:"noParent,omitempty"`
-	// Exclude beans that block other beans
-	NoBlocks *bool `json:"noBlocks,omitempty"`
+	// Exclude beans that are blocking other beans
+	NoBlocking *bool `json:"noBlocking,omitempty"`
 }
 
 // Input for creating a new bean
@@ -64,8 +64,8 @@ type CreateBeanInput struct {
 	Body *string `json:"body,omitempty"`
 	// Parent bean ID (validated against type hierarchy)
 	Parent *string `json:"parent,omitempty"`
-	// Bean IDs this bean blocks
-	Blocks []string `json:"blocks,omitempty"`
+	// Bean IDs this bean is blocking
+	Blocking []string `json:"blocking,omitempty"`
 }
 
 type Mutation struct {
