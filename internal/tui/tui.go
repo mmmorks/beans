@@ -20,6 +20,7 @@ const (
 	viewParentPicker
 	viewStatusPicker
 	viewTypePicker
+	viewBlockingPicker
 )
 
 // beansChangedMsg is sent when beans change on disk (via file watcher)
@@ -46,20 +47,21 @@ type openParentPickerMsg struct {
 
 // App is the main TUI application model
 type App struct {
-	state        viewState
-	list         listModel
-	detail       detailModel
-	tagPicker    tagPickerModel
-	parentPicker parentPickerModel
-	statusPicker statusPickerModel
-	typePicker   typePickerModel
-	history      []detailModel // stack of previous detail views for back navigation
-	core         *beancore.Core
-	resolver     *graph.Resolver
-	config       *config.Config
-	width        int
-	height       int
-	program      *tea.Program // reference to program for sending messages from watcher
+	state          viewState
+	list           listModel
+	detail         detailModel
+	tagPicker      tagPickerModel
+	parentPicker   parentPickerModel
+	statusPicker   statusPickerModel
+	typePicker     typePickerModel
+	blockingPicker blockingPickerModel
+	history        []detailModel // stack of previous detail views for back navigation
+	core           *beancore.Core
+	resolver       *graph.Resolver
+	config         *config.Config
+	width          int
+	height         int
+	program        *tea.Program // reference to program for sending messages from watcher
 
 	// Key chord state - tracks partial key sequences like "g" waiting for "t"
 	pendingKey string
@@ -124,7 +126,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			return a, tea.Quit
 		case "q":
-			if a.state == viewDetail || a.state == viewTagPicker || a.state == viewParentPicker || a.state == viewStatusPicker || a.state == viewTypePicker {
+			if a.state == viewDetail || a.state == viewTagPicker || a.state == viewParentPicker || a.state == viewStatusPicker || a.state == viewTypePicker || a.state == viewBlockingPicker {
 				return a, tea.Quit
 			}
 			// For list, only quit if not filtering
@@ -242,6 +244,36 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return a, a.list.loadBeans
 
+	case openBlockingPickerMsg:
+		a.previousState = a.state
+		a.blockingPicker = newBlockingPickerModel(msg.beanID, msg.beanTitle, msg.currentBlocking, a.resolver, a.config, a.width, a.height)
+		a.state = viewBlockingPicker
+		return a, a.blockingPicker.Init()
+
+	case closeBlockingPickerMsg:
+		// Return to previous view and refresh in case beans changed while picker was open
+		a.state = a.previousState
+		return a, a.list.loadBeans
+
+	case blockingToggledMsg:
+		// Toggle the blocking relationship via GraphQL mutation
+		var err error
+		if msg.added {
+			_, err = a.resolver.Mutation().AddBlocking(context.Background(), msg.beanID, msg.targetID)
+		} else {
+			_, err = a.resolver.Mutation().RemoveBlocking(context.Background(), msg.beanID, msg.targetID)
+		}
+		if err != nil {
+			// Stay in picker on error
+			return a, nil
+		}
+		// Refresh the picker to show updated state
+		updatedBean, _ := a.resolver.Query().Bean(context.Background(), msg.beanID)
+		if updatedBean != nil {
+			a.blockingPicker = newBlockingPickerModel(msg.beanID, updatedBean.Title, updatedBean.Blocking, a.resolver, a.config, a.width, a.height)
+		}
+		return a, nil
+
 	case parentSelectedMsg:
 		// Set the new parent via GraphQL mutation
 		var parentID *string
@@ -307,6 +339,8 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.statusPicker, cmd = a.statusPicker.Update(msg)
 	case viewTypePicker:
 		a.typePicker, cmd = a.typePicker.Update(msg)
+	case viewBlockingPicker:
+		a.blockingPicker, cmd = a.blockingPicker.Update(msg)
 	}
 
 	return a, cmd
@@ -345,6 +379,8 @@ func (a *App) View() string {
 		return a.statusPicker.ModalView(a.getBackgroundView(), a.width, a.height)
 	case viewTypePicker:
 		return a.typePicker.ModalView(a.getBackgroundView(), a.width, a.height)
+	case viewBlockingPicker:
+		return a.blockingPicker.ModalView(a.getBackgroundView(), a.width, a.height)
 	}
 	return ""
 }

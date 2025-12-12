@@ -291,6 +291,17 @@ func (m listModel) Update(msg tea.Msg) (listModel, tea.Cmd) {
 						}
 					}
 				}
+			case "b":
+				// Open blocking picker for selected bean
+				if item, ok := m.list.SelectedItem().(beanItem); ok {
+					return m, func() tea.Msg {
+						return openBlockingPickerMsg{
+							beanID:          item.bean.ID,
+							beanTitle:       item.bean.Title,
+							currentBlocking: item.bean.Blocking,
+						}
+					}
+				}
 			case "esc", "backspace":
 				// If we have an active filter, clear it instead of quitting
 				if m.hasActiveFilter() {
@@ -351,6 +362,7 @@ func (m listModel) View() string {
 			helpKeyStyle.Render("s") + " " + helpStyle.Render("status") + "  " +
 			helpKeyStyle.Render("t") + " " + helpStyle.Render("type") + "  " +
 			helpKeyStyle.Render("p") + " " + helpStyle.Render("parent") + "  " +
+			helpKeyStyle.Render("b") + " " + helpStyle.Render("blocking") + "  " +
 			helpKeyStyle.Render("esc") + " " + helpStyle.Render("clear filter") + "  " +
 			helpKeyStyle.Render("q") + " " + helpStyle.Render("quit")
 	} else {
@@ -358,8 +370,8 @@ func (m listModel) View() string {
 			helpKeyStyle.Render("s") + " " + helpStyle.Render("status") + "  " +
 			helpKeyStyle.Render("t") + " " + helpStyle.Render("type") + "  " +
 			helpKeyStyle.Render("p") + " " + helpStyle.Render("parent") + "  " +
+			helpKeyStyle.Render("b") + " " + helpStyle.Render("blocking") + "  " +
 			helpKeyStyle.Render("/") + " " + helpStyle.Render("filter") + "  " +
-			helpKeyStyle.Render("g t") + " " + helpStyle.Render("filter by tag") + "  " +
 			helpKeyStyle.Render("q") + " " + helpStyle.Render("quit")
 	}
 
