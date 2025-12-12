@@ -35,9 +35,8 @@ type openBlockingPickerMsg struct {
 
 // blockingItem wraps a bean to implement list.Item for the blocking picker
 type blockingItem struct {
-	bean       *bean.Bean
-	cfg        *config.Config
-	isBlocking bool // true if current bean is blocking this one (pending state)
+	bean *bean.Bean
+	cfg  *config.Config
 }
 
 func (i blockingItem) Title() string       { return i.bean.Title }
@@ -46,7 +45,8 @@ func (i blockingItem) FilterValue() string { return i.bean.Title + " " + i.bean.
 
 // blockingItemDelegate handles rendering of blocking picker items
 type blockingItemDelegate struct {
-	cfg *config.Config
+	cfg             *config.Config
+	pendingBlocking *map[string]bool // pointer to pending state for live updates
 }
 
 func (d blockingItemDelegate) Height() int                             { return 1 }
@@ -66,9 +66,10 @@ func (d blockingItemDelegate) Render(w io.Writer, m list.Model, index int, listI
 		cursor = "  "
 	}
 
-	// Show blocking indicator
+	// Show blocking indicator - read from pending state for live updates
+	isBlocking := (*d.pendingBlocking)[item.bean.ID]
 	var blockingIndicator string
-	if item.isBlocking {
+	if isBlocking {
 		blockingIndicator = lipgloss.NewStyle().Foreground(ui.ColorDanger).Bold(true).Render("● ") // Red dot for blocking
 	} else {
 		blockingIndicator = lipgloss.NewStyle().Foreground(ui.ColorMuted).Render("○ ") // Empty circle for not blocking
@@ -90,14 +91,14 @@ func (d blockingItemDelegate) Render(w io.Writer, m list.Model, index int, listI
 
 // blockingPickerModel is the model for the blocking picker view
 type blockingPickerModel struct {
-	list            list.Model
-	beanID          string              // the bean we're setting blocking for
-	beanTitle       string              // the bean's title
-	originalBlocking map[string]bool    // original state (for computing diff)
-	pendingBlocking  map[string]bool    // pending state (toggled by space)
-	cfg             *config.Config
-	width           int
-	height          int
+	list             list.Model
+	beanID           string           // the bean we're setting blocking for
+	beanTitle        string           // the bean's title
+	originalBlocking map[string]bool  // original state (for computing diff)
+	pendingBlocking  map[string]bool  // pending state (toggled by space)
+	cfg              *config.Config
+	width            int
+	height           int
 }
 
 func newBlockingPickerModel(beanID, beanTitle string, currentBlocking []string, resolver *graph.Resolver, cfg *config.Config, width, height int) blockingPickerModel {
@@ -134,15 +135,12 @@ func newBlockingPickerModel(beanID, beanTitle string, currentBlocking []string, 
 		return strings.ToLower(eligibleBeans[i].Title) < strings.ToLower(eligibleBeans[j].Title)
 	})
 
-	delegate := blockingItemDelegate{cfg: cfg}
-
 	// Build items list
 	items := make([]list.Item, 0, len(eligibleBeans))
 	for _, b := range eligibleBeans {
 		items = append(items, blockingItem{
-			bean:       b,
-			cfg:        cfg,
-			isBlocking: pendingBlocking[b.ID],
+			bean: b,
+			cfg:  cfg,
 		})
 	}
 
@@ -150,7 +148,11 @@ func newBlockingPickerModel(beanID, beanTitle string, currentBlocking []string, 
 	modalWidth := max(40, min(80, width*60/100))
 	modalHeight := max(10, min(20, height*60/100))
 	listWidth := modalWidth - 6
-	listHeight := modalHeight - 7
+	// Account for: header(1) + subtitle(1) + blank(1) + blank(1) + description(1) + blank(1) + help(1) + border(2) = 9
+	listHeight := modalHeight - 9
+
+	// Create delegate with pointer to pending state (so it can read live updates)
+	delegate := blockingItemDelegate{cfg: cfg, pendingBlocking: &pendingBlocking}
 
 	l := list.New(items, delegate, listWidth, listHeight)
 	l.Title = "Manage Blocking"
@@ -189,41 +191,22 @@ func (m blockingPickerModel) Update(msg tea.Msg) (blockingPickerModel, tea.Cmd) 
 		modalWidth := max(40, min(80, msg.Width*60/100))
 		modalHeight := max(10, min(20, msg.Height*60/100))
 		listWidth := modalWidth - 6
-		listHeight := modalHeight - 7
+		listHeight := modalHeight - 9 // Account for description line
 		m.list.SetSize(listWidth, listHeight)
 
 	case tea.KeyMsg:
 		if m.list.FilterState() != list.Filtering {
 			switch msg.String() {
 			case " ":
-				// Toggle the selected item locally
+				// Toggle the selected item's pending state
+				// The delegate reads from pendingBlocking directly, so no need to update items
 				if item, ok := m.list.SelectedItem().(blockingItem); ok {
 					targetID := item.bean.ID
-					currentIndex := m.list.Index()
-
-					// Toggle pending state
 					if m.pendingBlocking[targetID] {
 						delete(m.pendingBlocking, targetID)
 					} else {
 						m.pendingBlocking[targetID] = true
 					}
-
-					// Update the list items to reflect new state
-					oldItems := m.list.Items()
-					newItems := make([]list.Item, len(oldItems))
-					for i, listItem := range oldItems {
-						if bi, ok := listItem.(blockingItem); ok {
-							newItems[i] = blockingItem{
-								bean:       bi.bean,
-								cfg:        bi.cfg,
-								isBlocking: m.pendingBlocking[bi.bean.ID],
-							}
-						}
-					}
-					m.list.SetItems(newItems)
-
-					// Restore selection position
-					m.list.Select(currentIndex)
 				}
 				return m, nil
 
