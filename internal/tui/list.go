@@ -291,6 +291,17 @@ func (m listModel) Update(msg tea.Msg) (listModel, tea.Cmd) {
 						}
 					}
 				}
+			case "P":
+				// Open priority picker for selected bean
+				if item, ok := m.list.SelectedItem().(beanItem); ok {
+					return m, func() tea.Msg {
+						return openPriorityPickerMsg{
+							beanID:          item.bean.ID,
+							beanTitle:       item.bean.Title,
+							currentPriority: item.bean.Priority,
+						}
+					}
+				}
 			case "b":
 				// Open blocking picker for selected bean
 				if item, ok := m.list.SelectedItem().(beanItem); ok {
@@ -378,9 +389,11 @@ func (m listModel) View() string {
 			helpKeyStyle.Render("e") + " " + helpStyle.Render("edit") + "  " +
 			helpKeyStyle.Render("s") + " " + helpStyle.Render("status") + "  " +
 			helpKeyStyle.Render("t") + " " + helpStyle.Render("type") + "  " +
+			helpKeyStyle.Render("P") + " " + helpStyle.Render("priority") + "  " +
 			helpKeyStyle.Render("p") + " " + helpStyle.Render("parent") + "  " +
 			helpKeyStyle.Render("b") + " " + helpStyle.Render("blocking") + "  " +
 			helpKeyStyle.Render("esc") + " " + helpStyle.Render("clear filter") + "  " +
+			helpKeyStyle.Render("?") + " " + helpStyle.Render("help") + "  " +
 			helpKeyStyle.Render("q") + " " + helpStyle.Render("quit")
 	} else {
 		help = helpKeyStyle.Render("enter") + " " + helpStyle.Render("view") + "  " +
@@ -388,9 +401,11 @@ func (m listModel) View() string {
 			helpKeyStyle.Render("e") + " " + helpStyle.Render("edit") + "  " +
 			helpKeyStyle.Render("s") + " " + helpStyle.Render("status") + "  " +
 			helpKeyStyle.Render("t") + " " + helpStyle.Render("type") + "  " +
+			helpKeyStyle.Render("P") + " " + helpStyle.Render("priority") + "  " +
 			helpKeyStyle.Render("p") + " " + helpStyle.Render("parent") + "  " +
 			helpKeyStyle.Render("b") + " " + helpStyle.Render("blocking") + "  " +
 			helpKeyStyle.Render("/") + " " + helpStyle.Render("filter") + "  " +
+			helpKeyStyle.Render("?") + " " + helpStyle.Render("help") + "  " +
 			helpKeyStyle.Render("q") + " " + helpStyle.Render("quit")
 	}
 

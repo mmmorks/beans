@@ -24,7 +24,9 @@ const (
 	viewStatusPicker
 	viewTypePicker
 	viewBlockingPicker
+	viewPriorityPicker
 	viewCreateModal
+	viewHelpOverlay
 )
 
 // beansChangedMsg is sent when beans change on disk (via file watcher)
@@ -70,7 +72,9 @@ type App struct {
 	statusPicker   statusPickerModel
 	typePicker     typePickerModel
 	blockingPicker blockingPickerModel
+	priorityPicker priorityPickerModel
 	createModal    createModalModel
+	helpOverlay    helpOverlayModel
 	history        []detailModel // stack of previous detail views for back navigation
 	core           *beancore.Core
 	resolver       *graph.Resolver
@@ -141,8 +145,16 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c":
 			return a, tea.Quit
+		case "?":
+			// Open help overlay if not already showing it (and not in a picker/modal)
+			if a.state == viewList || a.state == viewDetail {
+				a.previousState = a.state
+				a.helpOverlay = newHelpOverlayModel(a.width, a.height)
+				a.state = viewHelpOverlay
+				return a, a.helpOverlay.Init()
+			}
 		case "q":
-			if a.state == viewDetail || a.state == viewTagPicker || a.state == viewParentPicker || a.state == viewStatusPicker || a.state == viewTypePicker || a.state == viewBlockingPicker || a.state == viewCreateModal {
+			if a.state == viewDetail || a.state == viewTagPicker || a.state == viewParentPicker || a.state == viewStatusPicker || a.state == viewTypePicker || a.state == viewBlockingPicker || a.state == viewPriorityPicker || a.state == viewCreateModal || a.state == viewHelpOverlay {
 				return a, tea.Quit
 			}
 			// For list, only quit if not filtering
@@ -259,6 +271,46 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return a, a.list.loadBeans
+
+	case openPriorityPickerMsg:
+		a.previousState = a.state
+		a.priorityPicker = newPriorityPickerModel(msg.beanID, msg.beanTitle, msg.currentPriority, a.config, a.width, a.height)
+		a.state = viewPriorityPicker
+		return a, a.priorityPicker.Init()
+
+	case closePriorityPickerMsg:
+		// Return to previous view and refresh in case beans changed while picker was open
+		a.state = a.previousState
+		return a, a.list.loadBeans
+
+	case prioritySelectedMsg:
+		// Update the bean's priority via GraphQL mutation
+		_, err := a.resolver.Mutation().UpdateBean(context.Background(), msg.beanID, model.UpdateBeanInput{
+			Priority: &msg.priority,
+		})
+		if err != nil {
+			a.state = a.previousState
+			return a, nil
+		}
+		// Return to the previous view and refresh
+		a.state = a.previousState
+		if a.state == viewDetail {
+			updatedBean, _ := a.resolver.Query().Bean(context.Background(), msg.beanID)
+			if updatedBean != nil {
+				a.detail = newDetailModel(updatedBean, a.resolver, a.config, a.width, a.height)
+			}
+		}
+		return a, a.list.loadBeans
+
+	case openHelpMsg:
+		a.previousState = a.state
+		a.helpOverlay = newHelpOverlayModel(a.width, a.height)
+		a.state = viewHelpOverlay
+		return a, a.helpOverlay.Init()
+
+	case closeHelpMsg:
+		a.state = a.previousState
+		return a, nil
 
 	case openBlockingPickerMsg:
 		a.previousState = a.state
@@ -400,10 +452,14 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.statusPicker, cmd = a.statusPicker.Update(msg)
 	case viewTypePicker:
 		a.typePicker, cmd = a.typePicker.Update(msg)
+	case viewPriorityPicker:
+		a.priorityPicker, cmd = a.priorityPicker.Update(msg)
 	case viewBlockingPicker:
 		a.blockingPicker, cmd = a.blockingPicker.Update(msg)
 	case viewCreateModal:
 		a.createModal, cmd = a.createModal.Update(msg)
+	case viewHelpOverlay:
+		a.helpOverlay, cmd = a.helpOverlay.Update(msg)
 	}
 
 	return a, cmd
@@ -442,10 +498,14 @@ func (a *App) View() string {
 		return a.statusPicker.ModalView(a.getBackgroundView(), a.width, a.height)
 	case viewTypePicker:
 		return a.typePicker.ModalView(a.getBackgroundView(), a.width, a.height)
+	case viewPriorityPicker:
+		return a.priorityPicker.ModalView(a.getBackgroundView(), a.width, a.height)
 	case viewBlockingPicker:
 		return a.blockingPicker.ModalView(a.getBackgroundView(), a.width, a.height)
 	case viewCreateModal:
 		return a.createModal.ModalView(a.getBackgroundView(), a.width, a.height)
+	case viewHelpOverlay:
+		return a.helpOverlay.ModalView(a.getBackgroundView(), a.width, a.height)
 	}
 	return ""
 }

@@ -1,10 +1,10 @@
 ---
 title: 'TUI: ''P'' shortcut to change bean priority'
-status: todo
+status: completed
 type: feature
 priority: normal
 created_at: 2025-12-13T00:47:21Z
-updated_at: 2025-12-13T00:48:10Z
+updated_at: 2025-12-13T01:22:59Z
 parent: beans-xnp8
 ---
 
