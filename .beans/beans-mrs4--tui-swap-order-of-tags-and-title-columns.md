@@ -1,9 +1,10 @@
 ---
 title: 'TUI: swap order of tags and title columns!'
-status: backlog
+status: todo
 type: feature
+priority: normal
 created_at: 2025-12-13T00:34:57Z
-updated_at: 2025-12-13T00:34:57Z
+updated_at: 2025-12-13T00:39:41Z
 parent: beans-xnp8
 ---
 
