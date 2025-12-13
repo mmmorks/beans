@@ -188,7 +188,7 @@ func RenderTree(nodes []*TreeNode, cfg *config.Config, maxIDWidth int, hasTags b
 	idStyle := lipgloss.NewStyle().Width(treeColWidth)
 	typeStyle := lipgloss.NewStyle().Width(12)
 	statusStyle := lipgloss.NewStyle().Width(14)
-	tagsStyle := lipgloss.NewStyle().Width(24)
+	titleStyle := lipgloss.NewStyle().Width(50)
 	headerCol := lipgloss.NewStyle().Foreground(ColorMuted)
 
 	// Header
@@ -199,10 +199,10 @@ func RenderTree(nodes []*TreeNode, cfg *config.Config, maxIDWidth int, hasTags b
 			idStyle.Render(headerCol.Render("ID")),
 			typeStyle.Render(headerCol.Render("TYPE")),
 			statusStyle.Render(headerCol.Render("STATUS")),
-			tagsStyle.Render(headerCol.Render("TAGS")),
-			headerCol.Render("TITLE"),
+			titleStyle.Render(headerCol.Render("TITLE")),
+			headerCol.Render("TAGS"),
 		)
-		dividerWidth = treeColWidth + 12 + 14 + 24 + 30
+		dividerWidth = treeColWidth + 12 + 14 + 50 + 24
 	} else {
 		header = lipgloss.JoinHorizontal(lipgloss.Top,
 			idStyle.Render(headerCol.Render("ID")),
@@ -210,7 +210,7 @@ func RenderTree(nodes []*TreeNode, cfg *config.Config, maxIDWidth int, hasTags b
 			statusStyle.Render(headerCol.Render("STATUS")),
 			headerCol.Render("TITLE"),
 		)
-		dividerWidth = treeColWidth + 12 + 14 + 30
+		dividerWidth = treeColWidth + 12 + 14 + 50
 	}
 	sb.WriteString(header)
 	sb.WriteString("\n")
@@ -266,7 +266,7 @@ func renderNode(sb *strings.Builder, node *TreeNode, depth int, isLast bool, cfg
 	// Column styles - fixed widths for alignment
 	typeStyle := lipgloss.NewStyle().Width(12)
 	statusStyle := lipgloss.NewStyle().Width(14)
-	tagsStyle := lipgloss.NewStyle().Width(24)
+	titleStyle := lipgloss.NewStyle().Width(50)
 
 	// Build indentation and connector
 	// depth 0: no indent, no connector
@@ -324,7 +324,12 @@ func renderNode(sb *strings.Builder, node *TreeNode, depth int, isLast bool, cfg
 	}
 
 	var titleText string
-	title := truncateString(b.Title, 50)
+	// Account for priority symbol width when truncating (symbol + space = 2 chars)
+	maxTitleWidth := 50
+	if prioritySymbol != "" {
+		maxTitleWidth -= 2
+	}
+	title := truncateString(b.Title, maxTitleWidth)
 	if node.Matched {
 		titleText = prioritySymbol + title
 	} else {
@@ -350,8 +355,8 @@ func renderNode(sb *strings.Builder, node *TreeNode, depth int, isLast bool, cfg
 			idCell,
 			typeStyle.Render(typeText),
 			statusStyle.Render(statusText),
-			tagsStyle.Render(tagsStr),
-			titleText,
+			titleStyle.Render(titleText),
+			tagsStr,
 		)
 	} else {
 		row = lipgloss.JoinHorizontal(lipgloss.Top,

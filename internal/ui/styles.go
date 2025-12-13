@@ -499,7 +499,7 @@ func RenderBeanRow(id, status, typeName, title string, cfg BeanRowConfig) string
 	}
 
 	if cfg.ShowTags {
-		return cursor + idCol + typeCol + statusCol + tagsCol + prioritySymbol + titleStyled
+		return cursor + idCol + typeCol + statusCol + prioritySymbol + titleStyled + " " + tagsCol
 	}
 	return cursor + idCol + typeCol + statusCol + prioritySymbol + titleStyled
 }
