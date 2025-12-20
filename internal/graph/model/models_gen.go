@@ -118,12 +118,15 @@ type UpdateBeanInput struct {
 type ChangeType string
 
 const (
+	// Bean existed when subscription started (emitted when includeInitial=true)
+	ChangeTypeInitial ChangeType = "INITIAL"
 	ChangeTypeCreated ChangeType = "CREATED"
 	ChangeTypeUpdated ChangeType = "UPDATED"
 	ChangeTypeDeleted ChangeType = "DELETED"
 )
 
 var AllChangeType = []ChangeType{
+	ChangeTypeInitial,
 	ChangeTypeCreated,
 	ChangeTypeUpdated,
 	ChangeTypeDeleted,
@@ -131,7 +134,7 @@ var AllChangeType = []ChangeType{
 
 func (e ChangeType) IsValid() bool {
 	switch e {
-	case ChangeTypeCreated, ChangeTypeUpdated, ChangeTypeDeleted:
+	case ChangeTypeInitial, ChangeTypeCreated, ChangeTypeUpdated, ChangeTypeDeleted:
 		return true
 	}
 	return false
