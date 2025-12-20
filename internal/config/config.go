@@ -108,6 +108,9 @@ func Default() *Config {
 			DefaultStatus: "todo",
 			DefaultType:   "task",
 		},
+		Server: ServerConfig{
+			Port: DefaultServerPort,
+		},
 	}
 }
 
