@@ -1,6 +1,7 @@
 package beancore
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -642,5 +643,409 @@ func TestClose(t *testing.T) {
 	// Close should stop the watcher
 	if err := core.Close(); err != nil {
 		t.Errorf("Close() error = %v", err)
+	}
+}
+
+func TestSubscribe(t *testing.T) {
+	core, beansDir := setupTestCore(t)
+
+	// Start watching
+	if err := core.StartWatching(); err != nil {
+		t.Fatalf("StartWatching() error = %v", err)
+	}
+	defer core.Unwatch()
+
+	// Subscribe to events
+	ch, unsub := core.Subscribe()
+	defer unsub()
+
+	// Give watcher time to start
+	time.Sleep(50 * time.Millisecond)
+
+	// Create a bean file (should trigger EventCreated)
+	content := `---
+title: New Bean
+status: todo
+---
+`
+	if err := os.WriteFile(filepath.Join(beansDir, "new1--new.md"), []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write test file: %v", err)
+	}
+
+	// Wait for events
+	select {
+	case events := <-ch:
+		if len(events) == 0 {
+			t.Error("expected at least one event")
+		}
+		found := false
+		for _, e := range events {
+			if e.Type == EventCreated && e.BeanID == "new1" {
+				found = true
+				if e.Bean == nil {
+					t.Error("EventCreated should include Bean")
+				}
+			}
+		}
+		if !found {
+			t.Errorf("expected EventCreated for new1, got: %+v", events)
+		}
+	case <-time.After(500 * time.Millisecond):
+		t.Error("timeout waiting for events")
+	}
+}
+
+func TestSubscribeMultiple(t *testing.T) {
+	core, beansDir := setupTestCore(t)
+
+	if err := core.StartWatching(); err != nil {
+		t.Fatalf("StartWatching() error = %v", err)
+	}
+	defer core.Unwatch()
+
+	// Create two subscribers
+	ch1, unsub1 := core.Subscribe()
+	defer unsub1()
+	ch2, unsub2 := core.Subscribe()
+	defer unsub2()
+
+	// Give watcher time to start
+	time.Sleep(50 * time.Millisecond)
+
+	// Create a bean file
+	content := `---
+title: Multi Test
+status: todo
+---
+`
+	if err := os.WriteFile(filepath.Join(beansDir, "mult--multi.md"), []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write test file: %v", err)
+	}
+
+	// Both subscribers should receive events
+	received1, received2 := false, false
+	timeout := time.After(500 * time.Millisecond)
+
+	for !received1 || !received2 {
+		select {
+		case <-ch1:
+			received1 = true
+		case <-ch2:
+			received2 = true
+		case <-timeout:
+			t.Fatalf("timeout: received1=%v, received2=%v", received1, received2)
+		}
+	}
+}
+
+func TestUnsubscribe(t *testing.T) {
+	core, _ := setupTestCore(t)
+
+	if err := core.StartWatching(); err != nil {
+		t.Fatalf("StartWatching() error = %v", err)
+	}
+	defer core.Unwatch()
+
+	ch, unsub := core.Subscribe()
+	unsub()
+
+	// Channel should be closed
+	_, ok := <-ch
+	if ok {
+		t.Error("expected channel to be closed after unsubscribe")
+	}
+}
+
+func TestEventTypes(t *testing.T) {
+	core, beansDir := setupTestCore(t)
+
+	// Create an initial bean
+	createTestBean(t, core, "evt1", "Event Test", "todo")
+
+	if err := core.StartWatching(); err != nil {
+		t.Fatalf("StartWatching() error = %v", err)
+	}
+	defer core.Unwatch()
+
+	ch, unsub := core.Subscribe()
+	defer unsub()
+
+	// Give watcher time to start
+	time.Sleep(50 * time.Millisecond)
+
+	t.Run("update event", func(t *testing.T) {
+		// Modify the existing bean file
+		content := `---
+title: Updated Title
+status: in-progress
+---
+`
+		if err := os.WriteFile(filepath.Join(beansDir, "evt1--event-test.md"), []byte(content), 0644); err != nil {
+			t.Fatalf("failed to write test file: %v", err)
+		}
+
+		select {
+		case events := <-ch:
+			found := false
+			for _, e := range events {
+				if e.Type == EventUpdated && e.BeanID == "evt1" {
+					found = true
+					if e.Bean == nil {
+						t.Error("EventUpdated should include Bean")
+					}
+					if e.Bean.Title != "Updated Title" {
+						t.Errorf("expected updated title, got %q", e.Bean.Title)
+					}
+				}
+			}
+			if !found {
+				t.Errorf("expected EventUpdated for evt1, got: %+v", events)
+			}
+		case <-time.After(500 * time.Millisecond):
+			t.Error("timeout waiting for update event")
+		}
+	})
+
+	t.Run("delete event", func(t *testing.T) {
+		// Delete the bean file
+		if err := os.Remove(filepath.Join(beansDir, "evt1--event-test.md")); err != nil {
+			t.Fatalf("failed to delete file: %v", err)
+		}
+
+		select {
+		case events := <-ch:
+			found := false
+			for _, e := range events {
+				if e.Type == EventDeleted && e.BeanID == "evt1" {
+					found = true
+					if e.Bean != nil {
+						t.Error("EventDeleted should have nil Bean")
+					}
+				}
+			}
+			if !found {
+				t.Errorf("expected EventDeleted for evt1, got: %+v", events)
+			}
+		case <-time.After(500 * time.Millisecond):
+			t.Error("timeout waiting for delete event")
+		}
+	})
+}
+
+func TestSubscribersClosedOnUnwatch(t *testing.T) {
+	core, _ := setupTestCore(t)
+
+	if err := core.StartWatching(); err != nil {
+		t.Fatalf("StartWatching() error = %v", err)
+	}
+
+	ch, _ := core.Subscribe() // Note: not calling unsub
+
+	// Unwatch should close subscriber channels
+	if err := core.Unwatch(); err != nil {
+		t.Fatalf("Unwatch() error = %v", err)
+	}
+
+	// Channel should be closed
+	_, ok := <-ch
+	if ok {
+		t.Error("expected channel to be closed after Unwatch")
+	}
+}
+
+func TestMultipleChangesInDebounceWindow(t *testing.T) {
+	core, beansDir := setupTestCore(t)
+
+	// Create an initial bean to update
+	createTestBean(t, core, "upd1", "To Update", "todo")
+
+	if err := core.StartWatching(); err != nil {
+		t.Fatalf("StartWatching() error = %v", err)
+	}
+	defer core.Unwatch()
+
+	ch, unsub := core.Subscribe()
+	defer unsub()
+
+	time.Sleep(50 * time.Millisecond)
+
+	// Make multiple changes rapidly (within debounce window)
+	// 1. Create a new bean
+	content1 := `---
+title: New Bean
+status: todo
+---
+`
+	os.WriteFile(filepath.Join(beansDir, "new1--new.md"), []byte(content1), 0644)
+
+	// 2. Update existing bean
+	content2 := `---
+title: Updated Bean
+status: in-progress
+---
+`
+	os.WriteFile(filepath.Join(beansDir, "upd1--to-update.md"), []byte(content2), 0644)
+
+	// 3. Create another bean then delete it (net effect: nothing)
+	os.WriteFile(filepath.Join(beansDir, "tmp1--temp.md"), []byte(content1), 0644)
+	os.Remove(filepath.Join(beansDir, "tmp1--temp.md"))
+
+	// Wait for debounced events
+	select {
+	case events := <-ch:
+		// Should have events for new1 (created) and upd1 (updated)
+		// tmp1 might or might not appear depending on timing
+		foundNew := false
+		foundUpd := false
+		for _, e := range events {
+			if e.BeanID == "new1" && e.Type == EventCreated {
+				foundNew = true
+			}
+			if e.BeanID == "upd1" && e.Type == EventUpdated {
+				foundUpd = true
+			}
+		}
+		if !foundNew {
+			t.Error("expected EventCreated for new1")
+		}
+		if !foundUpd {
+			t.Error("expected EventUpdated for upd1")
+		}
+	case <-time.After(500 * time.Millisecond):
+		t.Error("timeout waiting for events")
+	}
+
+	// Verify state is correct
+	_, err := core.Get("new1")
+	if err != nil {
+		t.Errorf("new1 should exist: %v", err)
+	}
+
+	upd, err := core.Get("upd1")
+	if err != nil {
+		t.Fatalf("upd1 should exist: %v", err)
+	}
+	if upd.Title != "Updated Bean" {
+		t.Errorf("upd1 title = %q, want %q", upd.Title, "Updated Bean")
+	}
+
+	// tmp1 should not exist
+	_, err = core.Get("tmp1")
+	if err != ErrNotFound {
+		t.Error("tmp1 should not exist (was created then deleted)")
+	}
+}
+
+func TestInvalidFileIgnored(t *testing.T) {
+	core, beansDir := setupTestCore(t)
+
+	// Create a valid bean first
+	createTestBean(t, core, "val1", "Valid Bean", "todo")
+
+	if err := core.StartWatching(); err != nil {
+		t.Fatalf("StartWatching() error = %v", err)
+	}
+	defer core.Unwatch()
+
+	ch, unsub := core.Subscribe()
+	defer unsub()
+
+	time.Sleep(50 * time.Millisecond)
+
+	// Create an invalid bean file (malformed YAML frontmatter)
+	invalidContent := `---
+title: [unclosed bracket
+status: {broken yaml
+---
+`
+	os.WriteFile(filepath.Join(beansDir, "bad1--invalid.md"), []byte(invalidContent), 0644)
+
+	// Also create a valid bean to verify processing continues
+	validContent := `---
+title: Another Valid
+status: todo
+---
+`
+	os.WriteFile(filepath.Join(beansDir, "val2--another.md"), []byte(validContent), 0644)
+
+	// Wait for events
+	select {
+	case events := <-ch:
+		// Should have event for val2 (created), bad1 should be skipped
+		foundVal2 := false
+		for _, e := range events {
+			if e.BeanID == "val2" && e.Type == EventCreated {
+				foundVal2 = true
+			}
+			if e.BeanID == "bad1" {
+				t.Error("bad1 should not produce an event (invalid file)")
+			}
+		}
+		if !foundVal2 {
+			t.Error("expected EventCreated for val2")
+		}
+	case <-time.After(500 * time.Millisecond):
+		t.Error("timeout waiting for events")
+	}
+
+	// Valid beans should still be accessible
+	if _, err := core.Get("val1"); err != nil {
+		t.Errorf("val1 should still exist: %v", err)
+	}
+	if _, err := core.Get("val2"); err != nil {
+		t.Errorf("val2 should exist: %v", err)
+	}
+}
+
+func TestRapidUpdatesToSameFile(t *testing.T) {
+	core, beansDir := setupTestCore(t)
+
+	createTestBean(t, core, "rap1", "Rapid Updates", "todo")
+
+	if err := core.StartWatching(); err != nil {
+		t.Fatalf("StartWatching() error = %v", err)
+	}
+	defer core.Unwatch()
+
+	ch, unsub := core.Subscribe()
+	defer unsub()
+
+	time.Sleep(50 * time.Millisecond)
+
+	// Write to the same file multiple times rapidly
+	for i := 1; i <= 5; i++ {
+		content := fmt.Sprintf(`---
+title: Update %d
+status: todo
+---
+`, i)
+		os.WriteFile(filepath.Join(beansDir, "rap1--rapid-updates.md"), []byte(content), 0644)
+		time.Sleep(10 * time.Millisecond) // Small delay but within debounce
+	}
+
+	// Should get a single batch of events (debounced)
+	select {
+	case events := <-ch:
+		// Count events for rap1 - should be exactly one
+		rap1Count := 0
+		var lastEvent BeanEvent
+		for _, e := range events {
+			if e.BeanID == "rap1" {
+				rap1Count++
+				lastEvent = e
+			}
+		}
+		if rap1Count != 1 {
+			t.Errorf("expected 1 event for rap1, got %d", rap1Count)
+		}
+		if lastEvent.Type != EventUpdated {
+			t.Errorf("expected EventUpdated, got %v", lastEvent.Type)
+		}
+		// Should have the final value
+		if lastEvent.Bean != nil && lastEvent.Bean.Title != "Update 5" {
+			t.Errorf("expected title 'Update 5', got %q", lastEvent.Bean.Title)
+		}
+	case <-time.After(500 * time.Millisecond):
+		t.Error("timeout waiting for events")
 	}
 }
