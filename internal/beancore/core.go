@@ -27,9 +27,6 @@ type Core struct {
 	root   string         // absolute path to .beans directory
 	config *config.Config // project configuration
 
-	// Whether to include archived beans when loading
-	withArchived bool
-
 	// In-memory state
 	mu    sync.RWMutex
 	beans map[string]*bean.Bean // ID -> Bean
@@ -85,17 +82,6 @@ func (c *Core) Config() *config.Config {
 	return c.config
 }
 
-// SetWithArchived sets whether to include archived beans when loading.
-// Must be called before Load().
-func (c *Core) SetWithArchived(include bool) {
-	c.withArchived = include
-}
-
-// WithArchived returns whether archived beans are included.
-func (c *Core) WithArchived() bool {
-	return c.withArchived
-}
-
 // Load reads all beans from disk into memory.
 func (c *Core) Load() error {
 	c.mu.Lock()
@@ -105,23 +91,32 @@ func (c *Core) Load() error {
 }
 
 // loadFromDisk reads all beans from disk (must be called with lock held).
+// Loads all .md files from the root directory and any subdirectories.
 func (c *Core) loadFromDisk() error {
 	// Clear existing beans
 	c.beans = make(map[string]*bean.Bean)
 
-	// Load beans from main directory
-	if err := c.loadBeansFromDir(""); err != nil {
-		return err
-	}
-
-	// Optionally load archived beans
-	if c.withArchived {
-		archivePath := filepath.Join(c.root, ArchiveDir)
-		if info, err := os.Stat(archivePath); err == nil && info.IsDir() {
-			if err := c.loadBeansFromDir(ArchiveDir); err != nil {
-				return err
-			}
+	// Walk the entire .beans directory tree, loading all .md files
+	err := filepath.WalkDir(c.root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
 		}
+
+		// Skip non-.md files
+		if d.IsDir() || !strings.HasSuffix(d.Name(), ".md") {
+			return nil
+		}
+
+		b, loadErr := c.loadBean(path)
+		if loadErr != nil {
+			return fmt.Errorf("loading %s: %w", path, loadErr)
+		}
+
+		c.beans[b.ID] = b
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	// Reinitialize search index if it was active: close and re-create (best-effort, don't fail load)
@@ -132,37 +127,6 @@ func (c *Core) loadFromDisk() error {
 		if err := c.ensureSearchIndexLocked(); err != nil {
 			c.logWarn("failed to reinitialize search index after reload: %v", err)
 		}
-	}
-
-	return nil
-}
-
-// loadBeansFromDir loads all .md files from a subdirectory of the root.
-// Pass "" for the main .beans directory.
-func (c *Core) loadBeansFromDir(subdir string) error {
-	dir := c.root
-	if subdir != "" {
-		dir = filepath.Join(c.root, subdir)
-	}
-
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return err
-	}
-
-	for _, entry := range entries {
-		// Skip directories and non-.md files
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
-			continue
-		}
-
-		path := filepath.Join(dir, entry.Name())
-		b, err := c.loadBean(path)
-		if err != nil {
-			return fmt.Errorf("loading %s: %w", path, err)
-		}
-
-		c.beans[b.ID] = b
 	}
 
 	return nil
@@ -622,43 +586,15 @@ func (c *Core) LoadAndUnarchive(id string) (*bean.Bean, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	// Check if bean is already loaded (maybe it was unarchived by another goroutine)
-	if b, _, err := c.findBeanLocked(id); err == nil {
-		return b, nil
-	}
-
-	// Look for bean in archive
-	fullID := c.normalizeID(id)
-	archiveDir := filepath.Join(c.root, ArchiveDir)
-
-	if _, err := os.Stat(archiveDir); os.IsNotExist(err) {
-		return nil, ErrNotFound
-	}
-
-	entries, err := os.ReadDir(archiveDir)
+	// Find the bean (always loaded since we now include archived beans)
+	b, targetID, err := c.findBeanLocked(id)
 	if err != nil {
-		return nil, err
-	}
-
-	var b *bean.Bean
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
-			continue
-		}
-
-		fileID, _ := bean.ParseFilename(entry.Name())
-		if fileID == fullID {
-			path := filepath.Join(archiveDir, entry.Name())
-			b, err = c.loadBean(path)
-			if err != nil {
-				return nil, err
-			}
-			break
-		}
-	}
-
-	if b == nil {
 		return nil, ErrNotFound
+	}
+
+	// If already in main directory, just return it
+	if !c.isArchivedPath(b.Path) {
+		return b, nil
 	}
 
 	// Move file from archive to main directory
@@ -670,16 +606,9 @@ func (c *Core) LoadAndUnarchive(id string) (*bean.Bean, error) {
 		return nil, fmt.Errorf("moving bean from archive: %w", err)
 	}
 
-	// Update bean's path and add to in-memory map
+	// Update bean's path
 	b.Path = newRelPath
-	c.beans[b.ID] = b
-
-	// Update search index if active
-	if c.searchIndex != nil {
-		if err := c.searchIndex.IndexBean(b); err != nil {
-			c.logWarn("failed to index bean %s: %v", b.ID, err)
-		}
-	}
+	c.beans[targetID] = b
 
 	return b, nil
 }
