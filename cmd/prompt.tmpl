@@ -13,6 +13,21 @@ This project uses **beans**, an agentic-first issue tracker. Issues are called "
 4. **When committing**: Include bean file changes with your code commits.
 
 If you identify follow-up work, create a new bean instead of doing it immediately.
+
+## Finding Work
+
+When the user asks what to work on next:
+
+```bash
+# Check for in-progress beans first (finish what's started)
+beans query --json '{ beans(filter: { status: ["in-progress"] }) { id title type priority body } }'
+
+# Find actionable beans sorted by priority
+beans query --json '{ beans(filter: { excludeStatus: ["completed", "scrapped", "draft"], isBlocked: false }) { id title type priority status } }'
+
+# Check milestone priorities for context
+beans query --json '{ beans(filter: { type: ["milestone"], status: ["in-progress", "todo"] }) { id title body children(filter: { excludeStatus: ["completed"] }) { id title status } } }'
+```
 </EXTREMELY_IMPORTANT>
 
 ## GraphQL Queries
