@@ -15,7 +15,31 @@ This project uses **beans**, an agentic-first issue tracker. Issues are called "
 If you identify follow-up work, create a new bean instead of doing it immediately.
 </EXTREMELY_IMPORTANT>
 
-## Common Commands
+## GraphQL Queries
+
+The `beans query` command allows advanced querying using GraphQL. Unlike the other CLI commands listed below, GraphQL allows you to:
+
+- Fetch exactly the fields you need, across a potentially large set of beans
+- Directly read all fields (including `body`) and relationships
+- Traverse relationships in a single query
+- `beans query --help` for syntax and usage details
+- `beans query --schema` to view the full GraphQL schema
+
+```bash
+# Get all actionable beans with their details
+beans query '{ beans(filter: { excludeStatus: ["completed", "scrapped"] }) { id title status type body } }'
+
+# Get a single bean with its relationships
+beans query '{ bean(id: "bean-abc") { title body parent { title } children { id title status } } }'
+
+# Find high-priority bugs
+beans query '{ beans(filter: { type: ["bug"], priority: ["critical", "high"] }) { id title } }'
+
+# Search with text
+beans query '{ beans(filter: { search: "authentication" }) { id title body } }'
+```
+
+## CLI Commands
 
 ```bash
 # List beans (default excludes completed/scrapped)
@@ -51,14 +75,6 @@ beans list --with-archived -S "authentication" # Search across all beans
 beans show --with-archived <id>                # View an archived bean
 ```
 
-## GraphQL (Advanced)
-
-For complex queries, use `beans query` with GraphQL:
-
-```bash
-beans query --schema                   # View full schema
-beans query '{ beans { id title } }'   # Run a query
-```
 
 ## Relationships
 
