@@ -7,10 +7,7 @@ This project uses **beans**, an agentic-first issue tracker. Issues are called "
 
 ## Workflow
 
-1. **Before starting work**: Check for existing beans with `beans list`, or create one:
-   ```bash
-   beans create "Fix login bug" -t bug -d "Users cannot log in when..." -s in-progress
-   ```
+1. **Before starting work**: Check for existing beans, or create one: `beans create "Fix login bug" -t bug -d "Users cannot log in when..." -s in-progress`
 2. **While working**: Keep the bean updated. If it has a checklist, check off items as you complete them.
 3. **When done**: Mark complete with `beans update <id> -s completed`
 4. **When committing**: Include bean file changes with your code commits.
@@ -44,14 +41,10 @@ beans archive
 
 Use `beans <command> --help` for full options. Use `--json` for machine-readable output.
 
-## Relationships
-
-- **Parent**: Hierarchy (milestone → epic → feature → task/bug). Set with `--parent <id>`.
-- **Blocking**: Dependencies. Set with `--blocking <id>` to indicate this bean blocks another.
-
 ## Archived Beans (Project Memory)
 
 Use `--with-archived` to include archived beans when searching for past decisions:
+
 ```bash
 beans list --with-archived                     # List all beans including archived
 beans list --with-archived -S "authentication" # Search across all beans
@@ -61,10 +54,16 @@ beans show --with-archived <id>                # View an archived bean
 ## GraphQL (Advanced)
 
 For complex queries, use `beans query` with GraphQL:
+
 ```bash
 beans query --schema                   # View full schema
 beans query '{ beans { id title } }'   # Run a query
 ```
+
+## Relationships
+
+- **Parent**: Hierarchy (milestone → epic → feature → task/bug). Set with `--parent <id>`.
+- **Blocking**: Dependencies. Set with `--blocking <id>` to indicate this bean blocks another.
 
 ## Issue Types
 
