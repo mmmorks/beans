@@ -129,14 +129,14 @@ func (c *Core) Watch(onChange func()) error {
 		return err
 	}
 
-	// Also watch the archive directory if withArchived is set
-	if c.withArchived {
-		archivePath := filepath.Join(c.root, ArchiveDir)
-		if info, statErr := os.Stat(archivePath); statErr == nil && info.IsDir() {
-			// Best effort - don't fail if archive dir can't be watched
-			_ = watcher.Add(archivePath)
+	// Watch all subdirectories (best effort - don't fail if any can't be watched)
+	_ = filepath.WalkDir(c.root, func(path string, d os.DirEntry, err error) error {
+		if err != nil || !d.IsDir() || path == c.root {
+			return nil
 		}
-	}
+		_ = watcher.Add(path)
+		return nil
+	})
 
 	c.watching = true
 	c.done = make(chan struct{})
@@ -199,16 +199,14 @@ func (c *Core) watchLoop(watcher *fsnotify.Watcher) {
 				return
 			}
 
-			// Only care about .md files
+			// Only care about .md files within the .beans directory tree
 			if !strings.HasSuffix(event.Name, ".md") {
 				continue
 			}
 
-			// Only care about files directly in .beans or in .beans/archive (if withArchived)
-			dir := filepath.Dir(event.Name)
-			archivePath := filepath.Join(c.root, ArchiveDir)
-			validDir := dir == c.root || (c.withArchived && dir == archivePath)
-			if !validDir {
+			// Verify the file is within the .beans directory
+			relPath, err := filepath.Rel(c.root, event.Name)
+			if err != nil || strings.HasPrefix(relPath, "..") {
 				continue
 			}
 
