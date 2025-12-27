@@ -53,7 +53,9 @@ Use `beans <command> --help` for full options. Use `--json` for machine-readable
 
 Use `--with-archived` to include archived beans when searching for past decisions:
 ```bash
-beans list --with-archived -S "authentication"
+beans list --with-archived                     # List all beans including archived
+beans list --with-archived -S "authentication" # Search across all beans
+beans show --with-archived <id>                # View an archived bean
 ```
 
 ## GraphQL (Advanced)
