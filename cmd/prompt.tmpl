@@ -37,6 +37,9 @@ beans query '{ beans(filter: { type: ["bug"], priority: ["critical", "high"] }) 
 
 # Search with text
 beans query '{ beans(filter: { search: "authentication" }) { id title body } }'
+
+# Search across all beans including archived (project memory)
+beans query --with-archived '{ beans(filter: { search: "authentication" }) { id title status body } }'
 ```
 
 ## CLI Commands
