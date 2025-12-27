@@ -27,40 +27,39 @@ The `beans query` command allows advanced querying using GraphQL.
 
 ```bash
 # Get all actionable beans with their details
-beans query '{ beans(filter: { excludeStatus: ["completed", "scrapped"], isBlocked: false }) { id title status type body } }'
+beans query --json '{ beans(filter: { excludeStatus: ["completed", "scrapped"], isBlocked: false }) { id title status type body } }'
 
 # Get a single bean with its relationships
-beans query '{ bean(id: "bean-abc") { title body parent { title } children { id title status } } }'
+beans query --json '{ bean(id: "bean-abc") { title body parent { title } children { id title status } } }'
 
 # Find high-priority bugs
-beans query '{ beans(filter: { type: ["bug"], priority: ["critical", "high"] }) { id title } }'
+beans query --json '{ beans(filter: { type: ["bug"], priority: ["critical", "high"] }) { id title } }'
 
 # Search with text
-beans query '{ beans(filter: { search: "authentication" }) { id title body } }'
+beans query --json '{ beans(filter: { search: "authentication" }) { id title body } }'
 
 # Search across all beans including archived (project memory)
-beans query --with-archived '{ beans(filter: { search: "authentication" }) { id title status body } }'
+beans query --json --with-archived '{ beans(filter: { search: "authentication" }) { id title status body } }'
 ```
 
 ## CLI Commands
 
 ```bash
 # List beans (default excludes completed/scrapped)
-beans list
-beans list -t bug -s todo              # Filter by type and status
-beans list --no-status completed       # Exclude specific status
-beans list -S "authentication"         # Full-text search
+beans list --json
+beans list --json -t bug -s todo       # Filter by type and status
+beans list --json -S "authentication"  # Full-text search
 
 # View a bean
-beans show <id>
+beans show --json <id>
 
 # Create a bean (always specify -t type)
-beans create "Title" -t task -d "Description..." -s todo
+beans create --json "Title" -t task -d "Description..." -s todo
 
 # Update a bean
-beans update <id> -s in-progress       # Change status
-beans update <id> --parent <other-id>  # Set parent relationship
-beans update <id> --blocking <other-id> # Mark as blocking another bean
+beans update --json <id> -s in-progress       # Change status
+beans update --json <id> --parent <other-id>  # Set parent relationship
+beans update --json <id> --blocking <other-id> # Mark as blocking another bean
 
 # Archive completed/scrapped beans (only when user requests)
 beans archive
@@ -73,9 +72,9 @@ Use `beans <command> --help` for full options. Use `--json` for machine-readable
 Use `--with-archived` to include archived beans when searching for past decisions:
 
 ```bash
-beans list --with-archived                     # List all beans including archived
-beans list --with-archived -S "authentication" # Search across all beans
-beans show --with-archived <id>                # View an archived bean
+beans list --json --with-archived                     # List all beans including archived
+beans list --json --with-archived -S "authentication" # Search across all beans
+beans show --json --with-archived <id>                # View an archived bean
 ```
 
 ## Relationships
