@@ -26,11 +26,8 @@ If you identify follow-up work, create a new bean instead of doing it immediatel
 When the user asks what to work on next:
 
 ```bash
-# Check for in-progress beans first (finish what's started)
-beans list --json --full -s in-progress
-
 # Find beans ready to start (not blocked, excludes in-progress/completed/scrapped/draft)
-beans list --json --full --ready
+beans list --json --ready
 ```
 </EXTREMELY_IMPORTANT>
 
