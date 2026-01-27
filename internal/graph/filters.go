@@ -87,6 +87,22 @@ func ApplyFilter(beans []*bean.Bean, filter *model.BeanFilter, core *beancore.Co
 		result = filterByNoBlockedBy(result)
 	}
 
+	// Git filters
+	if filter.HasGitBranch != nil {
+		if *filter.HasGitBranch {
+			result = filterByHasGitBranch(result)
+		} else {
+			result = filterByNoGitBranch(result)
+		}
+	}
+	if filter.GitBranchMerged != nil {
+		if *filter.GitBranchMerged {
+			result = filterByGitBranchMerged(result)
+		} else {
+			result = filterByGitBranchNotMerged(result)
+		}
+	}
+
 	return result
 }
 
@@ -326,6 +342,50 @@ func filterByNoBlockedBy(beans []*bean.Bean) []*bean.Bean {
 	var result []*bean.Bean
 	for _, b := range beans {
 		if len(b.BlockedBy) == 0 {
+			result = append(result, b)
+		}
+	}
+	return result
+}
+
+// filterByHasGitBranch filters beans that have a git branch.
+func filterByHasGitBranch(beans []*bean.Bean) []*bean.Bean {
+	var result []*bean.Bean
+	for _, b := range beans {
+		if b.GitBranch != "" {
+			result = append(result, b)
+		}
+	}
+	return result
+}
+
+// filterByNoGitBranch filters beans that don't have a git branch.
+func filterByNoGitBranch(beans []*bean.Bean) []*bean.Bean {
+	var result []*bean.Bean
+	for _, b := range beans {
+		if b.GitBranch == "" {
+			result = append(result, b)
+		}
+	}
+	return result
+}
+
+// filterByGitBranchMerged filters beans with merged git branches.
+func filterByGitBranchMerged(beans []*bean.Bean) []*bean.Bean {
+	var result []*bean.Bean
+	for _, b := range beans {
+		if b.GitMergedAt != nil {
+			result = append(result, b)
+		}
+	}
+	return result
+}
+
+// filterByGitBranchNotMerged filters beans without merged git branches.
+func filterByGitBranchNotMerged(beans []*bean.Bean) []*bean.Bean {
+	var result []*bean.Bean
+	for _, b := range beans {
+		if b.GitMergedAt == nil {
 			result = append(result, b)
 		}
 	}
