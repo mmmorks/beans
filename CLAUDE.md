@@ -41,6 +41,7 @@ Beans includes git-branch integration that automatically creates and manages git
 - Git operations are in `internal/gitflow/` package using go-git library
 - Core integration hooks in `internal/beancore/core.go` handle status transitions
 - GitHub Flow compliance: branches created from base branch, merge detection supports squash/rebase
+- Base branch auto-detection: reads `origin/HEAD`, falls back to "main"/"master"
 - GraphQL schema includes git fields: `gitBranch`, `gitCreatedAt`, `gitMergedAt`, `gitMergeCommit`
 - Git metadata is stored in bean frontmatter
 

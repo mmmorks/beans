@@ -101,9 +101,14 @@ beans:
   git:
     enabled: true              # Enable/disable git integration
     auto_create_branch: true   # Auto-create branches on in-progress transition
-    base_branch: main          # Base branch for merge detection
+    base_branch: main          # Base branch (auto-detected from git if not set)
     require_merge: true        # Prevent manual 'completed' if branch not merged
 ```
+
+**Note:** If `base_branch` is not specified, beans automatically detects it from:
+1. `origin/HEAD` (the remote's default branch) - most reliable
+2. Common names: "main", then "master"
+3. First available branch as fallback
 
 **Examples:**
 ```bash

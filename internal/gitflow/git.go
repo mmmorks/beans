@@ -248,23 +248,63 @@ func (g *GitFlow) SwitchBranch(branchName string) error {
 	return nil
 }
 
-// GetMainBranch attempts to determine the main branch name (main or master).
+// GetMainBranch attempts to determine the main/default branch name.
+// Uses multiple strategies in order of preference:
+// 1. Read origin/HEAD (the remote's default branch)
+// 2. Try common names: "main", "master"
 func (g *GitFlow) GetMainBranch() (string, error) {
-	// Try "main" first
+	// Strategy 1: Check origin/HEAD (most reliable - respects remote's default)
+	originHead := plumbing.NewSymbolicReference("refs/remotes/origin/HEAD", "")
+	ref, err := g.repo.Reference(originHead.Name(), true)
+	if err == nil && ref.Type() == plumbing.SymbolicReference {
+		// origin/HEAD is a symbolic ref pointing to origin/<branch>
+		// Extract the branch name from refs/remotes/origin/<branch>
+		target := ref.Target().Short()
+		// Remove "origin/" prefix if present
+		if len(target) > 7 && target[:7] == "origin/" {
+			branchName := target[7:]
+			// Verify the local branch exists
+			localRef := plumbing.NewBranchReferenceName(branchName)
+			if _, err := g.repo.Reference(localRef, true); err == nil {
+				return branchName, nil
+			}
+		}
+	}
+
+	// Strategy 2: Try common default branch names
+	// Try "main" first (modern default)
 	mainRef := plumbing.NewBranchReferenceName("main")
-	_, err := g.repo.Reference(mainRef, true)
+	_, err = g.repo.Reference(mainRef, true)
 	if err == nil {
 		return "main", nil
 	}
 
-	// Try "master"
+	// Try "master" (legacy default)
 	masterRef := plumbing.NewBranchReferenceName("master")
 	_, err = g.repo.Reference(masterRef, true)
 	if err == nil {
 		return "master", nil
 	}
 
-	return "", fmt.Errorf("could not find main or master branch")
+	// Strategy 3: Try to find any branch that looks like a default
+	// Get all branches and pick the first one that exists
+	// (this is a last resort)
+	refs, err := g.repo.References()
+	if err == nil {
+		var firstBranch string
+		err = refs.ForEach(func(ref *plumbing.Reference) error {
+			if ref.Name().IsBranch() {
+				firstBranch = ref.Name().Short()
+				return fmt.Errorf("found") // Stop iteration
+			}
+			return nil
+		})
+		if firstBranch != "" {
+			return firstBranch, nil
+		}
+	}
+
+	return "", fmt.Errorf("could not determine default branch")
 }
 
 // IsWorkingTreeClean returns true if the working tree has no uncommitted changes.
