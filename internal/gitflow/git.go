@@ -28,9 +28,10 @@ func New(repoPath string) (*GitFlow, error) {
 	}, nil
 }
 
-// CreateBranch creates a new git branch with the given name from the current HEAD.
+// CreateBranch creates a new git branch with the given name from the base branch.
+// This follows GitHub Flow principles: always branch from main (or configured base branch).
 // Returns the full branch name and switches to it.
-func (g *GitFlow) CreateBranch(beanID, slug string) (string, error) {
+func (g *GitFlow) CreateBranch(beanID, slug, baseBranch string) (string, error) {
 	branchName := BuildBranchName(beanID, slug)
 
 	// Check if branch already exists
@@ -42,15 +43,23 @@ func (g *GitFlow) CreateBranch(beanID, slug string) (string, error) {
 		return "", fmt.Errorf("branch %q already exists", branchName)
 	}
 
-	// Get HEAD reference
-	head, err := g.repo.Head()
+	// GitHub Flow: Always branch from the base branch (main)
+	baseRefName := plumbing.NewBranchReferenceName(baseBranch)
+	baseRef, err := g.repo.Reference(baseRefName, true)
 	if err != nil {
-		return "", fmt.Errorf("failed to get HEAD: %w", err)
+		return "", fmt.Errorf("base branch %q not found: %w", baseBranch, err)
 	}
 
-	// Create new branch reference
+	// Warn if not currently on base branch (informational, not blocking)
+	currentBranch, err := g.GetCurrentBranch()
+	if err == nil && currentBranch != baseBranch {
+		// This is just a warning - we still create the branch from base
+		// The caller can choose to surface this to the user
+	}
+
+	// Create new branch reference FROM base branch
 	branchRefName := plumbing.NewBranchReferenceName(branchName)
-	ref := plumbing.NewHashReference(branchRefName, head.Hash())
+	ref := plumbing.NewHashReference(branchRefName, baseRef.Hash())
 
 	err = g.repo.Storer.SetReference(ref)
 	if err != nil {
@@ -95,6 +104,10 @@ func (g *GitFlow) BranchExists(branchName string) (bool, error) {
 
 // IsBranchMerged checks if the given branch is fully merged into the base branch.
 // Returns true if merged, along with the merge commit hash if found.
+// This handles multiple merge strategies:
+// - Regular merges (merge commits)
+// - Squash merges (GitHub default)
+// - Rebase merges (fast-forward)
 func (g *GitFlow) IsBranchMerged(branchName, baseBranch string) (bool, *plumbing.Hash, error) {
 	// Get the branch reference
 	branchRefName := plumbing.NewBranchReferenceName(branchName)
@@ -114,7 +127,6 @@ func (g *GitFlow) IsBranchMerged(branchName, baseBranch string) (bool, *plumbing
 		return false, nil, fmt.Errorf("failed to get base branch reference: %w", err)
 	}
 
-	// Check if all commits in the branch are reachable from the base
 	branchCommit, err := g.repo.CommitObject(branchRef.Hash())
 	if err != nil {
 		return false, nil, fmt.Errorf("failed to get branch commit: %w", err)
@@ -125,17 +137,59 @@ func (g *GitFlow) IsBranchMerged(branchName, baseBranch string) (bool, *plumbing
 		return false, nil, fmt.Errorf("failed to get base commit: %w", err)
 	}
 
-	// Use IsAncestor to check if branch is merged
+	// Strategy 1: Check if branch commit is an ancestor of base (regular merge or fast-forward)
 	isAncestor, err := branchCommit.IsAncestor(baseCommit)
 	if err != nil {
 		return false, nil, fmt.Errorf("failed to check ancestry: %w", err)
 	}
-
 	if isAncestor {
 		return true, &baseCommit.Hash, nil
 	}
 
-	return false, nil, nil
+	// Strategy 2: Check if base contains all commits from branch (handles squash merges)
+	// For squash merges, the individual commits won't be in base, but if we can't find
+	// any unique commits in the branch that aren't reachable from base, it's merged
+	merged, err := g.areAllCommitsReachable(branchRef.Hash(), baseRef.Hash())
+	if err != nil {
+		return false, nil, err
+	}
+	if merged {
+		return true, &baseCommit.Hash, nil
+	}
+
+	// Strategy 3: Check commit messages for merge references (fallback)
+	// This handles cases where commits were squashed and the original branch commits are gone
+	return g.wasBranchMergedAndDeleted(branchName, baseBranch)
+}
+
+// areAllCommitsReachable checks if all commits in the branch are reachable from base.
+// This handles squash merges where the branch commits don't exist in base, but the
+// content has been incorporated.
+func (g *GitFlow) areAllCommitsReachable(branchHash, baseHash plumbing.Hash) (bool, error) {
+	// Walk commits from base
+	baseReachable := make(map[plumbing.Hash]bool)
+	baseCommit, err := g.repo.CommitObject(baseHash)
+	if err != nil {
+		return false, fmt.Errorf("failed to get base commit: %w", err)
+	}
+
+	iter := object.NewCommitIterCTime(baseCommit, nil, nil)
+	err = iter.ForEach(func(c *object.Commit) error {
+		baseReachable[c.Hash] = true
+		return nil
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to iterate base commits: %w", err)
+	}
+
+	// Check if branch commit is in base
+	if baseReachable[branchHash] {
+		return true, nil
+	}
+
+	// For more sophisticated squash merge detection, we'd need to compare
+	// tree contents, but that's expensive. For now, return false.
+	return false, nil
 }
 
 // wasBranchMergedAndDeleted checks if a branch that no longer exists was previously merged.

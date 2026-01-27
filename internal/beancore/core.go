@@ -756,7 +756,22 @@ func (c *Core) hasChildren(beanID string) bool {
 	return false
 }
 
-// createBranchForBean creates a git branch for the bean.
+// getBaseBranch returns the configured base branch or auto-detects it.
+func (c *Core) getBaseBranch() string {
+	if c.config.Beans.Git.BaseBranch != "" {
+		return c.config.Beans.Git.BaseBranch
+	}
+	// Try to detect main branch
+	detected, err := c.gitFlow.GetMainBranch()
+	if err == nil {
+		return detected
+	}
+	// Fallback to "main"
+	return "main"
+}
+
+// createBranchForBean creates a git branch for the bean following GitHub Flow.
+// Always branches from the base branch (main), not from HEAD.
 // Must be called with lock held.
 func (c *Core) createBranchForBean(b *bean.Bean) error {
 	// Skip if branch already exists
@@ -784,8 +799,11 @@ func (c *Core) createBranchForBean(b *bean.Bean) error {
 		return fmt.Errorf("working tree has uncommitted changes - commit or stash them before creating a branch")
 	}
 
-	// Create the branch
-	branchName, err := c.gitFlow.CreateBranch(b.ID, b.Slug)
+	// Get base branch from config
+	baseBranch := c.getBaseBranch()
+
+	// GitHub Flow: Create branch FROM base branch, not from HEAD
+	branchName, err := c.gitFlow.CreateBranch(b.ID, b.Slug, baseBranch)
 	if err != nil {
 		return fmt.Errorf("failed to create branch: %w", err)
 	}
@@ -835,17 +853,8 @@ func (c *Core) SyncGitBranches() (*SyncResult, error) {
 		return nil, fmt.Errorf("git integration is not enabled")
 	}
 
-	// Get the base branch from config or use default
-	baseBranch := "main"
-	if c.config.Beans.Git.BaseBranch != "" {
-		baseBranch = c.config.Beans.Git.BaseBranch
-	} else {
-		// Try to detect main branch
-		detected, err := c.gitFlow.GetMainBranch()
-		if err == nil {
-			baseBranch = detected
-		}
-	}
+	// Get the base branch from config or auto-detect
+	baseBranch := c.getBaseBranch()
 
 	result := &SyncResult{
 		Updated: make([]*bean.Bean, 0),

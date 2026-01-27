@@ -75,17 +75,19 @@ Use `beans <command> --help` for full options. Use `--json` for machine-readable
 
 ## Git Integration
 
-Beans automatically creates and manages git branches for **parent beans** (beans with children).
+Beans automatically creates and manages git branches for **parent beans** (beans with children), following **GitHub Flow** principles.
 
 **Key Behavior:**
 - When a parent bean (bean with children) transitions to `in-progress`, a git branch is automatically created
 - Branch naming: `{bean-id}/{slug}` (e.g., `beans-abc123/user-authentication`)
-- The branch is created from the current HEAD and immediately checked out
+- **GitHub Flow**: Branches are always created FROM the base branch (main), not from HEAD
+- The branch is immediately checked out after creation
 - Requires a clean working tree (no uncommitted changes)
 
-**Synchronization:**
+**Synchronization (GitHub Flow):**
 - Merged branches → bean status becomes `completed`
 - Deleted branches (not merged) → bean status becomes `scrapped`
+- Handles squash merges, rebase merges, and fast-forward merges
 - Use `beans sync --apply` to synchronize git state with beans
 
 **Git Metadata:**

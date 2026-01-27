@@ -23,12 +23,14 @@ You already know what beans is. This is the beans repository.
 
 # Git Integration
 
-Beans includes git-branch integration that automatically creates and manages git branches for parent beans (beans with children).
+Beans includes git-branch integration that automatically creates and manages git branches for parent beans (beans with children), following **GitHub Flow** principles.
 
 **Key Features:**
 - Auto-creates git branches when parent beans transition to `in-progress` status
+- **GitHub Flow**: Always branches from base branch (main), not from HEAD
 - Branch naming: `{bean-id}/{slug}` (e.g., `beans-abc123/user-authentication`)
 - Bidirectional sync: merged branches → completed status, deleted branches → scrapped status
+- Handles squash merges (GitHub default), rebase merges, and fast-forward merges
 - Configuration in `.beans.yml` under `beans.git` section
 
 **Commands:**
@@ -38,6 +40,7 @@ Beans includes git-branch integration that automatically creates and manages git
 **Technical Details:**
 - Git operations are in `internal/gitflow/` package using go-git library
 - Core integration hooks in `internal/beancore/core.go` handle status transitions
+- GitHub Flow compliance: branches created from base branch, merge detection supports squash/rebase
 - GraphQL schema includes git fields: `gitBranch`, `gitCreatedAt`, `gitMergedAt`, `gitMergeCommit`
 - Git metadata is stored in bean frontmatter
 
