@@ -1,11 +1,11 @@
 ---
 # beans-gjv8
 title: Document git integration test coverage
-status: todo
+status: completed
 type: task
 priority: low
 created_at: 2026-01-27T06:49:33Z
-updated_at: 2026-01-27T06:49:33Z
+updated_at: 2026-01-27T08:15:30Z
 ---
 
 Create comprehensive documentation explaining the test coverage for the GitHub Flow git integration feature.
@@ -63,3 +63,25 @@ Either:
 - Commands to run each test suite
 - Known issues documented
 - Easy for contributors to understand test coverage
+
+## Summary of Changes
+
+Added comprehensive git integration test documentation to CLAUDE.md under the Testing section.
+
+### Documentation Added
+
+The new "Git Integration Test Coverage" section includes:
+
+1. **Test Architecture Overview** - Explains the multi-layer testing approach across gitflow, beancore, GraphQL, and CLI layers
+
+2. **Running Tests** - Provides specific commands to run git-related tests at each layer
+
+3. **Test Coverage Summary** - Table showing all tested features, their test files, and current status (all passing)
+
+4. **Error Scenarios Covered** - Lists the comprehensive error scenarios that are tested
+
+5. **Test Helpers** - Documents the key test helper functions available for writing new tests
+
+6. **Adding New Tests** - Guide for where to add new tests based on what layer is being tested
+
+All existing and new git integration tests are passing. The documentation provides a clear reference for understanding the test coverage and for contributors adding new tests.

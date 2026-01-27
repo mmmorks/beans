@@ -9,6 +9,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/hmans/beans/internal/bean"
 	"github.com/hmans/beans/internal/beancore"
 	"github.com/hmans/beans/internal/config"
@@ -2521,7 +2524,7 @@ func TestQueryBeansFilter_GitBranchMerged(t *testing.T) {
 		filter := &model.BeanFilter{
 			GitBranchMerged: &gitBranchMerged,
 		}
-		
+
 		beans, err := qr.Beans(ctx, filter)
 		if err != nil {
 			t.Fatalf("Beans() error = %v", err)
@@ -2541,7 +2544,7 @@ func TestQueryBeansFilter_GitBranchMerged(t *testing.T) {
 		filter := &model.BeanFilter{
 			GitBranchMerged: &gitBranchMerged,
 		}
-		
+
 		beans, err := qr.Beans(ctx, filter)
 		if err != nil {
 			t.Fatalf("Beans() error = %v", err)
@@ -2550,6 +2553,336 @@ func TestQueryBeansFilter_GitBranchMerged(t *testing.T) {
 		// Should return beans without git branches AND beans with unmerged branches
 		if len(beans) != 2 {
 			t.Errorf("Beans() returned %d beans, want 2", len(beans))
+		}
+	})
+}
+
+// setupTestResolverWithGit creates a test resolver with a git repository initialized.
+func setupTestResolverWithGit(t *testing.T) (*Resolver, *beancore.Core, *git.Repository) {
+	t.Helper()
+	tmpDir := t.TempDir()
+	beansDir := filepath.Join(tmpDir, ".beans")
+	if err := os.MkdirAll(beansDir, 0755); err != nil {
+		t.Fatalf("failed to create test .beans dir: %v", err)
+	}
+
+	// Initialize git repo
+	repo, err := git.PlainInit(tmpDir, false)
+	if err != nil {
+		t.Fatalf("failed to init git repo: %v", err)
+	}
+
+	// Create initial commit on main
+	w, _ := repo.Worktree()
+	testFile := filepath.Join(tmpDir, "README.md")
+	os.WriteFile(testFile, []byte("# Test\n"), 0644)
+	w.Add("README.md")
+	commit, err := w.Commit("Initial commit", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Create main branch
+	mainRef := plumbing.NewBranchReferenceName("main")
+	repo.Storer.SetReference(plumbing.NewHashReference(mainRef, commit))
+	w.Checkout(&git.CheckoutOptions{Branch: mainRef})
+
+	// Setup Core with git integration enabled
+	cfg := config.Default()
+	cfg.Beans.Git.Enabled = true
+	cfg.Beans.Git.AutoCreateBranch = true
+	cfg.Beans.Git.BaseBranch = "main"
+
+	core := beancore.New(beansDir, cfg)
+	core.SetWarnWriter(nil)
+	if err := core.Load(); err != nil {
+		t.Fatalf("failed to load core: %v", err)
+	}
+
+	// Enable git flow
+	if err := core.EnableGitFlow(tmpDir); err != nil {
+		t.Fatalf("failed to enable git flow: %v", err)
+	}
+
+	return &Resolver{Core: core}, core, repo
+}
+
+// Git Integration Mutation Tests
+
+func TestMutationUpdateBean_GitBranchAutoCreate(t *testing.T) {
+	resolver, core, repo := setupTestResolverWithGit(t)
+	ctx := context.Background()
+
+	// Create a parent bean with a child
+	parent := &bean.Bean{
+		ID:     "beans-parent1",
+		Slug:   "parent-feature",
+		Title:  "Parent Feature",
+		Status: "todo",
+	}
+	if err := core.Create(parent); err != nil {
+		t.Fatalf("Create parent error = %v", err)
+	}
+
+	child := &bean.Bean{
+		ID:     "beans-child1",
+		Slug:   "child-task",
+		Title:  "Child Task",
+		Status: "todo",
+		Parent: "beans-parent1",
+	}
+	if err := core.Create(child); err != nil {
+		t.Fatalf("Create child error = %v", err)
+	}
+
+	// Commit the bean files (working tree must be clean)
+	w, _ := repo.Worktree()
+	w.Add(".beans")
+	w.Commit("Add beans", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+
+	t.Run("transition parent to in-progress creates branch", func(t *testing.T) {
+		mr := resolver.Mutation()
+		newStatus := "in-progress"
+		input := model.UpdateBeanInput{
+			Status: &newStatus,
+		}
+		got, err := mr.UpdateBean(ctx, "beans-parent1", input)
+		if err != nil {
+			t.Fatalf("UpdateBean() error = %v", err)
+		}
+
+		// Verify status updated
+		if got.Status != "in-progress" {
+			t.Errorf("UpdateBean().Status = %q, want %q", got.Status, "in-progress")
+		}
+
+		// Verify git branch was created
+		expectedBranch := "beans-parent1/parent-feature"
+		if got.GitBranch != expectedBranch {
+			t.Errorf("UpdateBean().GitBranch = %q, want %q", got.GitBranch, expectedBranch)
+		}
+
+		// Verify GitCreatedAt is set
+		if got.GitCreatedAt == nil {
+			t.Error("UpdateBean().GitCreatedAt should be set")
+		}
+
+		// Verify git branch exists in repository
+		branchRef := plumbing.NewBranchReferenceName(expectedBranch)
+		_, err = repo.Reference(branchRef, true)
+		if err != nil {
+			t.Errorf("git branch %q should exist: %v", expectedBranch, err)
+		}
+
+		// Verify we're on the new branch
+		head, _ := repo.Head()
+		if head.Name().Short() != expectedBranch {
+			t.Errorf("current branch = %q, want %q", head.Name().Short(), expectedBranch)
+		}
+	})
+}
+
+func TestMutationUpdateBean_GitBranchNoAutoCreate_NonParent(t *testing.T) {
+	resolver, core, repo := setupTestResolverWithGit(t)
+	ctx := context.Background()
+
+	// Create a non-parent bean (no children)
+	nonParent := &bean.Bean{
+		ID:     "beans-solo1",
+		Slug:   "solo-task",
+		Title:  "Solo Task",
+		Status: "todo",
+	}
+	if err := core.Create(nonParent); err != nil {
+		t.Fatalf("Create bean error = %v", err)
+	}
+
+	// Commit the bean file
+	w, _ := repo.Worktree()
+	w.Add(".beans")
+	w.Commit("Add bean", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+
+	t.Run("transition non-parent to in-progress does not create branch", func(t *testing.T) {
+		mr := resolver.Mutation()
+		newStatus := "in-progress"
+		input := model.UpdateBeanInput{
+			Status: &newStatus,
+		}
+		got, err := mr.UpdateBean(ctx, "beans-solo1", input)
+		if err != nil {
+			t.Fatalf("UpdateBean() error = %v", err)
+		}
+
+		// Verify status updated
+		if got.Status != "in-progress" {
+			t.Errorf("UpdateBean().Status = %q, want %q", got.Status, "in-progress")
+		}
+
+		// Verify git branch was NOT created (non-parent beans don't get branches)
+		if got.GitBranch != "" {
+			t.Errorf("UpdateBean().GitBranch = %q, want empty (non-parent should not get branch)", got.GitBranch)
+		}
+	})
+}
+
+func TestMutationUpdateBean_GitDisabled(t *testing.T) {
+	resolver, core := setupTestResolver(t) // Uses regular setup without git
+	ctx := context.Background()
+
+	// Create a parent bean with a child
+	parent := &bean.Bean{
+		ID:     "beans-parent1",
+		Slug:   "parent-feature",
+		Title:  "Parent Feature",
+		Status: "todo",
+	}
+	core.Create(parent)
+
+	child := &bean.Bean{
+		ID:     "beans-child1",
+		Slug:   "child-task",
+		Title:  "Child Task",
+		Status: "todo",
+		Parent: "beans-parent1",
+	}
+	core.Create(child)
+
+	t.Run("update when git disabled does not create branch", func(t *testing.T) {
+		mr := resolver.Mutation()
+		newStatus := "in-progress"
+		input := model.UpdateBeanInput{
+			Status: &newStatus,
+		}
+		got, err := mr.UpdateBean(ctx, "beans-parent1", input)
+		if err != nil {
+			t.Fatalf("UpdateBean() error = %v", err)
+		}
+
+		// Verify status updated
+		if got.Status != "in-progress" {
+			t.Errorf("UpdateBean().Status = %q, want %q", got.Status, "in-progress")
+		}
+
+		// Verify git branch was NOT created (git disabled)
+		if got.GitBranch != "" {
+			t.Errorf("UpdateBean().GitBranch = %q, want empty (git disabled)", got.GitBranch)
+		}
+	})
+}
+
+func TestMutationSyncGitBranches(t *testing.T) {
+	resolver, core, repo := setupTestResolverWithGit(t)
+	ctx := context.Background()
+
+	// Create parent bean with branch
+	parent := &bean.Bean{
+		ID:     "beans-parent1",
+		Slug:   "parent-feature",
+		Title:  "Parent Feature",
+		Status: "todo",
+	}
+	core.Create(parent)
+
+	child := &bean.Bean{
+		ID:     "beans-child1",
+		Slug:   "child-task",
+		Title:  "Child Task",
+		Status: "todo",
+		Parent: "beans-parent1",
+	}
+	core.Create(child)
+
+	// Commit and create branch via status transition
+	w, _ := repo.Worktree()
+	w.Add(".beans")
+	w.Commit("Add beans", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+
+	parent.Status = "in-progress"
+	core.Update(parent)
+
+	// Reload parent to get git metadata
+	parent, _ = core.Get("beans-parent1")
+
+	t.Run("sync merged branch marks bean as completed", func(t *testing.T) {
+		// Switch back to main and merge the feature branch
+		mainRef := plumbing.NewBranchReferenceName("main")
+		w.Checkout(&git.CheckoutOptions{Branch: mainRef})
+
+		// Merge the feature branch (fast-forward)
+		featureRef := plumbing.NewBranchReferenceName(parent.GitBranch)
+		featureHash, _ := repo.ResolveRevision(plumbing.Revision(featureRef.String()))
+		w.Checkout(&git.CheckoutOptions{Hash: *featureHash})
+		w.Checkout(&git.CheckoutOptions{Branch: mainRef})
+
+		// Update main ref to point to feature branch commit (fast-forward merge)
+		repo.Storer.SetReference(plumbing.NewHashReference(mainRef, *featureHash))
+
+		// Call SyncGitBranches
+		mr := resolver.Mutation()
+		updated, err := mr.SyncGitBranches(ctx)
+		if err != nil {
+			t.Fatalf("SyncGitBranches() error = %v", err)
+		}
+
+		// Verify bean was updated
+		if len(updated) != 1 {
+			t.Errorf("SyncGitBranches() returned %d beans, want 1", len(updated))
+		}
+
+		if len(updated) > 0 {
+			if updated[0].ID != "beans-parent1" {
+				t.Errorf("SyncGitBranches()[0].ID = %q, want %q", updated[0].ID, "beans-parent1")
+			}
+			if updated[0].Status != "completed" {
+				t.Errorf("SyncGitBranches()[0].Status = %q, want %q", updated[0].Status, "completed")
+			}
+			if updated[0].GitMergedAt == nil {
+				t.Error("SyncGitBranches()[0].GitMergedAt should be set")
+			}
+			if updated[0].GitMergeCommit == "" {
+				t.Error("SyncGitBranches()[0].GitMergeCommit should be set")
+			}
+		}
+	})
+}
+
+func TestMutationSyncGitBranches_NoBeans(t *testing.T) {
+	resolver, _, _ := setupTestResolverWithGit(t)
+	ctx := context.Background()
+
+	t.Run("sync with no beans returns empty", func(t *testing.T) {
+		mr := resolver.Mutation()
+		updated, err := mr.SyncGitBranches(ctx)
+		if err != nil {
+			t.Fatalf("SyncGitBranches() error = %v", err)
+		}
+
+		if len(updated) != 0 {
+			t.Errorf("SyncGitBranches() returned %d beans, want 0", len(updated))
+		}
+	})
+}
+
+func TestMutationSyncGitBranches_GitDisabled(t *testing.T) {
+	resolver, _ := setupTestResolver(t) // Regular setup without git
+	ctx := context.Background()
+
+	t.Run("sync when git disabled returns error", func(t *testing.T) {
+		mr := resolver.Mutation()
+		_, err := mr.SyncGitBranches(ctx)
+		if err == nil {
+			t.Error("SyncGitBranches() expected error when git disabled")
+		}
+		if !strings.Contains(err.Error(), "not enabled") {
+			t.Errorf("Error should mention git not enabled, got: %v", err)
 		}
 	})
 }

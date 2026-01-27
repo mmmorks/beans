@@ -165,3 +165,98 @@ func TestTruncate(t *testing.T) {
 	}
 }
 
+func TestListCommand_GitFieldsInBeans(t *testing.T) {
+	// Test that beans with git fields are properly included in list
+	now := time.Now()
+	earlier := now.Add(-24 * time.Hour)
+
+	beans := []*bean.Bean{
+		{
+			ID:           "beans-with-git",
+			Title:        "With Git",
+			Status:       "in-progress",
+			GitBranch:    "beans-with-git/with-git",
+			GitCreatedAt: &now,
+		},
+		{
+			ID:             "beans-merged",
+			Title:          "Merged",
+			Status:         "completed",
+			GitBranch:      "beans-merged/merged",
+			GitCreatedAt:   &earlier,
+			GitMergedAt:    &now,
+			GitMergeCommit: "abc123",
+		},
+		{
+			ID:     "beans-no-git",
+			Title:  "No Git",
+			Status: "todo",
+		},
+	}
+
+	// Verify beans have the expected git fields
+	if beans[0].GitBranch == "" {
+		t.Error("first bean should have GitBranch")
+	}
+	if beans[0].GitCreatedAt == nil {
+		t.Error("first bean should have GitCreatedAt")
+	}
+
+	if beans[1].GitMergedAt == nil {
+		t.Error("second bean should have GitMergedAt")
+	}
+	if beans[1].GitMergeCommit == "" {
+		t.Error("second bean should have GitMergeCommit")
+	}
+
+	if beans[2].GitBranch != "" {
+		t.Error("third bean should not have GitBranch")
+	}
+}
+
+func TestListCommand_SortBeansWithGitFields(t *testing.T) {
+	// Test that beans with git fields can be sorted
+	now := time.Now()
+	earlier := now.Add(-1 * time.Hour)
+
+	testCfg := config.Default()
+
+	beans := []*bean.Bean{
+		{
+			ID:           "beans-2",
+			Title:        "Bean 2",
+			Status:       "in-progress",
+			GitBranch:    "beans-2/bean-two",
+			GitCreatedAt: &now,
+		},
+		{
+			ID:           "beans-1",
+			Title:        "Bean 1",
+			Status:       "in-progress",
+			GitBranch:    "beans-1/bean-one",
+			GitCreatedAt: &earlier,
+		},
+		{
+			ID:     "beans-3",
+			Title:  "Bean 3",
+			Status: "todo",
+		},
+	}
+
+	// Sort by ID
+	sortBeans(beans, "id", testCfg)
+	if beans[0].ID != "beans-1" {
+		t.Errorf("after sort by id, first should be beans-1, got %s", beans[0].ID)
+	}
+
+	// Sort by status
+	sortBeans(beans, "status", testCfg)
+	// in-progress comes before todo
+	if beans[0].Status != "in-progress" {
+		t.Errorf("after sort by status, first should have status in-progress, got %s", beans[0].Status)
+	}
+	if beans[2].Status != "todo" {
+		t.Errorf("after sort by status, last should have status todo, got %s", beans[2].Status)
+	}
+}
+

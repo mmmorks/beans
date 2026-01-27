@@ -2201,6 +2201,329 @@ func TestGitFlow_AutoCommitBeans_MixedChanges(t *testing.T) {
 	}
 }
 
+func TestGitFlow_AutoCommitBeans_MultipleBeanUpdates(t *testing.T) {
+	core, _, repoPath := setupTestCoreWithGit(t)
+
+	repo, _ := git.PlainOpen(repoPath)
+	w, _ := repo.Worktree()
+
+	// Create multiple parent beans (with children to make them parents)
+	parent1 := &bean.Bean{
+		ID:     "beans-parent1",
+		Slug:   "parent-one",
+		Title:  "Parent One",
+		Status: "todo",
+	}
+	core.Create(parent1)
+	child1 := &bean.Bean{
+		ID:     "beans-child1",
+		Slug:   "child-one",
+		Title:  "Child One",
+		Status: "todo",
+		Parent: "beans-parent1",
+	}
+	core.Create(child1)
+
+	parent2 := &bean.Bean{
+		ID:     "beans-parent2",
+		Slug:   "parent-two",
+		Title:  "Parent Two",
+		Status: "todo",
+	}
+	core.Create(parent2)
+	child2 := &bean.Bean{
+		ID:     "beans-child2",
+		Slug:   "child-two",
+		Title:  "Child Two",
+		Status: "todo",
+		Parent: "beans-parent2",
+	}
+	core.Create(child2)
+
+	// First transition - should auto-commit and create branch
+	parent1.Status = "in-progress"
+	err := core.Update(parent1)
+	if err != nil {
+		t.Fatalf("Update parent1 error = %v", err)
+	}
+
+	// Commit the status change on the feature branch
+	w.Add(".beans")
+	w.Commit("Update parent1 status", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+
+	// Switch back to main for second parent
+	mainRef := plumbing.NewBranchReferenceName("main")
+	w.Checkout(&git.CheckoutOptions{Branch: mainRef})
+
+	// Second transition - should also auto-commit and create branch
+	parent2.Status = "in-progress"
+	err = core.Update(parent2)
+	if err != nil {
+		t.Fatalf("Update parent2 error = %v", err)
+	}
+
+	// Verify both beans have branches
+	parent1, _ = core.Get("beans-parent1")
+	parent2, _ = core.Get("beans-parent2")
+
+	if parent1.GitBranch == "" {
+		t.Error("parent1 should have git branch")
+	}
+	if parent2.GitBranch == "" {
+		t.Error("parent2 should have git branch")
+	}
+
+	// Verify auto-commits happened
+	head, _ := repo.Head()
+	iter, _ := repo.Log(&git.LogOptions{From: head.Hash()})
+	commitCount := 0
+	iter.ForEach(func(c *object.Commit) error {
+		if strings.Contains(c.Message, "chore: update beans") {
+			commitCount++
+		}
+		return nil
+	})
+
+	if commitCount < 1 {
+		t.Error("should have at least one auto-commit")
+	}
+}
+
+func TestGitFlow_AutoCommitBeans_CommitMessageFormat(t *testing.T) {
+	core, _, repoPath := setupTestCoreWithGit(t)
+
+	repo, _ := git.PlainOpen(repoPath)
+
+	// Create parent bean
+	parent := &bean.Bean{
+		ID:     "beans-parent1",
+		Slug:   "parent",
+		Title:  "Parent",
+		Status: "todo",
+	}
+	core.Create(parent)
+
+	child := &bean.Bean{
+		ID:     "beans-child1",
+		Slug:   "child",
+		Title:  "Child",
+		Status: "todo",
+		Parent: "beans-parent1",
+	}
+	core.Create(child)
+
+	// Transition to in-progress - triggers auto-commit
+	parent.Status = "in-progress"
+	err := core.Update(parent)
+	if err != nil {
+		t.Fatalf("Update() error = %v", err)
+	}
+
+	// Find the auto-commit and verify message format
+	head, _ := repo.Head()
+	iter, _ := repo.Log(&git.LogOptions{From: head.Hash()})
+	foundAutoCommit := false
+	iter.ForEach(func(c *object.Commit) error {
+		if strings.Contains(c.Message, "chore: update beans") {
+			foundAutoCommit = true
+
+			// Verify commit message format
+			// Expected: "chore: update beans"
+			if !strings.HasPrefix(c.Message, "chore: update beans") {
+				t.Errorf("commit message should start with 'chore: update beans', got: %q", c.Message)
+			}
+
+			// Verify author is set
+			if c.Author.Name == "" {
+				t.Error("commit author name should be set")
+			}
+			if c.Author.Email == "" {
+				t.Error("commit author email should be set")
+			}
+
+			return fmt.Errorf("stop") // Stop iteration
+		}
+		return nil
+	})
+
+	if !foundAutoCommit {
+		t.Error("should have found auto-commit with expected message format")
+	}
+}
+
+func TestGitFlow_AutoCommitBeans_DuringBranchCreation(t *testing.T) {
+	core, _, repoPath := setupTestCoreWithGit(t)
+
+	repo, _ := git.PlainOpen(repoPath)
+
+	// Create parent bean (uncommitted)
+	parent := &bean.Bean{
+		ID:     "beans-parent1",
+		Slug:   "parent-feature",
+		Title:  "Parent Feature",
+		Status: "todo",
+	}
+	core.Create(parent)
+
+	child := &bean.Bean{
+		ID:     "beans-child1",
+		Slug:   "child",
+		Title:  "Child",
+		Status: "todo",
+		Parent: "beans-parent1",
+	}
+	core.Create(child)
+
+	// Transition to in-progress - should auto-commit beans AND create branch
+	parent.Status = "in-progress"
+	err := core.Update(parent)
+	if err != nil {
+		t.Fatalf("Update() error = %v (should auto-commit and create branch)", err)
+	}
+
+	// Verify branch was created
+	parent, _ = core.Get("beans-parent1")
+	if parent.GitBranch == "" {
+		t.Error("GitBranch should be set")
+	}
+
+	// Verify we're on the new branch
+	head, _ := repo.Head()
+	if head.Name().Short() != parent.GitBranch {
+		t.Errorf("should be on branch %q, got %q", parent.GitBranch, head.Name().Short())
+	}
+
+	// Verify beans were committed before branch creation
+	// The branch should have the bean files
+	commit, _ := repo.CommitObject(head.Hash())
+	tree, _ := commit.Tree()
+
+	_, err = tree.File(".beans/beans-parent1--parent-feature.md")
+	if err != nil {
+		t.Error("parent bean file should exist in branch")
+	}
+}
+
+func TestGitFlow_AutoCommitBeans_StatusTransitions(t *testing.T) {
+	core, _, repoPath := setupTestCoreWithGit(t)
+
+	repo, _ := git.PlainOpen(repoPath)
+	w, _ := repo.Worktree()
+
+	// Create parent bean (with child to make it a parent)
+	parent := &bean.Bean{
+		ID:     "beans-parent1",
+		Slug:   "parent",
+		Title:  "Parent",
+		Status: "todo",
+	}
+	core.Create(parent)
+
+	child := &bean.Bean{
+		ID:     "beans-child1",
+		Slug:   "child",
+		Title:  "Child",
+		Status: "todo",
+		Parent: "beans-parent1",
+	}
+	core.Create(child)
+
+	// First transition to in-progress - should auto-commit and create branch
+	parent.Status = "in-progress"
+	err := core.Update(parent)
+	if err != nil {
+		t.Fatalf("Update to in-progress error = %v", err)
+	}
+
+	// Verify branch was created
+	parent, _ = core.Get("beans-parent1")
+	if parent.GitBranch == "" {
+		t.Error("GitBranch should be set after transition to in-progress")
+	}
+
+	// Commit the status change
+	w.Add(".beans")
+	w.Commit("Status change", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+
+	// Additional transitions (these don't trigger auto-commit, just verify they work)
+	parent.Status = "todo"
+	err = core.Update(parent)
+	if err != nil {
+		t.Fatalf("Update to todo error = %v", err)
+	}
+
+	// Verify auto-commit happened during the initial transition
+	head, _ := repo.Head()
+	iter, _ := repo.Log(&git.LogOptions{From: head.Hash()})
+	foundAutoCommit := false
+	iter.ForEach(func(c *object.Commit) error {
+		if strings.Contains(c.Message, "chore: update beans") {
+			foundAutoCommit = true
+			return fmt.Errorf("stop")
+		}
+		return nil
+	})
+
+	if !foundAutoCommit {
+		t.Error("should have auto-commit from initial status transition")
+	}
+}
+
+func TestGitFlow_AutoCommitBeans_EmptyCommitScenario(t *testing.T) {
+	core, _, repoPath := setupTestCoreWithGit(t)
+
+	repo, _ := git.PlainOpen(repoPath)
+	w, _ := repo.Worktree()
+
+	// Create and commit a bean
+	parent := &bean.Bean{
+		ID:     "beans-parent1",
+		Slug:   "parent",
+		Title:  "Parent",
+		Status: "todo",
+	}
+	core.Create(parent)
+
+	child := &bean.Bean{
+		ID:     "beans-child1",
+		Slug:   "child",
+		Title:  "Child",
+		Status: "todo",
+		Parent: "beans-parent1",
+	}
+	core.Create(child)
+
+	// Manually commit beans
+	w.Add(".beans")
+	w.Commit("Manual commit", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+
+	// Now transition to in-progress - no bean changes to commit before branch creation
+	parent.Status = "in-progress"
+	err := core.Update(parent)
+	if err != nil {
+		t.Fatalf("Update() error = %v (should succeed even with no uncommitted changes)", err)
+	}
+
+	// Verify branch was created
+	parent, _ = core.Get("beans-parent1")
+	if parent.GitBranch == "" {
+		t.Error("GitBranch should be set")
+	}
+
+	// The status change itself creates a new bean file change, which should be committed
+	// on the new branch
+	head, _ := repo.Head()
+	if head.Name().Short() != parent.GitBranch {
+		t.Errorf("should be on branch %q, got %q", parent.GitBranch, head.Name().Short())
+	}
+}
+
 func TestGitFlow_SyncGitBranches_MergedBranch(t *testing.T) {
 	core, _, repoPath := setupTestCoreWithGit(t)
 
