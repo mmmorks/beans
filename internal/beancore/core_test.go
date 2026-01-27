@@ -9,6 +9,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/hmans/beans/internal/bean"
 	"github.com/hmans/beans/internal/config"
 )
@@ -1600,7 +1603,6 @@ func TestNormalizeID(t *testing.T) {
 	})
 }
 
-
 func TestUpdateWithETag(t *testing.T) {
 	core, _ := setupTestCore(t)
 
@@ -1752,4 +1754,625 @@ func TestUpdateWithETagDebug(t *testing.T) {
 	if err != nil {
 		t.Logf("Update failed: %v", err)
 	}
+}
+
+// Git Integration Tests
+
+// commitAll commits all changes in the repo
+func commitAll(t *testing.T, repo *git.Repository, message string) {
+	t.Helper()
+	w, _ := repo.Worktree()
+	w.Add(".")
+	w.Commit(message, &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+}
+
+func setupTestCoreWithGit(t *testing.T) (*Core, string, string) {
+	t.Helper()
+	tmpDir := t.TempDir()
+	beansDir := filepath.Join(tmpDir, BeansDir)
+	if err := os.MkdirAll(beansDir, 0755); err != nil {
+		t.Fatalf("failed to create test .beans dir: %v", err)
+	}
+
+	// Initialize git repo
+	repo, err := git.PlainInit(tmpDir, false)
+	if err != nil {
+		t.Fatalf("failed to init git repo: %v", err)
+	}
+
+	// Create initial commit on main
+	w, _ := repo.Worktree()
+	testFile := filepath.Join(tmpDir, "README.md")
+	os.WriteFile(testFile, []byte("# Test\n"), 0644)
+	w.Add("README.md")
+	commit, err := w.Commit("Initial commit", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+	if err != nil {
+		t.Fatalf("failed to commit: %v", err)
+	}
+
+	// Create main branch
+	mainRef := plumbing.NewBranchReferenceName("main")
+	repo.Storer.SetReference(plumbing.NewHashReference(mainRef, commit))
+	w.Checkout(&git.CheckoutOptions{Branch: mainRef})
+
+	// Setup Core
+	cfg := config.Default()
+	cfg.Beans.Git.Enabled = true
+	cfg.Beans.Git.AutoCreateBranch = true
+	cfg.Beans.Git.BaseBranch = "main"
+
+	core := New(beansDir, cfg)
+	core.SetWarnWriter(nil)
+	if err := core.Load(); err != nil {
+		t.Fatalf("failed to load core: %v", err)
+	}
+
+	// Enable git flow
+	if err := core.EnableGitFlow(tmpDir); err != nil {
+		t.Fatalf("failed to enable git flow: %v", err)
+	}
+
+	return core, beansDir, tmpDir
+}
+
+func TestGitFlow_AutoCreateBranch_ParentBean(t *testing.T) {
+	core, _, repoPath := setupTestCoreWithGit(t)
+
+	repo, _ := git.PlainOpen(repoPath)
+	w, _ := repo.Worktree()
+
+	var err error
+
+	// Create a parent bean with a child
+	parent := &bean.Bean{
+		ID:     "beans-parent1",
+		Slug:   "parent-feature",
+		Title:  "Parent Feature",
+		Status: "todo",
+	}
+	if err := core.Create(parent); err != nil {
+		t.Fatalf("Create parent error = %v", err)
+	}
+
+	child := &bean.Bean{
+		ID:     "beans-child1",
+		Slug:   "child-task",
+		Title:  "Child Task",
+		Status: "todo",
+		Parent: "beans-parent1",
+	}
+	if err := core.Create(child); err != nil {
+		t.Fatalf("Create child error = %v", err)
+	}
+
+	// Commit the bean files (working tree must be clean)
+	w.Add(".beans")
+	w.Commit("Add beans", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+
+	// Verify git flow is enabled
+	if !core.IsGitFlowEnabled() {
+		t.Fatal("Git flow should be enabled")
+	}
+	if !core.Config().Beans.Git.Enabled {
+		t.Fatal("Git integration should be enabled in config")
+	}
+	if !core.Config().Beans.Git.AutoCreateBranch {
+		t.Fatal("Auto-create branch should be enabled in config")
+	}
+
+	// Reload parent to ensure we have the latest state
+	parent, err = core.Get("beans-parent1")
+	if err != nil {
+		t.Fatalf("Get parent error = %v", err)
+	}
+
+	// Transition parent to in-progress - should auto-create git branch
+	parent.Status = "in-progress"
+	err = core.Update(parent)
+	if err != nil {
+		t.Fatalf("Update parent error = %v", err)
+	}
+
+	// Reload parent to get updated git fields
+	parent, _ = core.Get("beans-parent1")
+
+	// Verify branch was created
+	if parent.GitBranch == "" {
+		t.Error("GitBranch should be set after transition to in-progress")
+	}
+
+	expectedBranch := "beans-parent1/parent-feature"
+	if parent.GitBranch != expectedBranch {
+		t.Errorf("GitBranch = %q, want %q", parent.GitBranch, expectedBranch)
+	}
+
+	// Verify GitCreatedAt is set
+	if parent.GitCreatedAt == nil {
+		t.Error("GitCreatedAt should be set")
+	}
+
+	// Verify git branch exists
+	branchRef := plumbing.NewBranchReferenceName(expectedBranch)
+	_, err = repo.Reference(branchRef, true)
+	if err != nil {
+		t.Errorf("git branch %q should exist: %v", expectedBranch, err)
+	}
+
+	// Verify we're on the new branch
+	head, _ := repo.Head()
+	if head.Name().Short() != expectedBranch {
+		t.Errorf("current branch = %q, want %q", head.Name().Short(), expectedBranch)
+	}
+}
+
+func TestGitFlow_AutoCreateBranch_NonParentBean(t *testing.T) {
+	core, _, _ := setupTestCoreWithGit(t)
+
+	// Create a non-parent bean (no children)
+	nonParent := &bean.Bean{
+		ID:     "beans-solo1",
+		Slug:   "solo-task",
+		Title:  "Solo Task",
+		Status: "todo",
+	}
+	if err := core.Create(nonParent); err != nil {
+		t.Fatalf("Create error = %v", err)
+	}
+
+	// Transition to in-progress - should NOT create branch
+	nonParent.Status = "in-progress"
+	if err := core.Update(nonParent); err != nil {
+		t.Fatalf("Update error = %v", err)
+	}
+
+	// Verify branch was NOT created
+	if nonParent.GitBranch != "" {
+		t.Errorf("GitBranch should be empty for non-parent bean, got %q", nonParent.GitBranch)
+	}
+
+	if nonParent.GitCreatedAt != nil {
+		t.Error("GitCreatedAt should be nil for non-parent bean")
+	}
+}
+
+func TestGitFlow_AutoCreateBranch_FromBaseBranch(t *testing.T) {
+	core, _, repoPath := setupTestCoreWithGit(t)
+
+	repo, _ := git.PlainOpen(repoPath)
+	w, _ := repo.Worktree()
+
+	// Make a commit on main
+	testFile := filepath.Join(repoPath, "main.txt")
+	os.WriteFile(testFile, []byte("main content"), 0644)
+	w.Add("main.txt")
+	mainCommit, _ := w.Commit("Add main file", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+
+	// Create and switch to a different branch
+	otherBranch := "other-branch"
+	otherRef := plumbing.NewBranchReferenceName(otherBranch)
+	repo.Storer.SetReference(plumbing.NewHashReference(otherRef, mainCommit))
+	w.Checkout(&git.CheckoutOptions{Branch: otherRef})
+
+	// Make a commit on other branch
+	otherFile := filepath.Join(repoPath, "other.txt")
+	os.WriteFile(otherFile, []byte("other content"), 0644)
+	w.Add("other.txt")
+	w.Commit("Add other file", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+
+	// Create parent bean (which will trigger branch creation)
+	parent := &bean.Bean{
+		ID:     "beans-test1",
+		Slug:   "test-feature",
+		Title:  "Test Feature",
+		Status: "todo",
+	}
+	core.Create(parent)
+
+	child := &bean.Bean{
+		ID:     "beans-child1",
+		Slug:   "child",
+		Title:  "Child",
+		Status: "todo",
+		Parent: "beans-test1",
+	}
+	core.Create(child)
+
+	// Commit the bean files (working tree must be clean)
+	w.Add(".beans")
+	w.Commit("Add beans", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+
+	// Reload parent to get current state
+	parent, _ = core.Get("beans-test1")
+
+	// Transition to in-progress (current branch is other-branch)
+	parent.Status = "in-progress"
+	core.Update(parent)
+
+	// Reload parent to get updated git fields
+	parent, _ = core.Get("beans-test1")
+
+	// Verify new branch was created FROM main, not from other-branch
+	newBranchRef, _ := repo.Reference(plumbing.NewBranchReferenceName(parent.GitBranch), true)
+	mainRef, _ := repo.Reference(plumbing.NewBranchReferenceName("main"), true)
+
+	if newBranchRef.Hash() != mainRef.Hash() {
+		t.Errorf("new branch should be created from main, got hash %s, want %s", newBranchRef.Hash(), mainRef.Hash())
+	}
+}
+
+func TestGitFlow_AutoCreateBranch_DirtyTree(t *testing.T) {
+	core, _, repoPath := setupTestCoreWithGit(t)
+
+	// Create uncommitted changes
+	dirtyFile := filepath.Join(repoPath, "dirty.txt")
+	os.WriteFile(dirtyFile, []byte("uncommitted"), 0644)
+
+	// Create parent bean
+	parent := &bean.Bean{
+		ID:     "beans-parent1",
+		Slug:   "parent",
+		Title:  "Parent",
+		Status: "todo",
+	}
+	core.Create(parent)
+
+	child := &bean.Bean{
+		ID:     "beans-child1",
+		Slug:   "child",
+		Title:  "Child",
+		Status: "todo",
+		Parent: "beans-parent1",
+	}
+	core.Create(child)
+
+	// Try to transition to in-progress with dirty tree - should error
+	parent.Status = "in-progress"
+	err := core.Update(parent)
+	if err == nil {
+		t.Error("Update() should error when working tree is dirty")
+	}
+	if err != nil && !contains(err.Error(), "working tree") && !contains(err.Error(), "clean") {
+		t.Errorf("error should mention dirty working tree, got: %v", err)
+	}
+}
+
+func TestGitFlow_SyncGitBranches_MergedBranch(t *testing.T) {
+	core, _, repoPath := setupTestCoreWithGit(t)
+
+	repo, _ := git.PlainOpen(repoPath)
+	w, _ := repo.Worktree()
+
+	// Create parent bean and transition to in-progress (creates branch)
+	parent := &bean.Bean{
+		ID:     "beans-feature1",
+		Slug:   "feature",
+		Title:  "Feature",
+		Status: "todo",
+	}
+	core.Create(parent)
+
+	child := &bean.Bean{
+		ID:     "beans-task1",
+		Slug:   "task",
+		Title:  "Task",
+		Status: "todo",
+		Parent: "beans-feature1",
+	}
+	core.Create(child)
+
+	// Commit the bean files (working tree must be clean)
+	w.Add(".beans")
+	w.Commit("Add beans", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+
+	// Reload and transition to in-progress
+	parent, _ = core.Get("beans-feature1")
+	parent.Status = "in-progress"
+	core.Update(parent)
+
+	// Reload to get GitBranch
+	parent, _ = core.Get("beans-feature1")
+
+	// Make a commit on the feature branch
+	featureFile := filepath.Join(repoPath, "feature.txt")
+	os.WriteFile(featureFile, []byte("feature content"), 0644)
+	w.Add("feature.txt")
+	featureCommit, _ := w.Commit("Add feature", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+
+	// Merge to main (fast-forward)
+	w.Checkout(&git.CheckoutOptions{Branch: plumbing.NewBranchReferenceName("main")})
+	repo.Storer.SetReference(plumbing.NewHashReference(plumbing.NewBranchReferenceName("main"), featureCommit))
+
+	// Sync should mark bean as completed
+	result, err := core.SyncGitBranches()
+	if err != nil {
+		t.Fatalf("SyncGitBranches() error = %v", err)
+	}
+	if len(result.Updated) == 0 {
+		t.Error("SyncGitBranches() should update the bean")
+	}
+
+	// Verify bean is now completed
+	synced, _ := core.Get("beans-feature1")
+	if synced.Status != "completed" {
+		t.Errorf("Status = %q, want %q", synced.Status, "completed")
+	}
+
+	// Verify merge metadata
+	if synced.GitMergedAt == nil {
+		t.Error("GitMergedAt should be set")
+	}
+	if synced.GitMergeCommit == "" {
+		t.Error("GitMergeCommit should be set")
+	}
+}
+
+func TestGitFlow_SyncGitBranches_DeletedBranch(t *testing.T) {
+	core, _, repoPath := setupTestCoreWithGit(t)
+
+	repo, _ := git.PlainOpen(repoPath)
+	w, _ := repo.Worktree()
+
+	// Create parent bean and branch
+	parent := &bean.Bean{
+		ID:     "beans-feature1",
+		Slug:   "feature",
+		Title:  "Feature",
+		Status: "todo",
+	}
+	core.Create(parent)
+
+	child := &bean.Bean{
+		ID:     "beans-task1",
+		Slug:   "task",
+		Title:  "Task",
+		Status: "todo",
+		Parent: "beans-feature1",
+	}
+	core.Create(child)
+
+	// Commit the bean files (working tree must be clean)
+	w.Add(".beans")
+	w.Commit("Add beans", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+
+	// Reload and transition to in-progress
+	parent, _ = core.Get("beans-feature1")
+	parent.Status = "in-progress"
+	core.Update(parent)
+
+	// Reload to get GitBranch
+	parent, _ = core.Get("beans-feature1")
+
+	// Make a commit
+	branchName := parent.GitBranch
+	featureFile := filepath.Join(repoPath, "feature.txt")
+	os.WriteFile(featureFile, []byte("feature content"), 0644)
+	w.Add("feature.txt")
+	w.Commit("Add feature", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+
+	// Switch back to main and delete the branch (without merging)
+	w.Checkout(&git.CheckoutOptions{Branch: plumbing.NewBranchReferenceName("main")})
+	repo.Storer.RemoveReference(plumbing.NewBranchReferenceName(branchName))
+
+	// Sync should mark bean as scrapped
+	result, err := core.SyncGitBranches()
+	if err != nil {
+		t.Fatalf("SyncGitBranches() error = %v", err)
+	}
+	if len(result.Updated) == 0 {
+		t.Error("SyncGitBranches() should update the bean")
+	}
+
+	// Verify bean is now scrapped
+	synced, _ := core.Get("beans-feature1")
+	if synced.Status != "scrapped" {
+		t.Errorf("Status = %q, want %q", synced.Status, "scrapped")
+	}
+}
+
+func TestGitFlow_SyncGitBranches_MultipleBeans(t *testing.T) {
+	core, _, repoPath := setupTestCoreWithGit(t)
+
+	repo, _ := git.PlainOpen(repoPath)
+	w, _ := repo.Worktree()
+
+	// Create two parent beans with branches
+	parent1 := &bean.Bean{
+		ID:     "beans-feature1",
+		Slug:   "feature1",
+		Title:  "Feature 1",
+		Status: "todo",
+	}
+	core.Create(parent1)
+	child1 := &bean.Bean{
+		ID:     "beans-task1",
+		Slug:   "task1",
+		Title:  "Task 1",
+		Status: "todo",
+		Parent: "beans-feature1",
+	}
+	core.Create(child1)
+
+	parent2 := &bean.Bean{
+		ID:     "beans-feature2",
+		Slug:   "feature2",
+		Title:  "Feature 2",
+		Status: "todo",
+	}
+	core.Create(parent2)
+	child2 := &bean.Bean{
+		ID:     "beans-task2",
+		Slug:   "task2",
+		Title:  "Task 2",
+		Status: "todo",
+		Parent: "beans-feature2",
+	}
+	core.Create(child2)
+
+	// Commit the bean files (working tree must be clean)
+	w.Add(".beans")
+	w.Commit("Add beans", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+
+	// Transition both to in-progress
+	parent1, _ = core.Get("beans-feature1")
+	parent1.Status = "in-progress"
+	core.Update(parent1)
+	parent1, _ = core.Get("beans-feature1")
+
+	// Commit updated bean files
+	w.Add(".beans")
+	w.Commit("Update parent1", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+	w.Checkout(&git.CheckoutOptions{Branch: plumbing.NewBranchReferenceName("main")})
+
+	parent2, _ = core.Get("beans-feature2")
+	parent2.Status = "in-progress"
+	core.Update(parent2)
+	parent2, _ = core.Get("beans-feature2")
+
+	// Commit updated bean files
+	w.Add(".beans")
+	w.Commit("Update parent2", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+	w.Checkout(&git.CheckoutOptions{Branch: plumbing.NewBranchReferenceName("main")})
+
+	// Merge feature1, delete feature2
+	branch1 := parent1.GitBranch
+	branch2 := parent2.GitBranch
+
+	// Merge feature1
+	w.Checkout(&git.CheckoutOptions{Branch: plumbing.NewBranchReferenceName(branch1)})
+	f1File := filepath.Join(repoPath, "f1.txt")
+	os.WriteFile(f1File, []byte("f1"), 0644)
+	w.Add("f1.txt")
+	f1Commit, _ := w.Commit("Add f1", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com"},
+	})
+	w.Checkout(&git.CheckoutOptions{Branch: plumbing.NewBranchReferenceName("main")})
+	repo.Storer.SetReference(plumbing.NewHashReference(plumbing.NewBranchReferenceName("main"), f1Commit))
+
+	// Delete feature2 (it exists but we'll simulate deletion)
+	repo.Storer.RemoveReference(plumbing.NewBranchReferenceName(branch2))
+
+	// Sync should update both beans
+	result, err := core.SyncGitBranches()
+	if err != nil {
+		t.Fatalf("SyncGitBranches() error = %v", err)
+	}
+	if len(result.Updated) != 2 {
+		t.Errorf("SyncGitBranches() updated %d beans, want 2", len(result.Updated))
+	}
+
+	// Verify statuses
+	synced1, _ := core.Get("beans-feature1")
+	if synced1.Status != "completed" {
+		t.Errorf("feature1 status = %q, want completed", synced1.Status)
+	}
+
+	synced2, _ := core.Get("beans-feature2")
+	if synced2.Status != "scrapped" {
+		t.Errorf("feature2 status = %q, want scrapped", synced2.Status)
+	}
+}
+
+func TestGitFlow_DisableAutoCreate(t *testing.T) {
+	core, _, _ := setupTestCoreWithGit(t)
+
+	// Disable auto-create
+	core.Config().Beans.Git.AutoCreateBranch = false
+
+	// Create parent bean
+	parent := &bean.Bean{
+		ID:     "beans-parent1",
+		Slug:   "parent",
+		Title:  "Parent",
+		Status: "todo",
+	}
+	core.Create(parent)
+
+	child := &bean.Bean{
+		ID:     "beans-child1",
+		Slug:   "child",
+		Title:  "Child",
+		Status: "todo",
+		Parent: "beans-parent1",
+	}
+	core.Create(child)
+
+	// Transition to in-progress - should NOT create branch
+	parent.Status = "in-progress"
+	core.Update(parent)
+
+	if parent.GitBranch != "" {
+		t.Errorf("GitBranch should be empty when auto-create is disabled, got %q", parent.GitBranch)
+	}
+}
+
+func TestGitFlow_DisableGitFlow(t *testing.T) {
+	core, _, _ := setupTestCoreWithGit(t)
+
+	// Create parent bean with git enabled
+	parent := &bean.Bean{
+		ID:     "beans-parent1",
+		Slug:   "parent",
+		Title:  "Parent",
+		Status: "todo",
+	}
+	core.Create(parent)
+
+	child := &bean.Bean{
+		ID:     "beans-child1",
+		Slug:   "child",
+		Title:  "Child",
+		Status: "todo",
+		Parent: "beans-parent1",
+	}
+	core.Create(child)
+
+	// Disable git flow completely
+	core.DisableGitFlow()
+
+	// Transition should work but not create branch
+	parent.Status = "in-progress"
+	err := core.Update(parent)
+	if err != nil {
+		t.Fatalf("Update() error = %v", err)
+	}
+
+	if parent.GitBranch != "" {
+		t.Errorf("GitBranch should be empty when GitFlow is disabled, got %q", parent.GitBranch)
+	}
+}
+
+// Helper function (if not already defined)
+func contains(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
 }

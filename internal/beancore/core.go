@@ -377,10 +377,25 @@ func (c *Core) Update(b *bean.Bean, ifMatch *string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	// Verify bean exists and capture old state
-	oldBean, ok := c.beans[b.ID]
+	// Verify bean exists
+	existingBean, ok := c.beans[b.ID]
 	if !ok {
 		return ErrNotFound
+	}
+
+	// Reload old state from disk to get true previous state
+	// (needed because user might have modified the bean from Get() before calling Update)
+	var oldBean *bean.Bean
+	if existingBean.Path != "" {
+		oldBeanFromDisk, err := c.loadBean(filepath.Join(c.root, existingBean.Path))
+		if err != nil {
+			return fmt.Errorf("failed to load old state: %w", err)
+		}
+		oldBean = oldBeanFromDisk
+	} else {
+		// Fallback: copy existing bean if no path set
+		oldBean = &bean.Bean{}
+		*oldBean = *existingBean
 	}
 
 	// Validate etag if provided or required
@@ -391,28 +406,8 @@ func (c *Core) Update(b *bean.Bean, ifMatch *string) error {
 	}
 
 	if ifMatch != nil && *ifMatch != "" {
-		// Calculate etag from the on-disk version by reading the old bean's path
-		// This is necessary because the in-memory bean may have already been modified
-		// (Go uses pointers, so modifying the bean passed to Update also modifies c.beans[id])
-		var currentETag string
-		if oldBean.Path != "" {
-			// Read current file from disk to calculate etag
-			diskPath := filepath.Join(c.root, oldBean.Path)
-			content, err := os.ReadFile(diskPath)
-			if err != nil {
-				// If file doesn't exist yet, fall back to old bean's etag
-				// This can happen for beans created but not yet persisted
-				currentETag = oldBean.ETag()
-			} else {
-				// Calculate etag from on-disk content
-				h := fnv.New64a()
-				h.Write(content)
-				currentETag = hex.EncodeToString(h.Sum(nil))
-			}
-		} else {
-			// No path yet, use in-memory etag
-			currentETag = oldBean.ETag()
-		}
+		// Calculate etag from the on-disk version (oldBean was just loaded from disk)
+		currentETag := oldBean.ETag()
 
 		if currentETag != *ifMatch {
 			return &ETagMismatchError{
@@ -420,6 +415,11 @@ func (c *Core) Update(b *bean.Bean, ifMatch *string) error {
 				Current:  currentETag,
 			}
 		}
+	}
+
+	// Preserve CreatedAt from old bean
+	if b.CreatedAt == nil && oldBean.CreatedAt != nil {
+		b.CreatedAt = oldBean.CreatedAt
 	}
 
 	// Update timestamp
@@ -826,10 +826,13 @@ func (c *Core) handleGitTransition(oldBean, newBean *bean.Bean) error {
 
 	// Detect transition to 'in-progress'
 	if newBean.Status == "in-progress" && oldBean.Status != "in-progress" {
-		// Check if bean has children (is a parent bean)
-		if c.hasChildren(newBean.ID) {
-			if err := c.createBranchForBean(newBean); err != nil {
-				return err
+		// Check if auto-create is enabled
+		if c.config != nil && c.config.Beans.Git.AutoCreateBranch {
+			// Check if bean has children (is a parent bean)
+			if c.hasChildren(newBean.ID) {
+				if err := c.createBranchForBean(newBean); err != nil {
+					return err
+				}
 			}
 		}
 	}
