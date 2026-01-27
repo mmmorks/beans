@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/hmans/beans/internal/bean"
 	"github.com/hmans/beans/internal/beancore"
@@ -2318,6 +2319,237 @@ func TestRemoveBlockingWithETag(t *testing.T) {
 		var mismatchErr *beancore.ETagMismatchError
 		if !errors.As(err, &mismatchErr) {
 			t.Errorf("Expected ETagMismatchError, got %T: %v", err, err)
+		}
+	})
+}
+
+// Git Integration GraphQL Tests
+
+func TestBeanGitFields(t *testing.T) {
+	resolver, core := setupTestResolver(t)
+	ctx := context.Background()
+
+	// Create a bean with git metadata
+	b := &bean.Bean{
+		ID:            "beans-git1",
+		Slug:          "git-feature",
+		Title:         "Git Feature",
+		Status:        "in-progress",
+		GitBranch:     "beans-git1/git-feature",
+		GitMergeCommit: "abc123def456",
+	}
+	
+	// Set git timestamps
+	createdAt := time.Now().Add(-24 * time.Hour)
+	mergedAt := time.Now()
+	b.GitCreatedAt = &createdAt
+	b.GitMergedAt = &mergedAt
+
+	if err := core.Create(b); err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+
+	// Query the bean
+	qr := resolver.Query()
+	got, err := qr.Bean(ctx, "beans-git1")
+	if err != nil {
+		t.Fatalf("Bean() error = %v", err)
+	}
+	if got == nil {
+		t.Fatal("Bean() returned nil")
+	}
+
+	// Verify git fields
+	t.Run("gitBranch", func(t *testing.T) {
+		if got.GitBranch != "beans-git1/git-feature" {
+			t.Errorf("GitBranch = %q, want %q", got.GitBranch, "beans-git1/git-feature")
+		}
+	})
+
+	t.Run("gitCreatedAt", func(t *testing.T) {
+		if got.GitCreatedAt == nil {
+			t.Fatal("GitCreatedAt should not be nil")
+		}
+		// Check it's within 1 second of expected
+		diff := got.GitCreatedAt.Sub(createdAt)
+		if diff < -time.Second || diff > time.Second {
+			t.Errorf("GitCreatedAt = %v, want %v (diff: %v)", got.GitCreatedAt, createdAt, diff)
+		}
+	})
+
+	t.Run("gitMergedAt", func(t *testing.T) {
+		if got.GitMergedAt == nil {
+			t.Fatal("GitMergedAt should not be nil")
+		}
+		diff := got.GitMergedAt.Sub(mergedAt)
+		if diff < -time.Second || diff > time.Second {
+			t.Errorf("GitMergedAt = %v, want %v (diff: %v)", got.GitMergedAt, mergedAt, diff)
+		}
+	})
+
+	t.Run("gitMergeCommit", func(t *testing.T) {
+		if got.GitMergeCommit != "abc123def456" {
+			t.Errorf("GitMergeCommit = %q, want %q", got.GitMergeCommit, "abc123def456")
+		}
+	})
+}
+
+func TestBeanGitFields_Empty(t *testing.T) {
+	resolver, core := setupTestResolver(t)
+	ctx := context.Background()
+
+	// Create a bean without git metadata
+	createTestBean(t, core, "beans-nogit", "No Git", "todo")
+
+	// Query the bean
+	qr := resolver.Query()
+	got, err := qr.Bean(ctx, "beans-nogit")
+	if err != nil {
+		t.Fatalf("Bean() error = %v", err)
+	}
+	if got == nil {
+		t.Fatal("Bean() returned nil")
+	}
+
+	// Verify git fields are empty
+	if got.GitBranch != "" {
+		t.Errorf("GitBranch = %q, want empty", got.GitBranch)
+	}
+	if got.GitCreatedAt != nil {
+		t.Errorf("GitCreatedAt = %v, want nil", got.GitCreatedAt)
+	}
+	if got.GitMergedAt != nil {
+		t.Errorf("GitMergedAt = %v, want nil", got.GitMergedAt)
+	}
+	if got.GitMergeCommit != "" {
+		t.Errorf("GitMergeCommit = %q, want empty", got.GitMergeCommit)
+	}
+}
+
+func TestQueryBeansFilter_HasGitBranch(t *testing.T) {
+	resolver, core := setupTestResolver(t)
+	ctx := context.Background()
+
+	// Create beans with and without git branches
+	b1 := &bean.Bean{
+		ID:        "beans-with-git",
+		Slug:      "with-git",
+		Title:     "With Git",
+		Status:    "in-progress",
+		GitBranch: "beans-with-git/with-git",
+	}
+	core.Create(b1)
+
+	createTestBean(t, core, "beans-without-git", "Without Git", "todo")
+
+	qr := resolver.Query()
+
+	t.Run("filter hasGitBranch=true", func(t *testing.T) {
+		hasGitBranch := true
+		filter := &model.BeanFilter{
+			HasGitBranch: &hasGitBranch,
+		}
+		
+		beans, err := qr.Beans(ctx, filter)
+		if err != nil {
+			t.Fatalf("Beans() error = %v", err)
+		}
+
+		if len(beans) != 1 {
+			t.Errorf("Beans() returned %d beans, want 1", len(beans))
+		}
+
+		if len(beans) > 0 && beans[0].ID != "beans-with-git" {
+			t.Errorf("Beans()[0].ID = %q, want %q", beans[0].ID, "beans-with-git")
+		}
+	})
+
+	t.Run("filter hasGitBranch=false", func(t *testing.T) {
+		hasGitBranch := false
+		filter := &model.BeanFilter{
+			HasGitBranch: &hasGitBranch,
+		}
+		
+		beans, err := qr.Beans(ctx, filter)
+		if err != nil {
+			t.Fatalf("Beans() error = %v", err)
+		}
+
+		if len(beans) != 1 {
+			t.Errorf("Beans() returned %d beans, want 1", len(beans))
+		}
+
+		if len(beans) > 0 && beans[0].ID != "beans-without-git" {
+			t.Errorf("Beans()[0].ID = %q, want %q", beans[0].ID, "beans-without-git")
+		}
+	})
+}
+
+func TestQueryBeansFilter_GitBranchMerged(t *testing.T) {
+	resolver, core := setupTestResolver(t)
+	ctx := context.Background()
+
+	// Create beans with different git merge states
+	mergedAt := time.Now()
+
+	b1 := &bean.Bean{
+		ID:             "beans-merged",
+		Slug:           "merged",
+		Title:          "Merged",
+		Status:         "completed",
+		GitBranch:      "beans-merged/merged",
+		GitMergedAt:    &mergedAt,
+		GitMergeCommit: "abc123",
+	}
+	core.Create(b1)
+
+	b2 := &bean.Bean{
+		ID:        "beans-not-merged",
+		Slug:      "not-merged",
+		Title:     "Not Merged",
+		Status:    "in-progress",
+		GitBranch: "beans-not-merged/not-merged",
+	}
+	core.Create(b2)
+
+	createTestBean(t, core, "beans-no-git", "No Git", "todo")
+
+	qr := resolver.Query()
+
+	t.Run("filter gitBranchMerged=true", func(t *testing.T) {
+		gitBranchMerged := true
+		filter := &model.BeanFilter{
+			GitBranchMerged: &gitBranchMerged,
+		}
+		
+		beans, err := qr.Beans(ctx, filter)
+		if err != nil {
+			t.Fatalf("Beans() error = %v", err)
+		}
+
+		if len(beans) != 1 {
+			t.Errorf("Beans() returned %d beans, want 1", len(beans))
+		}
+
+		if len(beans) > 0 && beans[0].ID != "beans-merged" {
+			t.Errorf("Beans()[0].ID = %q, want %q", beans[0].ID, "beans-merged")
+		}
+	})
+
+	t.Run("filter gitBranchMerged=false", func(t *testing.T) {
+		gitBranchMerged := false
+		filter := &model.BeanFilter{
+			GitBranchMerged: &gitBranchMerged,
+		}
+		
+		beans, err := qr.Beans(ctx, filter)
+		if err != nil {
+			t.Fatalf("Beans() error = %v", err)
+		}
+
+		// Should return beans without git branches AND beans with unmerged branches
+		if len(beans) != 2 {
+			t.Errorf("Beans() returned %d beans, want 2", len(beans))
 		}
 	})
 }
