@@ -2,6 +2,8 @@ package gitflow
 
 import (
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -320,4 +322,71 @@ func (g *GitFlow) IsWorkingTreeClean() (bool, error) {
 	}
 
 	return status.IsClean(), nil
+}
+
+// HasOnlyBeansDirChanges returns true if the only uncommitted changes are in the .beans/ directory or .beans.yml.
+// Returns false if either the tree is completely clean OR there are changes outside .beans/.
+func (g *GitFlow) HasOnlyBeansDirChanges() (bool, error) {
+	w, err := g.repo.Worktree()
+	if err != nil {
+		return false, fmt.Errorf("failed to get worktree: %w", err)
+	}
+
+	status, err := w.Status()
+	if err != nil {
+		return false, fmt.Errorf("failed to get status: %w", err)
+	}
+
+	if status.IsClean() {
+		return false, nil
+	}
+
+	// Check if all dirty files are in .beans/ or are .beans.yml
+	hasBeanChanges := false
+	for file, stat := range status {
+		// Check if file has any changes (worktree or staging)
+		if stat.Worktree != git.Unmodified || stat.Staging != git.Unmodified {
+			if strings.HasPrefix(file, ".beans/") || file == ".beans.yml" {
+				hasBeanChanges = true
+			} else {
+				// Found changes outside .beans/
+				return false, nil
+			}
+		}
+	}
+
+	return hasBeanChanges, nil
+}
+
+// CommitBeans commits all changes in the .beans/ directory and .beans.yml with the given message.
+// This is used for auto-committing bean updates before creating git branches.
+func (g *GitFlow) CommitBeans(message string) error {
+	w, err := g.repo.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to get worktree: %w", err)
+	}
+
+	// Add .beans.yml if it exists and has changes
+	if err := w.AddGlob(".beans.yml"); err != nil {
+		// Ignore error if file doesn't exist
+	}
+
+	// Add all files in .beans/ directory
+	if err := w.AddGlob(".beans/*"); err != nil {
+		return fmt.Errorf("failed to add .beans/ files: %w", err)
+	}
+
+	// Create commit
+	_, err = w.Commit(message, &git.CommitOptions{
+		Author: &object.Signature{
+			Name:  "beans",
+			Email: "beans@localhost",
+			When:  time.Now(),
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to commit: %w", err)
+	}
+
+	return nil
 }

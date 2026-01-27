@@ -790,6 +790,20 @@ func (c *Core) createBranchForBean(b *bean.Bean) error {
 		// Branch reference exists but branch is gone - will create new one
 	}
 
+	// Auto-commit beans if enabled and only .beans/ has changes
+	if c.config != nil && c.config.Beans.Git.AutoCommitBeans {
+		hasOnlyBeans, err := c.gitFlow.HasOnlyBeansDirChanges()
+		if err != nil {
+			return fmt.Errorf("failed to check for bean changes: %w", err)
+		}
+		if hasOnlyBeans {
+			if err := c.gitFlow.CommitBeans("chore: update beans"); err != nil {
+				c.logWarn("Failed to auto-commit beans: %v", err)
+				// Continue anyway - let the clean tree check handle it
+			}
+		}
+	}
+
 	// Check if working tree is clean
 	clean, err := c.gitFlow.IsWorkingTreeClean()
 	if err != nil {

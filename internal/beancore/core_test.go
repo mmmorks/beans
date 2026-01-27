@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -2044,6 +2045,158 @@ func TestGitFlow_AutoCreateBranch_DirtyTree(t *testing.T) {
 		t.Error("Update() should error when working tree is dirty")
 	}
 	if err != nil && !contains(err.Error(), "working tree") && !contains(err.Error(), "clean") {
+		t.Errorf("error should mention dirty working tree, got: %v", err)
+	}
+}
+
+func TestGitFlow_AutoCommitBeans(t *testing.T) {
+	core, _, repoPath := setupTestCoreWithGit(t)
+
+	repo, _ := git.PlainOpen(repoPath)
+
+	// Create parent bean
+	parent := &bean.Bean{
+		ID:     "beans-parent1",
+		Slug:   "parent",
+		Title:  "Parent",
+		Status: "todo",
+	}
+	core.Create(parent)
+
+	child := &bean.Bean{
+		ID:     "beans-child1",
+		Slug:   "child",
+		Title:  "Child",
+		Status: "todo",
+		Parent: "beans-parent1",
+	}
+	core.Create(child)
+
+	// At this point .beans/ has uncommitted changes
+	// But auto-commit should handle this
+
+	// Transition to in-progress - should auto-commit beans and succeed
+	parent.Status = "in-progress"
+	err := core.Update(parent)
+	if err != nil {
+		t.Fatalf("Update() error = %v (auto-commit should have handled bean changes)", err)
+	}
+
+	// Verify bean has git branch
+	parent, _ = core.Get("beans-parent1")
+	if parent.GitBranch == "" {
+		t.Error("GitBranch should be set")
+	}
+
+	// Verify beans were committed
+	w, _ := repo.Worktree()
+	status, _ := w.Status()
+
+	// Should be clean now (or only have the updated bean file from status change)
+	// The auto-commit should have committed the initial bean files
+	for file := range status {
+		if strings.HasPrefix(file, ".beans/") {
+			// It's okay to have modified bean files from the Update call
+			// but we should verify the beans were committed at some point
+		}
+	}
+
+	// Verify there's a commit with bean files
+	head, _ := repo.Head()
+	commit, _ := repo.CommitObject(head.Hash())
+	tree, _ := commit.Tree()
+
+	// Walk back through history to find the auto-commit
+	iter, _ := repo.Log(&git.LogOptions{From: head.Hash()})
+	foundAutoCommit := false
+	iter.ForEach(func(c *object.Commit) error {
+		if strings.Contains(c.Message, "chore: update beans") {
+			foundAutoCommit = true
+			return fmt.Errorf("stop") // Stop iteration
+		}
+		return nil
+	})
+
+	if !foundAutoCommit {
+		// Check if beans are in current tree
+		_, err1 := tree.File(".beans/beans-parent1.md")
+		_, err2 := tree.File(".beans/beans-child1.md")
+		if err1 != nil && err2 != nil {
+			t.Error("beans should be committed (either in auto-commit or current commit)")
+		}
+	}
+}
+
+func TestGitFlow_AutoCommitBeans_Disabled(t *testing.T) {
+	core, _, _ := setupTestCoreWithGit(t)
+
+	// Disable auto-commit
+	core.Config().Beans.Git.AutoCommitBeans = false
+
+	// Create parent bean
+	parent := &bean.Bean{
+		ID:     "beans-parent1",
+		Slug:   "parent",
+		Title:  "Parent",
+		Status: "todo",
+	}
+	core.Create(parent)
+
+	child := &bean.Bean{
+		ID:     "beans-child1",
+		Slug:   "child",
+		Title:  "Child",
+		Status: "todo",
+		Parent: "beans-parent1",
+	}
+	core.Create(child)
+
+	// At this point .beans/ has uncommitted changes
+	// With auto-commit disabled, this should fail
+
+	// Transition to in-progress - should fail with dirty tree
+	parent.Status = "in-progress"
+	err := core.Update(parent)
+	if err == nil {
+		t.Error("Update() should error when auto-commit is disabled and tree is dirty")
+	}
+	if err != nil && !contains(err.Error(), "working tree") {
+		t.Errorf("error should mention dirty working tree, got: %v", err)
+	}
+}
+
+func TestGitFlow_AutoCommitBeans_MixedChanges(t *testing.T) {
+	core, _, repoPath := setupTestCoreWithGit(t)
+
+	// Create bean
+	parent := &bean.Bean{
+		ID:     "beans-parent1",
+		Slug:   "parent",
+		Title:  "Parent",
+		Status: "todo",
+	}
+	core.Create(parent)
+
+	child := &bean.Bean{
+		ID:     "beans-child1",
+		Slug:   "child",
+		Title:  "Child",
+		Status: "todo",
+		Parent: "beans-parent1",
+	}
+	core.Create(child)
+
+	// Add uncommitted changes OUTSIDE .beans/
+	otherFile := filepath.Join(repoPath, "other.txt")
+	os.WriteFile(otherFile, []byte("uncommitted"), 0644)
+
+	// Transition to in-progress - should fail because of non-bean changes
+	parent.Status = "in-progress"
+	err := core.Update(parent)
+	if err == nil {
+		t.Error("Update() should error when there are changes outside .beans/")
+	}
+	if err != nil && !contains(err.Error(), "working tree") {
 		t.Errorf("error should mention dirty working tree, got: %v", err)
 	}
 }

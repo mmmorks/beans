@@ -407,6 +407,118 @@ func TestIsWorkingTreeClean(t *testing.T) {
 	}
 }
 
+func TestHasOnlyBeansDirChanges(t *testing.T) {
+	tmpDir, _ := setupTestRepo(t)
+	gf, err := New(tmpDir)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	t.Run("clean tree", func(t *testing.T) {
+		hasOnly, err := gf.HasOnlyBeansDirChanges()
+		if err != nil {
+			t.Fatalf("HasOnlyBeansDirChanges() error = %v", err)
+		}
+		if hasOnly {
+			t.Error("HasOnlyBeansDirChanges() = true, want false (tree is clean)")
+		}
+	})
+
+	t.Run("only .beans/ changes", func(t *testing.T) {
+		// Create .beans directory and add a file
+		beansDir := filepath.Join(tmpDir, ".beans")
+		os.MkdirAll(beansDir, 0755)
+		beanFile := filepath.Join(beansDir, "bean-test.md")
+		os.WriteFile(beanFile, []byte("test bean"), 0644)
+
+		hasOnly, err := gf.HasOnlyBeansDirChanges()
+		if err != nil {
+			t.Fatalf("HasOnlyBeansDirChanges() error = %v", err)
+		}
+		if !hasOnly {
+			t.Error("HasOnlyBeansDirChanges() = false, want true (only .beans/ has changes)")
+		}
+	})
+
+	t.Run("changes outside .beans/", func(t *testing.T) {
+		// Add a file outside .beans/
+		otherFile := filepath.Join(tmpDir, "other.txt")
+		os.WriteFile(otherFile, []byte("other content"), 0644)
+
+		hasOnly, err := gf.HasOnlyBeansDirChanges()
+		if err != nil {
+			t.Fatalf("HasOnlyBeansDirChanges() error = %v", err)
+		}
+		if hasOnly {
+			t.Error("HasOnlyBeansDirChanges() = true, want false (has changes outside .beans/)")
+		}
+	})
+}
+
+func TestCommitBeans(t *testing.T) {
+	tmpDir, repo := setupTestRepo(t)
+	gf, err := New(tmpDir)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
+
+	// Create .beans directory and add files
+	beansDir := filepath.Join(tmpDir, ".beans")
+	os.MkdirAll(beansDir, 0755)
+
+	bean1 := filepath.Join(beansDir, "bean-1.md")
+	os.WriteFile(bean1, []byte("# Bean 1"), 0644)
+
+	bean2 := filepath.Join(beansDir, "bean-2.md")
+	os.WriteFile(bean2, []byte("# Bean 2"), 0644)
+
+	// Commit beans
+	err = gf.CommitBeans("test: add beans")
+	if err != nil {
+		t.Fatalf("CommitBeans() error = %v", err)
+	}
+
+	// Verify working tree is now clean
+	clean, err := gf.IsWorkingTreeClean()
+	if err != nil {
+		t.Fatalf("IsWorkingTreeClean() error = %v", err)
+	}
+	if !clean {
+		t.Error("working tree should be clean after CommitBeans()")
+	}
+
+	// Verify commit was created
+	head, err := repo.Head()
+	if err != nil {
+		t.Fatalf("failed to get HEAD: %v", err)
+	}
+
+	commit, err := repo.CommitObject(head.Hash())
+	if err != nil {
+		t.Fatalf("failed to get commit: %v", err)
+	}
+
+	if commit.Message != "test: add beans" {
+		t.Errorf("commit message = %q, want %q", commit.Message, "test: add beans")
+	}
+
+	// Verify files are in the commit
+	tree, err := commit.Tree()
+	if err != nil {
+		t.Fatalf("failed to get tree: %v", err)
+	}
+
+	_, err = tree.File(".beans/bean-1.md")
+	if err != nil {
+		t.Error(".beans/bean-1.md should be in commit")
+	}
+
+	_, err = tree.File(".beans/bean-2.md")
+	if err != nil {
+		t.Error(".beans/bean-2.md should be in commit")
+	}
+}
+
 func TestIsBranchMerged_RegularMerge(t *testing.T) {
 	tmpDir, repo := setupTestRepo(t)
 	gf, err := New(tmpDir)

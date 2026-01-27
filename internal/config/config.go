@@ -95,6 +95,7 @@ type BeansConfig struct {
 type GitConfig struct {
 	Enabled          bool   `yaml:"enabled"`
 	AutoCreateBranch bool   `yaml:"auto_create_branch"`
+	AutoCommitBeans  bool   `yaml:"auto_commit_beans"`
 	BaseBranch       string `yaml:"base_branch,omitempty"`
 	RequireMerge     bool   `yaml:"require_merge"`
 }
@@ -111,6 +112,7 @@ func Default() *Config {
 			Git: GitConfig{
 				Enabled:          true,
 				AutoCreateBranch: true,
+				AutoCommitBeans:  true,
 				BaseBranch:       "main",
 				RequireMerge:     true,
 			},
