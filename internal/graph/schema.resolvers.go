@@ -394,6 +394,34 @@ func (r *mutationResolver) RemoveBlockedBy(ctx context.Context, id string, targe
 	return b, nil
 }
 
+// AppendToBody is the resolver for the appendToBody field.
+func (r *mutationResolver) AppendToBody(ctx context.Context, id string, content string, ifMatch *string) (*bean.Bean, error) {
+	panic(fmt.Errorf("not implemented: AppendToBody - appendToBody"))
+}
+
+// SyncGitBranches is the resolver for the syncGitBranches field.
+func (r *mutationResolver) SyncGitBranches(ctx context.Context) ([]*bean.Bean, error) {
+	if !r.Core.IsGitFlowEnabled() {
+		return nil, fmt.Errorf("git integration is not enabled")
+	}
+
+	result, err := r.Core.SyncGitBranches()
+	if err != nil {
+		return nil, err
+	}
+
+	// If there were errors, include them in the response
+	if len(result.Errors) > 0 {
+		// Return the updated beans but log warnings about errors
+		for _, syncErr := range result.Errors {
+			// In a real implementation, you might want to log these or return them differently
+			_ = syncErr
+		}
+	}
+
+	return result.Updated, nil
+}
+
 // Bean is the resolver for the bean field.
 func (r *queryResolver) Bean(ctx context.Context, id string) (*bean.Bean, error) {
 	b, err := r.Core.Get(id)

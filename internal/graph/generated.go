@@ -51,35 +51,41 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Bean struct {
-		BlockedBy    func(childComplexity int, filter *model.BeanFilter) int
-		BlockedByIds func(childComplexity int) int
-		Blocking     func(childComplexity int, filter *model.BeanFilter) int
-		BlockingIds  func(childComplexity int) int
-		Body         func(childComplexity int) int
-		Children     func(childComplexity int, filter *model.BeanFilter) int
-		CreatedAt    func(childComplexity int) int
-		ETag         func(childComplexity int) int
-		ID           func(childComplexity int) int
-		Parent       func(childComplexity int) int
-		ParentID     func(childComplexity int) int
-		Path         func(childComplexity int) int
-		Priority     func(childComplexity int) int
-		Slug         func(childComplexity int) int
-		Status       func(childComplexity int) int
-		Tags         func(childComplexity int) int
-		Title        func(childComplexity int) int
-		Type         func(childComplexity int) int
-		UpdatedAt    func(childComplexity int) int
+		BlockedBy      func(childComplexity int, filter *model.BeanFilter) int
+		BlockedByIds   func(childComplexity int) int
+		Blocking       func(childComplexity int, filter *model.BeanFilter) int
+		BlockingIds    func(childComplexity int) int
+		Body           func(childComplexity int) int
+		Children       func(childComplexity int, filter *model.BeanFilter) int
+		CreatedAt      func(childComplexity int) int
+		ETag           func(childComplexity int) int
+		GitBranch      func(childComplexity int) int
+		GitCreatedAt   func(childComplexity int) int
+		GitMergeCommit func(childComplexity int) int
+		GitMergedAt    func(childComplexity int) int
+		ID             func(childComplexity int) int
+		Parent         func(childComplexity int) int
+		ParentID       func(childComplexity int) int
+		Path           func(childComplexity int) int
+		Priority       func(childComplexity int) int
+		Slug           func(childComplexity int) int
+		Status         func(childComplexity int) int
+		Tags           func(childComplexity int) int
+		Title          func(childComplexity int) int
+		Type           func(childComplexity int) int
+		UpdatedAt      func(childComplexity int) int
 	}
 
 	Mutation struct {
 		AddBlockedBy    func(childComplexity int, id string, targetID string, ifMatch *string) int
 		AddBlocking     func(childComplexity int, id string, targetID string, ifMatch *string) int
+		AppendToBody    func(childComplexity int, id string, content string, ifMatch *string) int
 		CreateBean      func(childComplexity int, input model.CreateBeanInput) int
 		DeleteBean      func(childComplexity int, id string) int
 		RemoveBlockedBy func(childComplexity int, id string, targetID string, ifMatch *string) int
 		RemoveBlocking  func(childComplexity int, id string, targetID string, ifMatch *string) int
 		SetParent       func(childComplexity int, id string, parentID *string, ifMatch *string) int
+		SyncGitBranches func(childComplexity int) int
 		UpdateBean      func(childComplexity int, id string, input model.UpdateBeanInput) int
 	}
 
@@ -107,6 +113,8 @@ type MutationResolver interface {
 	RemoveBlocking(ctx context.Context, id string, targetID string, ifMatch *string) (*bean.Bean, error)
 	AddBlockedBy(ctx context.Context, id string, targetID string, ifMatch *string) (*bean.Bean, error)
 	RemoveBlockedBy(ctx context.Context, id string, targetID string, ifMatch *string) (*bean.Bean, error)
+	AppendToBody(ctx context.Context, id string, content string, ifMatch *string) (*bean.Bean, error)
+	SyncGitBranches(ctx context.Context) ([]*bean.Bean, error)
 }
 type QueryResolver interface {
 	Bean(ctx context.Context, id string) (*bean.Bean, error)
@@ -195,6 +203,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Bean.ETag(childComplexity), true
+	case "Bean.gitBranch":
+		if e.complexity.Bean.GitBranch == nil {
+			break
+		}
+
+		return e.complexity.Bean.GitBranch(childComplexity), true
+	case "Bean.gitCreatedAt":
+		if e.complexity.Bean.GitCreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Bean.GitCreatedAt(childComplexity), true
+	case "Bean.gitMergeCommit":
+		if e.complexity.Bean.GitMergeCommit == nil {
+			break
+		}
+
+		return e.complexity.Bean.GitMergeCommit(childComplexity), true
+	case "Bean.gitMergedAt":
+		if e.complexity.Bean.GitMergedAt == nil {
+			break
+		}
+
+		return e.complexity.Bean.GitMergedAt(childComplexity), true
 	case "Bean.id":
 		if e.complexity.Bean.ID == nil {
 			break
@@ -284,6 +316,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.AddBlocking(childComplexity, args["id"].(string), args["targetId"].(string), args["ifMatch"].(*string)), true
+	case "Mutation.appendToBody":
+		if e.complexity.Mutation.AppendToBody == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_appendToBody_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AppendToBody(childComplexity, args["id"].(string), args["content"].(string), args["ifMatch"].(*string)), true
 	case "Mutation.createBean":
 		if e.complexity.Mutation.CreateBean == nil {
 			break
@@ -339,6 +382,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.SetParent(childComplexity, args["id"].(string), args["parentId"].(*string), args["ifMatch"].(*string)), true
+	case "Mutation.syncGitBranches":
+		if e.complexity.Mutation.SyncGitBranches == nil {
+			break
+		}
+
+		return e.complexity.Mutation.SyncGitBranches(childComplexity), true
 	case "Mutation.updateBean":
 		if e.complexity.Mutation.UpdateBean == nil {
 			break
@@ -570,6 +619,27 @@ func (ec *executionContext) field_Mutation_addBlocking_args(ctx context.Context,
 		return nil, err
 	}
 	args["targetId"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "ifMatch", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["ifMatch"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_appendToBody_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "content", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["content"] = arg1
 	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "ifMatch", ec.unmarshalOString2ᚖstring)
 	if err != nil {
 		return nil, err
@@ -1112,6 +1182,122 @@ func (ec *executionContext) fieldContext_Bean_etag(_ context.Context, field grap
 	return fc, nil
 }
 
+func (ec *executionContext) _Bean_gitBranch(ctx context.Context, field graphql.CollectedField, obj *bean.Bean) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Bean_gitBranch,
+		func(ctx context.Context) (any, error) {
+			return obj.GitBranch, nil
+		},
+		nil,
+		ec.marshalOString2string,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Bean_gitBranch(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Bean",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Bean_gitCreatedAt(ctx context.Context, field graphql.CollectedField, obj *bean.Bean) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Bean_gitCreatedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.GitCreatedAt, nil
+		},
+		nil,
+		ec.marshalOTime2ᚖtimeᚐTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Bean_gitCreatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Bean",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Bean_gitMergedAt(ctx context.Context, field graphql.CollectedField, obj *bean.Bean) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Bean_gitMergedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.GitMergedAt, nil
+		},
+		nil,
+		ec.marshalOTime2ᚖtimeᚐTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Bean_gitMergedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Bean",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Bean_gitMergeCommit(ctx context.Context, field graphql.CollectedField, obj *bean.Bean) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Bean_gitMergeCommit,
+		func(ctx context.Context) (any, error) {
+			return obj.GitMergeCommit, nil
+		},
+		nil,
+		ec.marshalOString2string,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Bean_gitMergeCommit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Bean",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Bean_parentId(ctx context.Context, field graphql.CollectedField, obj *bean.Bean) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1248,6 +1434,14 @@ func (ec *executionContext) fieldContext_Bean_blockedBy(ctx context.Context, fie
 				return ec.fieldContext_Bean_body(ctx, field)
 			case "etag":
 				return ec.fieldContext_Bean_etag(ctx, field)
+			case "gitBranch":
+				return ec.fieldContext_Bean_gitBranch(ctx, field)
+			case "gitCreatedAt":
+				return ec.fieldContext_Bean_gitCreatedAt(ctx, field)
+			case "gitMergedAt":
+				return ec.fieldContext_Bean_gitMergedAt(ctx, field)
+			case "gitMergeCommit":
+				return ec.fieldContext_Bean_gitMergeCommit(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -1329,6 +1523,14 @@ func (ec *executionContext) fieldContext_Bean_blocking(ctx context.Context, fiel
 				return ec.fieldContext_Bean_body(ctx, field)
 			case "etag":
 				return ec.fieldContext_Bean_etag(ctx, field)
+			case "gitBranch":
+				return ec.fieldContext_Bean_gitBranch(ctx, field)
+			case "gitCreatedAt":
+				return ec.fieldContext_Bean_gitCreatedAt(ctx, field)
+			case "gitMergedAt":
+				return ec.fieldContext_Bean_gitMergedAt(ctx, field)
+			case "gitMergeCommit":
+				return ec.fieldContext_Bean_gitMergeCommit(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -1409,6 +1611,14 @@ func (ec *executionContext) fieldContext_Bean_parent(_ context.Context, field gr
 				return ec.fieldContext_Bean_body(ctx, field)
 			case "etag":
 				return ec.fieldContext_Bean_etag(ctx, field)
+			case "gitBranch":
+				return ec.fieldContext_Bean_gitBranch(ctx, field)
+			case "gitCreatedAt":
+				return ec.fieldContext_Bean_gitCreatedAt(ctx, field)
+			case "gitMergedAt":
+				return ec.fieldContext_Bean_gitMergedAt(ctx, field)
+			case "gitMergeCommit":
+				return ec.fieldContext_Bean_gitMergeCommit(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -1479,6 +1689,14 @@ func (ec *executionContext) fieldContext_Bean_children(ctx context.Context, fiel
 				return ec.fieldContext_Bean_body(ctx, field)
 			case "etag":
 				return ec.fieldContext_Bean_etag(ctx, field)
+			case "gitBranch":
+				return ec.fieldContext_Bean_gitBranch(ctx, field)
+			case "gitCreatedAt":
+				return ec.fieldContext_Bean_gitCreatedAt(ctx, field)
+			case "gitMergedAt":
+				return ec.fieldContext_Bean_gitMergedAt(ctx, field)
+			case "gitMergeCommit":
+				return ec.fieldContext_Bean_gitMergeCommit(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -1560,6 +1778,14 @@ func (ec *executionContext) fieldContext_Mutation_createBean(ctx context.Context
 				return ec.fieldContext_Bean_body(ctx, field)
 			case "etag":
 				return ec.fieldContext_Bean_etag(ctx, field)
+			case "gitBranch":
+				return ec.fieldContext_Bean_gitBranch(ctx, field)
+			case "gitCreatedAt":
+				return ec.fieldContext_Bean_gitCreatedAt(ctx, field)
+			case "gitMergedAt":
+				return ec.fieldContext_Bean_gitMergedAt(ctx, field)
+			case "gitMergeCommit":
+				return ec.fieldContext_Bean_gitMergeCommit(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -1641,6 +1867,14 @@ func (ec *executionContext) fieldContext_Mutation_updateBean(ctx context.Context
 				return ec.fieldContext_Bean_body(ctx, field)
 			case "etag":
 				return ec.fieldContext_Bean_etag(ctx, field)
+			case "gitBranch":
+				return ec.fieldContext_Bean_gitBranch(ctx, field)
+			case "gitCreatedAt":
+				return ec.fieldContext_Bean_gitCreatedAt(ctx, field)
+			case "gitMergedAt":
+				return ec.fieldContext_Bean_gitMergedAt(ctx, field)
+			case "gitMergeCommit":
+				return ec.fieldContext_Bean_gitMergeCommit(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -1763,6 +1997,14 @@ func (ec *executionContext) fieldContext_Mutation_setParent(ctx context.Context,
 				return ec.fieldContext_Bean_body(ctx, field)
 			case "etag":
 				return ec.fieldContext_Bean_etag(ctx, field)
+			case "gitBranch":
+				return ec.fieldContext_Bean_gitBranch(ctx, field)
+			case "gitCreatedAt":
+				return ec.fieldContext_Bean_gitCreatedAt(ctx, field)
+			case "gitMergedAt":
+				return ec.fieldContext_Bean_gitMergedAt(ctx, field)
+			case "gitMergeCommit":
+				return ec.fieldContext_Bean_gitMergeCommit(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -1844,6 +2086,14 @@ func (ec *executionContext) fieldContext_Mutation_addBlocking(ctx context.Contex
 				return ec.fieldContext_Bean_body(ctx, field)
 			case "etag":
 				return ec.fieldContext_Bean_etag(ctx, field)
+			case "gitBranch":
+				return ec.fieldContext_Bean_gitBranch(ctx, field)
+			case "gitCreatedAt":
+				return ec.fieldContext_Bean_gitCreatedAt(ctx, field)
+			case "gitMergedAt":
+				return ec.fieldContext_Bean_gitMergedAt(ctx, field)
+			case "gitMergeCommit":
+				return ec.fieldContext_Bean_gitMergeCommit(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -1925,6 +2175,14 @@ func (ec *executionContext) fieldContext_Mutation_removeBlocking(ctx context.Con
 				return ec.fieldContext_Bean_body(ctx, field)
 			case "etag":
 				return ec.fieldContext_Bean_etag(ctx, field)
+			case "gitBranch":
+				return ec.fieldContext_Bean_gitBranch(ctx, field)
+			case "gitCreatedAt":
+				return ec.fieldContext_Bean_gitCreatedAt(ctx, field)
+			case "gitMergedAt":
+				return ec.fieldContext_Bean_gitMergedAt(ctx, field)
+			case "gitMergeCommit":
+				return ec.fieldContext_Bean_gitMergeCommit(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -2006,6 +2264,14 @@ func (ec *executionContext) fieldContext_Mutation_addBlockedBy(ctx context.Conte
 				return ec.fieldContext_Bean_body(ctx, field)
 			case "etag":
 				return ec.fieldContext_Bean_etag(ctx, field)
+			case "gitBranch":
+				return ec.fieldContext_Bean_gitBranch(ctx, field)
+			case "gitCreatedAt":
+				return ec.fieldContext_Bean_gitCreatedAt(ctx, field)
+			case "gitMergedAt":
+				return ec.fieldContext_Bean_gitMergedAt(ctx, field)
+			case "gitMergeCommit":
+				return ec.fieldContext_Bean_gitMergeCommit(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -2087,6 +2353,14 @@ func (ec *executionContext) fieldContext_Mutation_removeBlockedBy(ctx context.Co
 				return ec.fieldContext_Bean_body(ctx, field)
 			case "etag":
 				return ec.fieldContext_Bean_etag(ctx, field)
+			case "gitBranch":
+				return ec.fieldContext_Bean_gitBranch(ctx, field)
+			case "gitCreatedAt":
+				return ec.fieldContext_Bean_gitCreatedAt(ctx, field)
+			case "gitMergedAt":
+				return ec.fieldContext_Bean_gitMergedAt(ctx, field)
+			case "gitMergeCommit":
+				return ec.fieldContext_Bean_gitMergeCommit(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -2115,6 +2389,172 @@ func (ec *executionContext) fieldContext_Mutation_removeBlockedBy(ctx context.Co
 	if fc.Args, err = ec.field_Mutation_removeBlockedBy_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_appendToBody(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_appendToBody,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().AppendToBody(ctx, fc.Args["id"].(string), fc.Args["content"].(string), fc.Args["ifMatch"].(*string))
+		},
+		nil,
+		ec.marshalNBean2ᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐBean,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_appendToBody(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Bean_id(ctx, field)
+			case "slug":
+				return ec.fieldContext_Bean_slug(ctx, field)
+			case "path":
+				return ec.fieldContext_Bean_path(ctx, field)
+			case "title":
+				return ec.fieldContext_Bean_title(ctx, field)
+			case "status":
+				return ec.fieldContext_Bean_status(ctx, field)
+			case "type":
+				return ec.fieldContext_Bean_type(ctx, field)
+			case "priority":
+				return ec.fieldContext_Bean_priority(ctx, field)
+			case "tags":
+				return ec.fieldContext_Bean_tags(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Bean_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Bean_updatedAt(ctx, field)
+			case "body":
+				return ec.fieldContext_Bean_body(ctx, field)
+			case "etag":
+				return ec.fieldContext_Bean_etag(ctx, field)
+			case "gitBranch":
+				return ec.fieldContext_Bean_gitBranch(ctx, field)
+			case "gitCreatedAt":
+				return ec.fieldContext_Bean_gitCreatedAt(ctx, field)
+			case "gitMergedAt":
+				return ec.fieldContext_Bean_gitMergedAt(ctx, field)
+			case "gitMergeCommit":
+				return ec.fieldContext_Bean_gitMergeCommit(ctx, field)
+			case "parentId":
+				return ec.fieldContext_Bean_parentId(ctx, field)
+			case "blockingIds":
+				return ec.fieldContext_Bean_blockingIds(ctx, field)
+			case "blockedByIds":
+				return ec.fieldContext_Bean_blockedByIds(ctx, field)
+			case "blockedBy":
+				return ec.fieldContext_Bean_blockedBy(ctx, field)
+			case "blocking":
+				return ec.fieldContext_Bean_blocking(ctx, field)
+			case "parent":
+				return ec.fieldContext_Bean_parent(ctx, field)
+			case "children":
+				return ec.fieldContext_Bean_children(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Bean", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_appendToBody_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_syncGitBranches(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_syncGitBranches,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Mutation().SyncGitBranches(ctx)
+		},
+		nil,
+		ec.marshalNBean2ᚕᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋbeanᚐBeanᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_syncGitBranches(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Bean_id(ctx, field)
+			case "slug":
+				return ec.fieldContext_Bean_slug(ctx, field)
+			case "path":
+				return ec.fieldContext_Bean_path(ctx, field)
+			case "title":
+				return ec.fieldContext_Bean_title(ctx, field)
+			case "status":
+				return ec.fieldContext_Bean_status(ctx, field)
+			case "type":
+				return ec.fieldContext_Bean_type(ctx, field)
+			case "priority":
+				return ec.fieldContext_Bean_priority(ctx, field)
+			case "tags":
+				return ec.fieldContext_Bean_tags(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Bean_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Bean_updatedAt(ctx, field)
+			case "body":
+				return ec.fieldContext_Bean_body(ctx, field)
+			case "etag":
+				return ec.fieldContext_Bean_etag(ctx, field)
+			case "gitBranch":
+				return ec.fieldContext_Bean_gitBranch(ctx, field)
+			case "gitCreatedAt":
+				return ec.fieldContext_Bean_gitCreatedAt(ctx, field)
+			case "gitMergedAt":
+				return ec.fieldContext_Bean_gitMergedAt(ctx, field)
+			case "gitMergeCommit":
+				return ec.fieldContext_Bean_gitMergeCommit(ctx, field)
+			case "parentId":
+				return ec.fieldContext_Bean_parentId(ctx, field)
+			case "blockingIds":
+				return ec.fieldContext_Bean_blockingIds(ctx, field)
+			case "blockedByIds":
+				return ec.fieldContext_Bean_blockedByIds(ctx, field)
+			case "blockedBy":
+				return ec.fieldContext_Bean_blockedBy(ctx, field)
+			case "blocking":
+				return ec.fieldContext_Bean_blocking(ctx, field)
+			case "parent":
+				return ec.fieldContext_Bean_parent(ctx, field)
+			case "children":
+				return ec.fieldContext_Bean_children(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Bean", field.Name)
+		},
 	}
 	return fc, nil
 }
@@ -2168,6 +2608,14 @@ func (ec *executionContext) fieldContext_Query_bean(ctx context.Context, field g
 				return ec.fieldContext_Bean_body(ctx, field)
 			case "etag":
 				return ec.fieldContext_Bean_etag(ctx, field)
+			case "gitBranch":
+				return ec.fieldContext_Bean_gitBranch(ctx, field)
+			case "gitCreatedAt":
+				return ec.fieldContext_Bean_gitCreatedAt(ctx, field)
+			case "gitMergedAt":
+				return ec.fieldContext_Bean_gitMergedAt(ctx, field)
+			case "gitMergeCommit":
+				return ec.fieldContext_Bean_gitMergeCommit(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -2249,6 +2697,14 @@ func (ec *executionContext) fieldContext_Query_beans(ctx context.Context, field 
 				return ec.fieldContext_Bean_body(ctx, field)
 			case "etag":
 				return ec.fieldContext_Bean_etag(ctx, field)
+			case "gitBranch":
+				return ec.fieldContext_Bean_gitBranch(ctx, field)
+			case "gitCreatedAt":
+				return ec.fieldContext_Bean_gitCreatedAt(ctx, field)
+			case "gitMergedAt":
+				return ec.fieldContext_Bean_gitMergedAt(ctx, field)
+			case "gitMergeCommit":
+				return ec.fieldContext_Bean_gitMergeCommit(ctx, field)
 			case "parentId":
 				return ec.fieldContext_Bean_parentId(ctx, field)
 			case "blockingIds":
@@ -3842,7 +4298,7 @@ func (ec *executionContext) unmarshalInputBeanFilter(ctx context.Context, obj an
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"search", "status", "excludeStatus", "type", "excludeType", "priority", "excludePriority", "tags", "excludeTags", "hasParent", "parentId", "hasBlocking", "blockingId", "isBlocked", "hasBlockedBy", "blockedById", "noParent", "noBlocking", "noBlockedBy"}
+	fieldsInOrder := [...]string{"search", "status", "excludeStatus", "type", "excludeType", "priority", "excludePriority", "tags", "excludeTags", "hasParent", "parentId", "hasBlocking", "blockingId", "isBlocked", "hasBlockedBy", "blockedById", "noParent", "noBlocking", "noBlockedBy", "hasGitBranch", "gitBranchMerged"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -3982,6 +4438,20 @@ func (ec *executionContext) unmarshalInputBeanFilter(ctx context.Context, obj an
 				return it, err
 			}
 			it.NoBlockedBy = data
+		case "hasGitBranch":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasGitBranch"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HasGitBranch = data
+		case "gitBranchMerged":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gitBranchMerged"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GitBranchMerged = data
 		}
 	}
 
@@ -4298,6 +4768,14 @@ func (ec *executionContext) _Bean(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "gitBranch":
+			out.Values[i] = ec._Bean_gitBranch(ctx, field, obj)
+		case "gitCreatedAt":
+			out.Values[i] = ec._Bean_gitCreatedAt(ctx, field, obj)
+		case "gitMergedAt":
+			out.Values[i] = ec._Bean_gitMergedAt(ctx, field, obj)
+		case "gitMergeCommit":
+			out.Values[i] = ec._Bean_gitMergeCommit(ctx, field, obj)
 		case "parentId":
 			field := field
 
@@ -4638,6 +5116,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "removeBlockedBy":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_removeBlockedBy(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "appendToBody":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_appendToBody(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "syncGitBranches":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_syncGitBranches(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -5651,6 +6143,24 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	_ = sel
 	_ = ctx
 	res := graphql.MarshalString(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOTime2ᚖtimeᚐTime(ctx context.Context, v any) (*time.Time, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalTime(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel ast.SelectionSet, v *time.Time) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalTime(*v)
 	return res
 }
 

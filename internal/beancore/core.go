@@ -16,6 +16,7 @@ import (
 
 	"github.com/hmans/beans/internal/bean"
 	"github.com/hmans/beans/internal/config"
+	"github.com/hmans/beans/internal/gitflow"
 	"github.com/hmans/beans/internal/search"
 )
 
@@ -53,6 +54,9 @@ type Core struct {
 
 	// Search index (optional, lazy-initialized)
 	searchIndex *search.Index
+
+	// Git integration (optional)
+	gitFlow *gitflow.GitFlow
 
 	// File watching (optional)
 	watching bool
@@ -373,8 +377,8 @@ func (c *Core) Update(b *bean.Bean, ifMatch *string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	// Verify bean exists in memory
-	storedBean, ok := c.beans[b.ID]
+	// Verify bean exists and capture old state
+	oldBean, ok := c.beans[b.ID]
 	if !ok {
 		return ErrNotFound
 	}
@@ -387,18 +391,18 @@ func (c *Core) Update(b *bean.Bean, ifMatch *string) error {
 	}
 
 	if ifMatch != nil && *ifMatch != "" {
-		// Calculate etag from the on-disk version by reading the stored bean's path
+		// Calculate etag from the on-disk version by reading the old bean's path
 		// This is necessary because the in-memory bean may have already been modified
 		// (Go uses pointers, so modifying the bean passed to Update also modifies c.beans[id])
 		var currentETag string
-		if storedBean.Path != "" {
+		if oldBean.Path != "" {
 			// Read current file from disk to calculate etag
-			diskPath := filepath.Join(c.root, storedBean.Path)
+			diskPath := filepath.Join(c.root, oldBean.Path)
 			content, err := os.ReadFile(diskPath)
 			if err != nil {
-				// If file doesn't exist yet, fall back to stored bean's etag
+				// If file doesn't exist yet, fall back to old bean's etag
 				// This can happen for beans created but not yet persisted
-				currentETag = storedBean.ETag()
+				currentETag = oldBean.ETag()
 			} else {
 				// Calculate etag from on-disk content
 				h := fnv.New64a()
@@ -407,7 +411,7 @@ func (c *Core) Update(b *bean.Bean, ifMatch *string) error {
 			}
 		} else {
 			// No path yet, use in-memory etag
-			currentETag = storedBean.ETag()
+			currentETag = oldBean.ETag()
 		}
 
 		if currentETag != *ifMatch {
@@ -421,6 +425,13 @@ func (c *Core) Update(b *bean.Bean, ifMatch *string) error {
 	// Update timestamp
 	now := time.Now().UTC().Truncate(time.Second)
 	b.UpdatedAt = &now
+
+	// GIT HOOK: Detect status transition and handle git branch creation
+	if c.IsGitFlowEnabled() {
+		if err := c.handleGitTransition(oldBean, b); err != nil {
+			return fmt.Errorf("git flow: %w", err)
+		}
+	}
 
 	// Write to disk
 	if err := c.saveToDisk(b); err != nil {
@@ -707,6 +718,200 @@ func (c *Core) Init() error {
 // FullPath returns the absolute path to a bean file.
 func (c *Core) FullPath(b *bean.Bean) string {
 	return filepath.Join(c.root, b.Path)
+}
+
+// EnableGitFlow initializes git integration for this Core.
+func (c *Core) EnableGitFlow(repoPath string) error {
+	gf, err := gitflow.New(repoPath)
+	if err != nil {
+		return fmt.Errorf("failed to initialize git flow: %w", err)
+	}
+	c.gitFlow = gf
+	return nil
+}
+
+// DisableGitFlow removes git integration.
+func (c *Core) DisableGitFlow() {
+	c.gitFlow = nil
+}
+
+// IsGitFlowEnabled returns true if git integration is active.
+func (c *Core) IsGitFlowEnabled() bool {
+	return c.gitFlow != nil
+}
+
+// GitFlow returns the git flow instance (may be nil).
+func (c *Core) GitFlow() *gitflow.GitFlow {
+	return c.gitFlow
+}
+
+// hasChildren returns true if any bean has this bean as parent.
+// Must be called with lock held.
+func (c *Core) hasChildren(beanID string) bool {
+	for _, b := range c.beans {
+		if b.Parent == beanID {
+			return true
+		}
+	}
+	return false
+}
+
+// createBranchForBean creates a git branch for the bean.
+// Must be called with lock held.
+func (c *Core) createBranchForBean(b *bean.Bean) error {
+	// Skip if branch already exists
+	if b.GitBranch != "" {
+		// Branch already set, try to switch to it
+		exists, err := c.gitFlow.BranchExists(b.GitBranch)
+		if err != nil {
+			return fmt.Errorf("failed to check branch existence: %w", err)
+		}
+		if exists {
+			if err := c.gitFlow.SwitchBranch(b.GitBranch); err != nil {
+				return fmt.Errorf("failed to switch to branch %q: %w", b.GitBranch, err)
+			}
+			return nil
+		}
+		// Branch reference exists but branch is gone - will create new one
+	}
+
+	// Check if working tree is clean
+	clean, err := c.gitFlow.IsWorkingTreeClean()
+	if err != nil {
+		return fmt.Errorf("failed to check working tree status: %w", err)
+	}
+	if !clean {
+		return fmt.Errorf("working tree has uncommitted changes - commit or stash them before creating a branch")
+	}
+
+	// Create the branch
+	branchName, err := c.gitFlow.CreateBranch(b.ID, b.Slug)
+	if err != nil {
+		return fmt.Errorf("failed to create branch: %w", err)
+	}
+
+	// Update bean metadata
+	now := time.Now().UTC().Truncate(time.Second)
+	b.GitBranch = branchName
+	b.GitCreatedAt = &now
+
+	return nil
+}
+
+// handleGitTransition manages git branch lifecycle during status changes.
+// Must be called with lock held.
+func (c *Core) handleGitTransition(oldBean, newBean *bean.Bean) error {
+	// Only act on status changes
+	if oldBean.Status == newBean.Status {
+		return nil
+	}
+
+	// Detect transition to 'in-progress'
+	if newBean.Status == "in-progress" && oldBean.Status != "in-progress" {
+		// Check if bean has children (is a parent bean)
+		if c.hasChildren(newBean.ID) {
+			if err := c.createBranchForBean(newBean); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// SyncResult contains the results of a git sync operation.
+type SyncResult struct {
+	Updated []*bean.Bean
+	Errors  []error
+}
+
+// SyncGitBranches synchronizes bean status with git branch lifecycle.
+// Checks all beans with git branches and updates their status:
+// - Merged branches → mark as "completed"
+// - Deleted branches (not merged) → mark as "scrapped"
+// Returns the list of updated beans and any errors encountered.
+func (c *Core) SyncGitBranches() (*SyncResult, error) {
+	if !c.IsGitFlowEnabled() {
+		return nil, fmt.Errorf("git integration is not enabled")
+	}
+
+	// Get the base branch from config or use default
+	baseBranch := "main"
+	if c.config.Beans.Git.BaseBranch != "" {
+		baseBranch = c.config.Beans.Git.BaseBranch
+	} else {
+		// Try to detect main branch
+		detected, err := c.gitFlow.GetMainBranch()
+		if err == nil {
+			baseBranch = detected
+		}
+	}
+
+	result := &SyncResult{
+		Updated: make([]*bean.Bean, 0),
+		Errors:  make([]error, 0),
+	}
+
+	// Get all beans
+	beans := c.All()
+
+	// Process each bean that has a git branch
+	for _, b := range beans {
+		if b.GitBranch == "" {
+			continue
+		}
+
+		updated, err := c.syncSingleBean(b, baseBranch)
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Errorf("bean %s: %w", b.ID, err))
+			continue
+		}
+
+		if updated {
+			// Update the bean
+			if err := c.Update(b); err != nil {
+				result.Errors = append(result.Errors, fmt.Errorf("bean %s: failed to update: %w", b.ID, err))
+				continue
+			}
+			result.Updated = append(result.Updated, b)
+		}
+	}
+
+	return result, nil
+}
+
+// syncSingleBean checks a single bean's git branch status and updates the bean if needed.
+// Returns true if the bean was modified.
+func (c *Core) syncSingleBean(b *bean.Bean, baseBranch string) (bool, error) {
+	status, err := c.gitFlow.GetBranchStatus(b.GitBranch, baseBranch)
+	if err != nil {
+		return false, fmt.Errorf("failed to check branch status: %w", err)
+	}
+
+	switch status {
+	case gitflow.BranchStatusMerged:
+		// Branch is merged → mark as completed
+		if b.Status != "completed" {
+			b.Status = "completed"
+			// Try to get merge commit hash
+			_, hash, _ := c.gitFlow.IsBranchMerged(b.GitBranch, baseBranch)
+			if hash != nil {
+				b.GitMergeCommit = hash.String()
+				now := time.Now().UTC().Truncate(time.Second)
+				b.GitMergedAt = &now
+			}
+			return true, nil
+		}
+
+	case gitflow.BranchStatusDeleted:
+		// Branch was deleted without merging → mark as scrapped
+		if b.Status != "scrapped" {
+			b.Status = "scrapped"
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 // Close stops any active file watcher and cleans up resources.

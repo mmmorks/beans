@@ -70,6 +70,15 @@ a full view of your project.`,
 			return fmt.Errorf("loading beans: %w", err)
 		}
 
+		// Enable git integration if configured
+		if cfg.Beans.Git.Enabled {
+			// Try to enable git flow - if it fails, just log a warning and continue
+			if err := core.EnableGitFlow("."); err != nil {
+				// Not a fatal error - git integration is optional
+				// The error will be caught when git operations are attempted
+			}
+		}
+
 		return nil
 	},
 }

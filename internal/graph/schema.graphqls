@@ -54,6 +54,20 @@ type Mutation {
   Remove a bean from the blocked-by list
   """
   removeBlockedBy(id: ID!, targetId: ID!, ifMatch: String): Bean!
+
+  """
+  Append content to a bean's body
+  """
+  appendToBody(id: ID!, content: String!, ifMatch: String): Bean!
+
+  """
+  Synchronize bean status with git branch lifecycle.
+  Checks all beans with git branches and updates their status:
+  - Merged branches → mark as 'completed'
+  - Deleted branches (not merged) → mark as 'scrapped'
+  Returns list of updated beans.
+  """
+  syncGitBranches: [Bean!]!
 }
 
 """
@@ -161,6 +175,16 @@ type Bean {
   "Content hash for optimistic concurrency control"
   etag: String!
 
+  # Git integration fields
+  "Git branch name (if created)"
+  gitBranch: String
+  "Timestamp when git branch was created"
+  gitCreatedAt: Time
+  "Timestamp when git branch was merged"
+  gitMergedAt: Time
+  "Merge commit SHA (if merged)"
+  gitMergeCommit: String
+
   # Direct link fields
   "Parent bean ID (optional, type-restricted)"
   parentId: String
@@ -236,4 +260,8 @@ input BeanFilter {
   noBlocking: Boolean
   "Exclude beans that have explicit blocked-by entries"
   noBlockedBy: Boolean
+  "Include only beans with git branches"
+  hasGitBranch: Boolean
+  "Include only beans with merged branches"
+  gitBranchMerged: Boolean
 }

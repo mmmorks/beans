@@ -82,12 +82,21 @@ type Config struct {
 // BeansConfig defines settings for bean creation.
 type BeansConfig struct {
 	// Path is the path to the beans directory (relative to config file location)
-	Path           string `yaml:"path,omitempty"`
-	Prefix         string `yaml:"prefix"`
-	IDLength       int    `yaml:"id_length"`
-	DefaultStatus  string `yaml:"default_status,omitempty"`
-	DefaultType    string `yaml:"default_type,omitempty"`
-	RequireIfMatch bool   `yaml:"require_if_match,omitempty"`
+	Path           string    `yaml:"path,omitempty"`
+	Prefix         string    `yaml:"prefix"`
+	IDLength       int       `yaml:"id_length"`
+	DefaultStatus  string    `yaml:"default_status,omitempty"`
+	DefaultType    string    `yaml:"default_type,omitempty"`
+	RequireIfMatch bool      `yaml:"require_if_match,omitempty"`
+	Git            GitConfig `yaml:"git,omitempty"`
+}
+
+// GitConfig defines settings for git integration.
+type GitConfig struct {
+	Enabled          bool   `yaml:"enabled"`
+	AutoCreateBranch bool   `yaml:"auto_create_branch"`
+	BaseBranch       string `yaml:"base_branch,omitempty"`
+	RequireMerge     bool   `yaml:"require_merge"`
 }
 
 // Default returns a Config with default values.
@@ -99,6 +108,12 @@ func Default() *Config {
 			IDLength:      4,
 			DefaultStatus: "todo",
 			DefaultType:   "task",
+			Git: GitConfig{
+				Enabled:          true,
+				AutoCreateBranch: true,
+				BaseBranch:       "main",
+				RequireMerge:     true,
+			},
 		},
 	}
 }

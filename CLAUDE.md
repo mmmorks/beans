@@ -21,6 +21,26 @@ You already know what beans is. This is the beans repository.
 - All CLI commands that interact with beans should internally use GraphQL queries/mutations.
 - `mise build` to build a `./beans` executable
 
+# Git Integration
+
+Beans includes git-branch integration that automatically creates and manages git branches for parent beans (beans with children).
+
+**Key Features:**
+- Auto-creates git branches when parent beans transition to `in-progress` status
+- Branch naming: `{bean-id}/{slug}` (e.g., `beans-abc123/user-authentication`)
+- Bidirectional sync: merged branches → completed status, deleted branches → scrapped status
+- Configuration in `.beans.yml` under `beans.git` section
+
+**Commands:**
+- `beans sync` - Synchronize bean status with git branch lifecycle (use `--apply` to make changes)
+- `beans update <id> --status in-progress` - Auto-creates branch if bean has children
+
+**Technical Details:**
+- Git operations are in `internal/gitflow/` package using go-git library
+- Core integration hooks in `internal/beancore/core.go` handle status transitions
+- GraphQL schema includes git fields: `gitBranch`, `gitCreatedAt`, `gitMergedAt`, `gitMergeCommit`
+- Git metadata is stored in bean frontmatter
+
 # Extra rules for our own beans/issues
 
 - Use the `idea` tag for ideas and proposals.

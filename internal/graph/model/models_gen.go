@@ -54,6 +54,10 @@ type BeanFilter struct {
 	NoBlocking *bool `json:"noBlocking,omitempty"`
 	// Exclude beans that have explicit blocked-by entries
 	NoBlockedBy *bool `json:"noBlockedBy,omitempty"`
+	// Include only beans with git branches
+	HasGitBranch *bool `json:"hasGitBranch,omitempty"`
+	// Include only beans with merged branches
+	GitBranchMerged *bool `json:"gitBranchMerged,omitempty"`
 }
 
 // Structured body modifications applied atomically.

@@ -161,20 +161,30 @@ type Bean struct {
 
 	// BlockedBy is a list of bean IDs that are blocking this bean.
 	BlockedBy []string `yaml:"blocked_by,omitempty" json:"blocked_by,omitempty"`
+
+	// Git integration fields
+	GitBranch      string     `yaml:"git_branch,omitempty" json:"git_branch,omitempty"`
+	GitCreatedAt   *time.Time `yaml:"git_created_at,omitempty" json:"git_created_at,omitempty"`
+	GitMergedAt    *time.Time `yaml:"git_merged_at,omitempty" json:"git_merged_at,omitempty"`
+	GitMergeCommit string     `yaml:"git_merge_commit,omitempty" json:"git_merge_commit,omitempty"`
 }
 
 // frontMatter is the subset of Bean that gets serialized to YAML front matter.
 type frontMatter struct {
-	Title     string     `yaml:"title"`
-	Status    string     `yaml:"status"`
-	Type      string     `yaml:"type,omitempty"`
-	Priority  string     `yaml:"priority,omitempty"`
-	Tags      []string   `yaml:"tags,omitempty"`
-	CreatedAt *time.Time `yaml:"created_at,omitempty"`
-	UpdatedAt *time.Time `yaml:"updated_at,omitempty"`
-	Parent    string     `yaml:"parent,omitempty"`
-	Blocking  []string   `yaml:"blocking,omitempty"`
-	BlockedBy []string   `yaml:"blocked_by,omitempty"`
+	Title          string     `yaml:"title"`
+	Status         string     `yaml:"status"`
+	Type           string     `yaml:"type,omitempty"`
+	Priority       string     `yaml:"priority,omitempty"`
+	Tags           []string   `yaml:"tags,omitempty"`
+	CreatedAt      *time.Time `yaml:"created_at,omitempty"`
+	UpdatedAt      *time.Time `yaml:"updated_at,omitempty"`
+	Parent         string     `yaml:"parent,omitempty"`
+	Blocking       []string   `yaml:"blocking,omitempty"`
+	BlockedBy      []string   `yaml:"blocked_by,omitempty"`
+	GitBranch      string     `yaml:"git_branch,omitempty"`
+	GitCreatedAt   *time.Time `yaml:"git_created_at,omitempty"`
+	GitMergedAt    *time.Time `yaml:"git_merged_at,omitempty"`
+	GitMergeCommit string     `yaml:"git_merge_commit,omitempty"`
 }
 
 // Parse reads a bean from a reader (markdown with YAML front matter).
@@ -189,47 +199,59 @@ func Parse(r io.Reader) (*Bean, error) {
 	bodyStr := strings.TrimSuffix(string(body), "\n")
 
 	return &Bean{
-		Title:     fm.Title,
-		Status:    fm.Status,
-		Type:      fm.Type,
-		Priority:  fm.Priority,
-		Tags:      fm.Tags,
-		CreatedAt: fm.CreatedAt,
-		UpdatedAt: fm.UpdatedAt,
-		Body:      bodyStr,
-		Parent:    fm.Parent,
-		Blocking:  fm.Blocking,
-		BlockedBy: fm.BlockedBy,
+		Title:          fm.Title,
+		Status:         fm.Status,
+		Type:           fm.Type,
+		Priority:       fm.Priority,
+		Tags:           fm.Tags,
+		CreatedAt:      fm.CreatedAt,
+		UpdatedAt:      fm.UpdatedAt,
+		Body:           bodyStr,
+		Parent:         fm.Parent,
+		Blocking:       fm.Blocking,
+		BlockedBy:      fm.BlockedBy,
+		GitBranch:      fm.GitBranch,
+		GitCreatedAt:   fm.GitCreatedAt,
+		GitMergedAt:    fm.GitMergedAt,
+		GitMergeCommit: fm.GitMergeCommit,
 	}, nil
 }
 
 // renderFrontMatter is used for YAML output with yaml.v3 (supports custom marshalers).
 type renderFrontMatter struct {
-	Title     string     `yaml:"title"`
-	Status    string     `yaml:"status"`
-	Type      string     `yaml:"type,omitempty"`
-	Priority  string     `yaml:"priority,omitempty"`
-	Tags      []string   `yaml:"tags,omitempty"`
-	CreatedAt *time.Time `yaml:"created_at,omitempty"`
-	UpdatedAt *time.Time `yaml:"updated_at,omitempty"`
-	Parent    string     `yaml:"parent,omitempty"`
-	Blocking  []string   `yaml:"blocking,omitempty"`
-	BlockedBy []string   `yaml:"blocked_by,omitempty"`
+	Title          string     `yaml:"title"`
+	Status         string     `yaml:"status"`
+	Type           string     `yaml:"type,omitempty"`
+	Priority       string     `yaml:"priority,omitempty"`
+	Tags           []string   `yaml:"tags,omitempty"`
+	CreatedAt      *time.Time `yaml:"created_at,omitempty"`
+	UpdatedAt      *time.Time `yaml:"updated_at,omitempty"`
+	Parent         string     `yaml:"parent,omitempty"`
+	Blocking       []string   `yaml:"blocking,omitempty"`
+	BlockedBy      []string   `yaml:"blocked_by,omitempty"`
+	GitBranch      string     `yaml:"git_branch,omitempty"`
+	GitCreatedAt   *time.Time `yaml:"git_created_at,omitempty"`
+	GitMergedAt    *time.Time `yaml:"git_merged_at,omitempty"`
+	GitMergeCommit string     `yaml:"git_merge_commit,omitempty"`
 }
 
 // Render serializes the bean back to markdown with YAML front matter.
 func (b *Bean) Render() ([]byte, error) {
 	fm := renderFrontMatter{
-		Title:     b.Title,
-		Status:    b.Status,
-		Type:      b.Type,
-		Priority:  b.Priority,
-		Tags:      b.Tags,
-		CreatedAt: b.CreatedAt,
-		UpdatedAt: b.UpdatedAt,
-		Parent:    b.Parent,
-		Blocking:  b.Blocking,
-		BlockedBy: b.BlockedBy,
+		Title:          b.Title,
+		Status:         b.Status,
+		Type:           b.Type,
+		Priority:       b.Priority,
+		Tags:           b.Tags,
+		CreatedAt:      b.CreatedAt,
+		UpdatedAt:      b.UpdatedAt,
+		Parent:         b.Parent,
+		Blocking:       b.Blocking,
+		BlockedBy:      b.BlockedBy,
+		GitBranch:      b.GitBranch,
+		GitCreatedAt:   b.GitCreatedAt,
+		GitMergedAt:    b.GitMergedAt,
+		GitMergeCommit: b.GitMergeCommit,
 	}
 
 	fmBytes, err := yaml.Marshal(&fm)

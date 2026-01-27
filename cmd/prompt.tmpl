@@ -65,9 +65,57 @@ beans update --json <id> -s completed --body-replace-old "- [ ] Task" --body-rep
 
 # Archive completed/scrapped beans (only when user requests)
 beans archive
+
+# Git integration - sync bean status with git branch lifecycle
+beans sync --json           # Preview changes (dry-run)
+beans sync --json --apply   # Apply changes (merged branches → completed, deleted → scrapped)
 ```
 
 Use `beans <command> --help` for full options. Use `--json` for machine-readable output.
+
+## Git Integration
+
+Beans automatically creates and manages git branches for **parent beans** (beans with children).
+
+**Key Behavior:**
+- When a parent bean (bean with children) transitions to `in-progress`, a git branch is automatically created
+- Branch naming: `{bean-id}/{slug}` (e.g., `beans-abc123/user-authentication`)
+- The branch is created from the current HEAD and immediately checked out
+- Requires a clean working tree (no uncommitted changes)
+
+**Synchronization:**
+- Merged branches → bean status becomes `completed`
+- Deleted branches (not merged) → bean status becomes `scrapped`
+- Use `beans sync --apply` to synchronize git state with beans
+
+**Git Metadata:**
+- Beans track: `git_branch`, `git_created_at`, `git_merged_at`, `git_merge_commit`
+- These fields are stored in bean frontmatter and queryable via GraphQL
+
+**Configuration:**
+Git integration is enabled by default in `.beans.yml`:
+```yaml
+beans:
+  git:
+    enabled: true              # Enable/disable git integration
+    auto_create_branch: true   # Auto-create branches on in-progress transition
+    base_branch: main          # Base branch for merge detection
+    require_merge: true        # Prevent manual 'completed' if branch not merged
+```
+
+**Examples:**
+```bash
+# Create a parent bean (epic with children) and start work
+beans create "User Auth" -t epic --json
+beans create "Login endpoint" --parent beans-abc1 --json  # Make it a parent
+beans update beans-abc1 -s in-progress --json             # Auto-creates branch beans-abc1/user-auth
+
+# After merging the branch via PR, sync the bean status
+beans sync --json --apply  # Marks beans-abc1 as completed
+
+# Check git branch status
+beans query --json '{ beans(filter: { hasGitBranch: true }) { id title gitBranch status } }'
+```
 
 ## Relationships
 
