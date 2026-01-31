@@ -1,6 +1,7 @@
 package gitflow
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -9,6 +10,9 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
+
+// Sentinel error used to break iteration when a merge commit is found
+var errMergeCommitFound = errors.New("merge commit found")
 
 // GitFlow provides git operations for beans integration.
 type GitFlow struct {
@@ -46,17 +50,11 @@ func (g *GitFlow) CreateBranch(beanID, slug, baseBranch string) (string, error) 
 	}
 
 	// GitHub Flow: Always branch from the base branch (main)
+	// Note: This creates the branch FROM the base branch regardless of current HEAD position
 	baseRefName := plumbing.NewBranchReferenceName(baseBranch)
 	baseRef, err := g.repo.Reference(baseRefName, true)
 	if err != nil {
 		return "", fmt.Errorf("base branch %q not found: %w", baseBranch, err)
-	}
-
-	// Warn if not currently on base branch (informational, not blocking)
-	currentBranch, err := g.GetCurrentBranch()
-	if err == nil && currentBranch != baseBranch {
-		// This is just a warning - we still create the branch from base
-		// The caller can choose to surface this to the user
 	}
 
 	// Create new branch reference FROM base branch
@@ -217,14 +215,14 @@ func (g *GitFlow) wasBranchMergedAndDeleted(branchName, baseBranch string) (bool
 			msg := c.Message
 			// Simple check - could be made more sophisticated
 			if containsBranchName(msg, branchName) {
-				return fmt.Errorf("found") // Use error to break iteration
+				return errMergeCommitFound // Use sentinel error to break iteration
 			}
 		}
 		return nil
 	})
 
 	// If we found a matching merge commit
-	if err != nil && err.Error() == "found" {
+	if errors.Is(err, errMergeCommitFound) {
 		hash := baseRef.Hash()
 		return true, &hash, nil
 	}
