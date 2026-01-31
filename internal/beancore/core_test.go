@@ -1618,6 +1618,8 @@ func TestUpdateWithETag(t *testing.T) {
 			t.Fatalf("Create() error = %v", err)
 		}
 
+		// Reload from core to get the on-disk etag
+		b, _ = core.Get("etag-test-1")
 		currentETag := b.ETag()
 		b.Title = "Updated"
 		err := core.Update(b, &currentETag)
@@ -1716,6 +1718,8 @@ func TestUpdateWithETagRequired(t *testing.T) {
 			t.Fatalf("Create() error = %v", err)
 		}
 
+		// Reload from core to get the on-disk etag
+		b, _ = core.Get("etag-req-test-3")
 		currentETag := b.ETag()
 		b.Title = "Success"
 		err := core.Update(b, &currentETag)
@@ -1875,7 +1879,7 @@ func TestGitFlow_AutoCreateBranch_ParentBean(t *testing.T) {
 
 	// Transition parent to in-progress - should auto-create git branch
 	parent.Status = "in-progress"
-	err = core.Update(parent)
+	err = core.Update(parent, nil)
 	if err != nil {
 		t.Fatalf("Update parent error = %v", err)
 	}
@@ -1928,7 +1932,7 @@ func TestGitFlow_AutoCreateBranch_NonParentBean(t *testing.T) {
 
 	// Transition to in-progress - should NOT create branch
 	nonParent.Status = "in-progress"
-	if err := core.Update(nonParent); err != nil {
+	if err := core.Update(nonParent, nil); err != nil {
 		t.Fatalf("Update error = %v", err)
 	}
 
@@ -1999,7 +2003,7 @@ func TestGitFlow_AutoCreateBranch_FromBaseBranch(t *testing.T) {
 
 	// Transition to in-progress (current branch is other-branch)
 	parent.Status = "in-progress"
-	core.Update(parent)
+	core.Update(parent, nil)
 
 	// Reload parent to get updated git fields
 	parent, _ = core.Get("beans-test1")
@@ -2040,7 +2044,7 @@ func TestGitFlow_AutoCreateBranch_DirtyTree(t *testing.T) {
 
 	// Try to transition to in-progress with dirty tree - should error
 	parent.Status = "in-progress"
-	err := core.Update(parent)
+	err := core.Update(parent, nil)
 	if err == nil {
 		t.Error("Update() should error when working tree is dirty")
 	}
@@ -2077,7 +2081,7 @@ func TestGitFlow_AutoCommitBeans(t *testing.T) {
 
 	// Transition to in-progress - should auto-commit beans and succeed
 	parent.Status = "in-progress"
-	err := core.Update(parent)
+	err := core.Update(parent, nil)
 	if err != nil {
 		t.Fatalf("Update() error = %v (auto-commit should have handled bean changes)", err)
 	}
@@ -2156,7 +2160,7 @@ func TestGitFlow_AutoCommitBeans_Disabled(t *testing.T) {
 
 	// Transition to in-progress - should fail with dirty tree
 	parent.Status = "in-progress"
-	err := core.Update(parent)
+	err := core.Update(parent, nil)
 	if err == nil {
 		t.Error("Update() should error when auto-commit is disabled and tree is dirty")
 	}
@@ -2192,7 +2196,7 @@ func TestGitFlow_AutoCommitBeans_MixedChanges(t *testing.T) {
 
 	// Transition to in-progress - should fail because of non-bean changes
 	parent.Status = "in-progress"
-	err := core.Update(parent)
+	err := core.Update(parent, nil)
 	if err == nil {
 		t.Error("Update() should error when there are changes outside .beans/")
 	}
@@ -2242,7 +2246,7 @@ func TestGitFlow_AutoCommitBeans_MultipleBeanUpdates(t *testing.T) {
 
 	// First transition - should auto-commit and create branch
 	parent1.Status = "in-progress"
-	err := core.Update(parent1)
+	err := core.Update(parent1, nil)
 	if err != nil {
 		t.Fatalf("Update parent1 error = %v", err)
 	}
@@ -2259,7 +2263,7 @@ func TestGitFlow_AutoCommitBeans_MultipleBeanUpdates(t *testing.T) {
 
 	// Second transition - should also auto-commit and create branch
 	parent2.Status = "in-progress"
-	err = core.Update(parent2)
+	err = core.Update(parent2, nil)
 	if err != nil {
 		t.Fatalf("Update parent2 error = %v", err)
 	}
@@ -2316,7 +2320,7 @@ func TestGitFlow_AutoCommitBeans_CommitMessageFormat(t *testing.T) {
 
 	// Transition to in-progress - triggers auto-commit
 	parent.Status = "in-progress"
-	err := core.Update(parent)
+	err := core.Update(parent, nil)
 	if err != nil {
 		t.Fatalf("Update() error = %v", err)
 	}
@@ -2378,7 +2382,7 @@ func TestGitFlow_AutoCommitBeans_DuringBranchCreation(t *testing.T) {
 
 	// Transition to in-progress - should auto-commit beans AND create branch
 	parent.Status = "in-progress"
-	err := core.Update(parent)
+	err := core.Update(parent, nil)
 	if err != nil {
 		t.Fatalf("Update() error = %v (should auto-commit and create branch)", err)
 	}
@@ -2432,7 +2436,7 @@ func TestGitFlow_AutoCommitBeans_StatusTransitions(t *testing.T) {
 
 	// First transition to in-progress - should auto-commit and create branch
 	parent.Status = "in-progress"
-	err := core.Update(parent)
+	err := core.Update(parent, nil)
 	if err != nil {
 		t.Fatalf("Update to in-progress error = %v", err)
 	}
@@ -2451,7 +2455,7 @@ func TestGitFlow_AutoCommitBeans_StatusTransitions(t *testing.T) {
 
 	// Additional transitions (these don't trigger auto-commit, just verify they work)
 	parent.Status = "todo"
-	err = core.Update(parent)
+	err = core.Update(parent, nil)
 	if err != nil {
 		t.Fatalf("Update to todo error = %v", err)
 	}
@@ -2505,7 +2509,7 @@ func TestGitFlow_AutoCommitBeans_EmptyCommitScenario(t *testing.T) {
 
 	// Now transition to in-progress - no bean changes to commit before branch creation
 	parent.Status = "in-progress"
-	err := core.Update(parent)
+	err := core.Update(parent, nil)
 	if err != nil {
 		t.Fatalf("Update() error = %v (should succeed even with no uncommitted changes)", err)
 	}
@@ -2557,7 +2561,7 @@ func TestGitFlow_SyncGitBranches_MergedBranch(t *testing.T) {
 	// Reload and transition to in-progress
 	parent, _ = core.Get("beans-feature1")
 	parent.Status = "in-progress"
-	core.Update(parent)
+	core.Update(parent, nil)
 
 	// Reload to get GitBranch
 	parent, _ = core.Get("beans-feature1")
@@ -2631,7 +2635,7 @@ func TestGitFlow_SyncGitBranches_DeletedBranch(t *testing.T) {
 	// Reload and transition to in-progress
 	parent, _ = core.Get("beans-feature1")
 	parent.Status = "in-progress"
-	core.Update(parent)
+	core.Update(parent, nil)
 
 	// Reload to get GitBranch
 	parent, _ = core.Get("beans-feature1")
@@ -2713,7 +2717,7 @@ func TestGitFlow_SyncGitBranches_MultipleBeans(t *testing.T) {
 	// Transition both to in-progress
 	parent1, _ = core.Get("beans-feature1")
 	parent1.Status = "in-progress"
-	core.Update(parent1)
+	core.Update(parent1, nil)
 	parent1, _ = core.Get("beans-feature1")
 
 	// Commit updated bean files
@@ -2725,7 +2729,7 @@ func TestGitFlow_SyncGitBranches_MultipleBeans(t *testing.T) {
 
 	parent2, _ = core.Get("beans-feature2")
 	parent2.Status = "in-progress"
-	core.Update(parent2)
+	core.Update(parent2, nil)
 	parent2, _ = core.Get("beans-feature2")
 
 	// Commit updated bean files
@@ -2800,7 +2804,7 @@ func TestGitFlow_DisableAutoCreate(t *testing.T) {
 
 	// Transition to in-progress - should NOT create branch
 	parent.Status = "in-progress"
-	core.Update(parent)
+	core.Update(parent, nil)
 
 	if parent.GitBranch != "" {
 		t.Errorf("GitBranch should be empty when auto-create is disabled, got %q", parent.GitBranch)
@@ -2833,7 +2837,7 @@ func TestGitFlow_DisableGitFlow(t *testing.T) {
 
 	// Transition should work but not create branch
 	parent.Status = "in-progress"
-	err := core.Update(parent)
+	err := core.Update(parent, nil)
 	if err != nil {
 		t.Fatalf("Update() error = %v", err)
 	}

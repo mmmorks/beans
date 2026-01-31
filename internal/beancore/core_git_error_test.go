@@ -134,7 +134,7 @@ func TestCore_GitBranchCreation_RequireMerge(t *testing.T) {
 
 	// Transition to in-progress (creates branch)
 	parent.Status = "in-progress"
-	if err := testCore.Update(parent); err != nil {
+	if err := testCore.Update(parent, nil); err != nil {
 		t.Fatalf("Update to in-progress error = %v", err)
 	}
 
@@ -146,7 +146,7 @@ func TestCore_GitBranchCreation_RequireMerge(t *testing.T) {
 
 	// Attempt to manually complete without merging branch (should fail)
 	parent.Status = "completed"
-	err := testCore.Update(parent)
+	err := testCore.Update(parent, nil)
 	if err == nil {
 		t.Error("Update to completed should fail when require_merge is true and branch not merged")
 	}
@@ -199,7 +199,7 @@ func TestCore_GitBranchCreation_AutoCommitBeans(t *testing.T) {
 
 	// Transition to in-progress - should create branch and auto-commit bean updates
 	parent.Status = "in-progress"
-	if err := testCore.Update(parent); err != nil {
+	if err := testCore.Update(parent, nil); err != nil {
 		t.Fatalf("Update to in-progress error = %v", err)
 	}
 
@@ -248,7 +248,7 @@ func TestCore_GitBranchCreation_NoAutoCommit(t *testing.T) {
 
 	// Transition to in-progress (creates branch but does NOT auto-commit)
 	parent.Status = "in-progress"
-	if err := testCore.Update(parent); err != nil {
+	if err := testCore.Update(parent, nil); err != nil {
 		t.Fatalf("Update to in-progress error = %v", err)
 	}
 
@@ -296,7 +296,7 @@ func TestCore_GitBranchCreation_InvalidBaseBranch(t *testing.T) {
 
 	// Attempt to transition to in-progress (should fail due to invalid base branch)
 	parent.Status = "in-progress"
-	err := testCore.Update(parent)
+	err := testCore.Update(parent, nil)
 	if err == nil {
 		t.Error("Update should fail with invalid base branch configured")
 	}
@@ -423,7 +423,7 @@ func TestCore_GitIntegration_DisabledInConfig(t *testing.T) {
 
 	// Transition to in-progress (should NOT create git branch)
 	parent.Status = "in-progress"
-	if err := testCore.Update(parent); err != nil {
+	if err := testCore.Update(parent, nil); err != nil {
 		t.Fatalf("Update should succeed even with git disabled: %v", err)
 	}
 

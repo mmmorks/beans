@@ -406,8 +406,25 @@ func (c *Core) Update(b *bean.Bean, ifMatch *string) error {
 	}
 
 	if ifMatch != nil && *ifMatch != "" {
-		// Calculate etag from the on-disk version (oldBean was just loaded from disk)
-		currentETag := oldBean.ETag()
+		// Calculate etag directly from on-disk file content (not from loaded bean object,
+		// since loadBean applies defaults that change the etag)
+		var currentETag string
+		if existingBean.Path != "" {
+			diskPath := filepath.Join(c.root, existingBean.Path)
+			content, readErr := os.ReadFile(diskPath)
+			if readErr != nil {
+				// If file doesn't exist yet, use existing bean's etag as fallback
+				currentETag = existingBean.ETag()
+			} else {
+				// Calculate etag from the actual file content using same algorithm as Bean.ETag()
+				h := fnv.New64a()
+				h.Write(content)
+				currentETag = hex.EncodeToString(h.Sum(nil))
+			}
+		} else {
+			// No path yet, use in-memory etag
+			currentETag = existingBean.ETag()
+		}
 
 		if currentETag != *ifMatch {
 			return &ETagMismatchError{
@@ -894,8 +911,8 @@ func (c *Core) SyncGitBranches() (*SyncResult, error) {
 		}
 
 		if updated {
-			// Update the bean
-			if err := c.Update(b); err != nil {
+			// Update the bean (no etag check for automated sync)
+			if err := c.Update(b, nil); err != nil {
 				result.Errors = append(result.Errors, fmt.Errorf("bean %s: failed to update: %w", b.ID, err))
 				continue
 			}

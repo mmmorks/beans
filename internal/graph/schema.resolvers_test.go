@@ -2806,7 +2806,7 @@ func TestMutationSyncGitBranches(t *testing.T) {
 	})
 
 	parent.Status = "in-progress"
-	core.Update(parent)
+	core.Update(parent, nil)
 
 	// Reload parent to get git metadata
 	parent, _ = core.Get("beans-parent1")
