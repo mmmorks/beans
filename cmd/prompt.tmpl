@@ -30,16 +30,16 @@ AFTER finishing any task:
 When creating or editing beans, you **MUST** correctly escape backticks in titles and descriptions.
 
 <bad-example>
-```
-$ beans create "Add weigh-ins table" -t feature -d "... Create `weigh_ins` table ..."
+```bash
+beans create "Add weigh-ins table" -t feature -d "... Create `weigh_ins` table ..."
 ```
 </bad-example>
 
 This command causes a problem because the shell tries to execute the string between the backticks as a shell command, which obviously fails.
 
 <good-example>
-```
-$ beans create "Add weigh-ins table" -t feature -d "... Create \`weigh_ins\` table ..."
+```bash
+beans create "Add weigh-ins table" -t feature -d "... Create \`weigh_ins\` table ..."
 ```
 </good-example>
 
