@@ -1,21 +1,21 @@
 {
   "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "beans prime"
-          }
-        ]
-      }
-    ],
     "PreCompact": [
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "beans prime"
+            "command": "beans prime",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "beans prime",
+            "type": "command"
           }
         ]
       }
